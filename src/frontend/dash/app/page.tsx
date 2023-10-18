@@ -51,6 +51,8 @@ export default function Home() {
         <title>TradingView Charting Library {version()}</title>
       </Head>
       <Script
+        id = "udf-dist"
+        key="udf-dist"
         src="/static/datafeeds/udf/dist/bundle.js"
         strategy="lazyOnload"
         onReady={() => {
@@ -59,29 +61,24 @@ export default function Home() {
       />
       
       <div>
-        <h1 className='container mx-auto mt-4 text-sm text-gray-800 font-bold underline'>
-					TradingView Charting Library and Next.js Integration
-			  </h1>
-      </div>
-      
-      <div className="md:container md:mx-auto">
         <ul> 
-          {["AAPL", "MSFT"].map((sym, i)  =>  (
-          <div className="columns-2">
+          {["AAPL"].map((sym, i)  =>  {
+                console.log(isScriptReady, i);
+            if(!isScriptReady){
+              return <></>
+            }
+            
+            return <div className="columns-1">
             <div>
-              <li key={i}> { isScriptReady && <TVChartContainer { ...{...defaultWidgetProps, symbol: sym} } />} </li>
-            </div>
-            <div>
-              <li key={i}> { isScriptReady && <TVChartContainer { ...{...defaultWidgetProps, symbol: sym} } />} </li>
+              <li key={(i*2).toString()}> { isScriptReady && <TVChartContainer { ...{...defaultWidgetProps, symbol: sym} } />} </li>
             </div>
           </div>
 
-            ))
+          })
           }
         </ul>  
       </div>
 
-      <script src="./static/preline/preline.js"></script>
     </>
   );
 }
