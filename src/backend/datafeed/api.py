@@ -3,8 +3,8 @@ from enum import Enum
 from typing import Any, List, Protocol, LiteralString
 from backend.curd.sqllite.model import SymbolExecutor
 from alpaca.data.requests import StockBarsRequest
-from alpaca.data.timeframe import TimeFrame
-from alpaca.data import StockHistoricalDataClient
+from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
+from alpaca.data import StockHistoricalDataClient, Adjustment
 
 from backend.datafeed.trading_view import (
     Bar,
@@ -24,12 +24,12 @@ stock_client = StockHistoricalDataClient(
 class DataFeed:
     async def search_symbols(
         user_input: LiteralString,
-        exchange: LiteralString,
+        screener: LiteralString,
         type: SymbolType,
         executor: SymbolExecutor,
     ) -> List[SearchSymbolResultItem]:
         symbols = await executor.select_symbols(
-            user_input=user_input, exchange=exchange, type=type
+            user_input=user_input, screener=screener, type=type
         )
         return [
             SearchSymbolResultItem(
@@ -44,13 +44,13 @@ class DataFeed:
         ]
 
     async def resolve_symbol(
-        exchange: LiteralString,
+        screener: LiteralString,
         type: LiteralString,
         symbol: LiteralString,
         executor: SymbolExecutor,
     ):
         symbols = await executor.resolve_symbol(
-            exchange=exchange,
+            screener=screener,
             type=type,
             symbol=symbol,
         )
@@ -118,12 +118,39 @@ class DataFeed:
     async def get_bars(
         symbol_info: LibrarySymbolInfo, resolution: str, period_params: PeriodParams
     ) -> List[Bar]:
-        mapping = {"1D": TimeFrame.Day, "1M": TimeFrame.Month}
+        """
+             frequency_maps = {
+            '10s': '10S', '30s': '30S',
+            '1m': '1', '2m': '2', '3m': '3', '5m': '5', '10m': '10', '15m': '15',
+            '30m': '30', '60m': '60', '120m': '120',
+            '4h': '240',
+            'd': '1D', '2d': '2D',
+            'w': '1W', 'm': '1M', 'y': '12M'
+        }
+        """
+        mapping = {
+            "1D": TimeFrame.Day,
+            "1M": TimeFrame.Month,
+            # "2D": TimeFrame(amount=2, unit=TimeFrameUnit.Day),
+            "1W": TimeFrame.Week,
+            "12M": TimeFrame(amount=12, unit=TimeFrame.Month),
+            "240": TimeFrame(amount=4, unit=TimeFrameUnit.Hour),
+            "120": TimeFrame(amount=2, unit=TimeFrameUnit.Hour),
+            "60": TimeFrame.Hour,
+            "30": TimeFrame(amount=30, unit=TimeFrameUnit.Minute),
+            "15": TimeFrame(amount=15, unit=TimeFrameUnit.Minute),
+            "10": TimeFrame(amount=10, unit=TimeFrameUnit.Minute),
+            "5": TimeFrame(amount=5, unit=TimeFrameUnit.Minute),
+            "3": TimeFrame(amount=3, unit=TimeFrameUnit.Minute),
+            "2": TimeFrame(amount=2, unit=TimeFrameUnit.Minute),
+            "1": TimeFrame(amount=1, unit=TimeFrameUnit.Minute),
+        }
         request_params = StockBarsRequest(
             symbol_or_symbols=symbol_info.name,
-            timeframe=TimeFrame.Day,
+            timeframe=mapping[resolution],
             start=datetime.date.fromtimestamp(period_params.from_),
             end=datetime.date.fromtimestamp(period_params.to),
+            adjustment=Adjustment.ALL,
             limit=period_params.countBack,
         )
 

@@ -2,7 +2,7 @@
 
 import styles from "./index.module.css";
 import { useEffect, useRef } from "react";
-import { ChartingLibraryWidgetOptions, LanguageCode, ResolutionString, widget } from "@/public/static/charting_library";
+import { ChartingLibraryWidgetOptions, LanguageCode, ResolutionString, widget,PineJS } from "@/public/static/charting_library";
 import DataFeedFactory from "./lib/datafeed";
 import { url } from "inspector";
 
@@ -28,26 +28,10 @@ export const TVChartContainer = (props: Partial<ChartingLibraryWidgetOptions>) =
 			fullscreen: props.fullscreen,
 			autosize: props.autosize
 		};
-
 		const tvWidget = new widget(widgetOptions);
 
 		tvWidget.onChartReady(() => {
-			tvWidget.headerReady().then(() => {
-				const button = tvWidget.createButton();
-				button.setAttribute("title", "Click to show a notification popup");
-				button.classList.add("apply-common-tooltip");
-				button.addEventListener("click", () =>
-					tvWidget.showNoticeDialog({
-						title: "Notification",
-						body: "TradingView Charting Library API works correctly",
-						callback: () => {
-							console.log("Noticed!");
-						},
-					})
-				);
-
-				button.innerHTML = "Check API";
-			});
+		
 		});
 
 		return () => {

@@ -57,13 +57,13 @@ app.static("/static", "./static")
 @app.route("/search_symbol")
 async def search_symbol(request: Request, executor: SymbolExecutor):
     user_input = request.args.get("user_input", "")
-    exchange = request.args.get("exchange", "NASDAQ")
+    screener = request.args.get("exchange", "NASDAQ")
     type = request.args.get("type", "stock")
 
     symbols = await DataFeed.search_symbols(
         type=type,
         user_input="%" + user_input + "%",
-        exchange=exchange,
+        screener=screener,
         executor=executor,
     )
     logging.debug("symbols ---%s", symbols)
@@ -73,11 +73,11 @@ async def search_symbol(request: Request, executor: SymbolExecutor):
 @app.route("/resolve_symbol")
 async def resolve_symbol(request: Request, executor: SymbolExecutor):
     symbol = request.args.get("symbol", "")
-    exchange = request.args.get("exchange", "NASDAQ")
+    screener = request.args.get("exchange", "america")
     type = request.args.get("type", "stock")
 
     symbols = await DataFeed.resolve_symbol(
-        exchange=exchange,
+        screener=screener,
         type=type,
         symbol=symbol,
         executor=executor,

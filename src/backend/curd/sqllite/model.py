@@ -16,18 +16,18 @@ class Symbol(BaseModel):
 
 class SymbolExecutor(SQLiteExecutor):
     @query(
-        """SELECT * from symbols where exchange=$exchange AND (`symbol` LIKE $user_input or `desc` LIKE $user_input) """  # or desc like '%$user_input%')"
+        """SELECT * from symbols where screener=$screener AND (`symbol` LIKE $user_input or `desc` LIKE $user_input) """  # or desc like '%$user_input%')"
     )
     async def select_symbols(
         self,
-        exchange: LiteralString,
+        screener: LiteralString,
         type: LiteralString,
         user_input: LiteralString,
     ) -> List[Symbol]:
         ...
 
-    @query("SELECT * from symbols WHERE exchange=:exchange AND `symbol`=:symbol")
+    @query("SELECT * from symbols WHERE screener=:screener AND `symbol`=:symbol")
     async def resolve_symbol(
-        self, exchange: LiteralString, type: LiteralString, symbol: LiteralString
+        self, screener: LiteralString, type: LiteralString, symbol: LiteralString
     ) -> List[Symbol]:
         ...
