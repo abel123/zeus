@@ -48,7 +48,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>TradingView Charting Library {version()}</title>
+        <title>TradingView Charting Library</title>
       </Head>
       <Script
         id = "udf-dist"
@@ -60,18 +60,16 @@ export default function Home() {
         }}
       />
       
-      <div>
-        <ul> 
+      <div className="">
+        <ul key="symbol_list"> 
           {["AAPL"].map((sym, i)  =>  {
                 console.log(isScriptReady, i);
             if(!isScriptReady){
               return <></>
             }
             
-            return <div className="columns-1">
-            <div>
-              <li key={(i*2).toString()}> { isScriptReady && <TVChartContainer { ...{...defaultWidgetProps, symbol: sym} } />} </li>
-            </div>
+            return <div className="columns-1 border-grey-100	 border-y-2" key={(i*2).toString()}>
+              <li key={"li"+(i*2).toString()}> { isScriptReady && <TVChartContainer { ...{...defaultWidgetProps, symbol: sym} } />} </li>
           </div>
 
           })

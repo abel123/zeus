@@ -143,5 +143,5 @@ class TimescaleMark(BaseModel):
 class PeriodParams(BaseModel):
     from_: int = Field(alias="from")
     to: int
-    countBack: int
+    countBack: int | None = None
     firstDataRequest: bool
