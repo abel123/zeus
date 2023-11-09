@@ -8,6 +8,16 @@
     "start": "next start",
     "lint": "next lint"
   },
+  "browser": {
+    "crypto": false,
+    "fs": false,
+    "path": false,
+    "os": false,
+    "net": false,
+    "stream": false,
+    "tls": false,
+    "readline": false
+    },
   "dependencies": {
     "@preline/overlay": "^1.4.0",
     "@types/lodash": "^4.14.200",
@@ -16,7 +26,8 @@
     "lodash.debounce": "^4.0.8",
     "next": "13.5.4",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "tty-table": "^4.2.3"
   },
   "devDependencies": {
     "@types/node": "^20",

@@ -16,7 +16,7 @@ class Symbol(BaseModel):
 
 class SymbolExecutor(SQLiteExecutor):
     @query(
-        """SELECT * from symbols where screener=$screener AND (`symbol` LIKE $user_input or `desc` LIKE $user_input) """  # or desc like '%$user_input%')"
+        """SELECT * from symbols where screener=$screener AND (`symbol` LIKE $user_input or `desc` LIKE $user_input) LIMIT 100"""  # or desc like '%$user_input%')"
     )
     async def select_symbols(
         self,

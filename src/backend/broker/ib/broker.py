@@ -8,14 +8,14 @@ import pytz
 from backend.calculate.zen import signal
 from backend.calculate.zen.signal.macd import MACDArea
 
-from backend.datafeed.trading_view import Bar, LibrarySymbolInfo, PeriodParams
+from backend.datafeed.tv_model import Bar, LibrarySymbolInfo, PeriodParams
 from czsc.analyze import CZSC
 from czsc.enum import Freq
 from czsc.objects import RawBar
 
 
 def timedelta_to_duration_str(duration: timedelta) -> str:
-    if duration.days >= 365:
+    if duration.days >= 360:
         return f"{math.ceil(duration.total_seconds()*1.0 / timedelta(365).total_seconds()):.0f} Y"
     elif duration.days >= 30:
         return f"{math.ceil(duration.total_seconds()*1.0 / timedelta(30).total_seconds()):.0f} M"
@@ -29,8 +29,10 @@ def timedelta_to_duration_str(duration: timedelta) -> str:
 
 class Broker:
     class CacheItem:
-        def __init__(self, bars: ib_insync.BarDataList) -> None:
-            self.macd_signal = MACDArea(signal.macd.Config())
+        def __init__(
+            self, bars: ib_insync.BarDataList, macd_config=signal.macd.Config()
+        ) -> None:
+            self.macd_signal = MACDArea(macd_config)
             raw_bars = [
                 RawBar(
                     symbol=bars.contract.symbol,
@@ -38,7 +40,7 @@ class Broker:
                     dt=datetime.fromisoformat(bar.date.isoformat()),
                     freq=Freq.D,
                     open=bar.open,
-                    close=bar.open,
+                    close=bar.close,
                     high=bar.high,
                     low=bar.low,
                     vol=bar.volume,
@@ -51,7 +53,7 @@ class Broker:
             self.bars.updateEvent += self.on_bar_update
 
         def on_bar_update(self, bars: ib_insync.BarDataList, hasNewBar):
-            print("update ", bars[-1])
+            print("update ", bars.contract.symbol, bars[-1])
             bar = bars[-1]
             self.czsc.update(
                 RawBar(
@@ -60,7 +62,7 @@ class Broker:
                     dt=datetime.fromisoformat(bar.date.isoformat()),
                     freq=Freq.D,
                     open=bar.open,
-                    close=bar.open,
+                    close=bar.close,
                     high=bar.high,
                     low=bar.low,
                     vol=bar.volume,
@@ -172,7 +174,13 @@ class Broker:
                     formatDate=2,
                     keepUpToDate=True,
                 )
-                requester = Broker.CacheItem(ib_bars)
+                if resolution != "1":
+                    requester = Broker.CacheItem(ib_bars)
+                else:
+                    requester = Broker.CacheItem(
+                        ib_bars,
+                        signal.Config(fastperiod=4, slowperiod=9, signalperiod=9),
+                    )
                 Broker.cache.update([(cache_key, requester)])
             else:
                 print(" ----------------------- use cache ---------------")
@@ -206,8 +214,7 @@ class Broker:
             df is not None and not df.empty and print("ib bars", df)
             return [
                 Bar(
-                    time=datetime.fromisoformat(bar.date.isoformat()).timestamp()
-                    * 1000,
+                    time=datetime.fromisoformat(bar.date.isoformat()).timestamp(),
                     # bar.date.timestamp() * 1000,
                     close=bar.close,
                     open=bar.open,

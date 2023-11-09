@@ -10,7 +10,7 @@ from backend.curd.sqllite.model import SymbolExecutor
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 
-from backend.datafeed.trading_view import (
+from backend.datafeed.tv_model import (
     Bar,
     LibrarySymbolInfo,
     Market,

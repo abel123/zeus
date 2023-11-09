@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime
+import math
 from typing import List, OrderedDict
+from loguru import logger
 from pydantic import BaseModel
 from czsc.analyze import CZSC
 from czsc.enum import Direction
@@ -37,6 +39,14 @@ class MACDArea:
         macd_b_val: float
         zs: ZS
         direction: Direction
+
+        @property
+        def high(self):
+            return max(self.bi_a.high, self.bi_b.high)
+
+        @property
+        def low(self):
+            return min(self.bi_a.low, self.bi_b.low)
 
     def __init__(self, config: Config) -> None:
         self.config = config
@@ -95,6 +105,7 @@ class MACDArea:
             bi1, bi2 = bis[0], bis[-1]
             bi1_macd = [x.cache[cache_key]["macd"] for x in bi1.raw_bars[1:-1]]
             bi2_macd = [x.cache[cache_key]["macd"] for x in bi2.raw_bars[1:-1]]
+
             bi1_dif = bi1.raw_bars[-2].cache[cache_key]["dif"]
             bi2_dif = bi2.raw_bars[-2].cache[cache_key]["dif"]
 
@@ -123,7 +134,12 @@ class MACDArea:
                 and bi1_dif > bi2_dif > 0
             ):
                 macd_a = max(
-                    bi1.raw_bars[1:-1], key=lambda bar: bar.cache[cache_key]["macd"]
+                    [
+                        bar
+                        for bar in bi1.raw_bars[1:-1]
+                        if not math.isnan(bar.cache[cache_key]["macd"])
+                    ],
+                    key=lambda bar: bar.cache[cache_key]["macd"],
                 )
                 macd_b = max(
                     bi2.raw_bars[1:-1], key=lambda bar: bar.cache[cache_key]["macd"]
@@ -146,7 +162,7 @@ class MACDArea:
             if (
                 bi1.direction == Direction.Down
                 and bi1.high == max_high
-                # and bi2.low == min_low
+                and bi2.low == min_low
                 and dif_zero > 0
                 and bi1_dif < bi2_dif < 0
             ):
@@ -168,7 +184,7 @@ class MACDArea:
                     area_b=bi2_area,
                     direction=bi1.direction,
                 )
-
+                logger.debug(f"beichi {self.bc_set[(bi1.sdt, bi2.sdt)]}")
                 return create_single_signal(k1=k1, k2=k2, k3=k3, v1="下跌", v2=f"{n}笔")
 
         return create_single_signal(k1=k1, k2=k2, k3=k3, v1=v1)

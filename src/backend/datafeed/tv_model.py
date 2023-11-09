@@ -35,12 +35,12 @@ class Config(BaseModel):
     supported_resolutions: Optional[List[str]] = None
     units: Optional[Dict[str, List[Unit]]] = None
     currency_codes: Optional[List[str]] = None
-    supports_marks: Optional[bool] = None
-    supports_time: Optional[bool] = None
-    supports_timescale_marks: Optional[bool] = None
+    supports_marks: bool = False
+    supports_time: bool = False
+    supports_timescale_marks: bool = False
     symbols_types: Optional[List[SymbolType]] = None
-    supports_search: Optional[bool] = None
-    supports_group_request: Optional[bool] = None
+    supports_search: bool = False
+    supports_group_request: bool = False
 
 
 class SeriesFormat(str, Enum):

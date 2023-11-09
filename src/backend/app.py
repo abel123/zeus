@@ -13,16 +13,19 @@ from backend.curd.sqllite.model import SymbolExecutor
 import logging
 
 from backend.datafeed.api import DataFeed
-from backend.datafeed.trading_view import LibrarySymbolInfo, PeriodParams
+from backend.datafeed.tv_model import LibrarySymbolInfo, PeriodParams
+from backend.datafeed.udf import UDF
 from czsc.analyze import CZSC
 from czsc.enum import Direction, Freq
-from czsc.objects import RawBar
+from czsc.objects import BI, RawBar
+from backend.utils.logger import InterceptHandler, logger
 
 logging.basicConfig(level=logging.DEBUG)
 logging.debug("This will get logged")
 
 import asyncio
 from rubicon.objc.eventloop import EventLoopPolicy
+from sanic import log
 
 # Install the event loop policy
 asyncio.set_event_loop_policy(EventLoopPolicy())
@@ -31,9 +34,19 @@ asyncio.set_event_loop_policy(EventLoopPolicy())
 loop = asyncio.get_event_loop()
 
 sio = socketio.AsyncServer(async_mode="sanic")
-app = Sanic(name="sanic_application")
+
+d = log.LOGGING_CONFIG_DEFAULTS
+d["handlers"]["console"]["class"] = "backend.utils.logger.InterceptHandler"
+d["handlers"]["error_console"]["class"] = "backend.utils.logger.InterceptHandler"
+d["handlers"]["access_console"]["class"] = "backend.utils.logger.InterceptHandler"
+del d["handlers"]["console"]["stream"]
+del d["handlers"]["error_console"]["stream"]
+del d["handlers"]["access_console"]["stream"]
+
+app = Sanic(name="zeus", log_config=d)
 sio.attach(app)
 app.config.CORS_ORIGINS = "*"
+UDF(app)
 
 
 async def background_task():
@@ -52,6 +65,8 @@ def before_server_start(sanic, loop):
 
 @app.after_server_start
 async def after_server_start(sanic, loop):
+    logger.debug("testing")
+
     await DataFeed.init()
 
 
@@ -86,7 +101,7 @@ async def search_symbol(request: Request, executor: SymbolExecutor):
         screener=screener,
         executor=executor,
     )
-    logging.debug("symbols ---%s", symbols)
+    logger.debug("symbols ---%s", symbols)
     return json([sym.dict() for sym in symbols])
 
 
@@ -110,7 +125,7 @@ async def resolve_symbol(request: Request, executor: SymbolExecutor):
 
 @app.route("/get_bars", methods=["POST"])
 async def get_bars(request: Request):
-    print(request.json)
+    logger.debug(request.json)
     symbol_info = LibrarySymbolInfo(**request.json["symbol_info"])
     resolution = request.json["resolution"]
     period_params = PeriodParams(**request.json["period_params"])
@@ -123,9 +138,13 @@ async def get_bars(request: Request):
 @app.route("/zen/elements")
 async def zen_elements(request: Request):
     symbol = request.args.get("symbol")
-    from_ts = request.args.get("from")
+    from_ts = int(request.args.get("from"))
     to_ts = int(request.args.get("to"))
-    print(datetime.now().timestamp(), "from", from_ts, " to ", to_ts)
+    logger.debug(f'{datetime.now().timestamp(), "from", from_ts, " to ", to_ts}')
+    if from_ts > datetime.now().timestamp():
+        from_ts //= 1000
+        to_ts //= 1000
+    logger.debug(f'{datetime.now().timestamp(), "from", from_ts, " to ", to_ts}')
 
     resolution = request.args.get("resolution")
     bars, item = await DataFeed.get_bars(
@@ -154,7 +173,7 @@ async def zen_elements(request: Request):
         ),
     )
 
-    print(item.macd_signal.bc_records)
+    logger.debug(item.macd_signal.bc_records)
     return json(
         {
             "bi": {
@@ -177,10 +196,21 @@ async def zen_elements(request: Request):
                     "macd_b_dt": int(bc.macd_b_dt.timestamp()),
                     "macd_b_val": bc.macd_b_val,
                     "direction": "up" if bc.direction == Direction.Up else "down",
+                    "start": {
+                        "left_dt": bc.bi_a.sdt.timestamp(),
+                        "right_dt": bc.bi_a.edt.timestamp(),
+                    },
+                    "end": {
+                        "left_dt": bc.bi_b.sdt.timestamp(),
+                        "right_dt": bc.bi_b.edt.timestamp(),
+                    },
+                    "high": bc.high,
+                    "low": bc.low,
                 }
                 for idx, bc in enumerate(item.macd_signal.bc_records)
             ],
-        }
+        },
+        default=str,
     )
 
 
