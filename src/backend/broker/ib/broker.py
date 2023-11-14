@@ -1,17 +1,21 @@
+from collections import OrderedDict
 from datetime import date, datetime, timedelta, timezone
 import math
 from typing import Any, List
-from cachetools import TLRUCache, TTLCache
+from cachetools import LRUCache, TLRUCache, TTLCache
 from ib_insync import IB
 import ib_insync
+from loguru import logger
 import pytz
 from backend.calculate.zen import signal
 from backend.calculate.zen.signal.macd import MACDArea
 
-from backend.datafeed.tv_model import Bar, LibrarySymbolInfo, PeriodParams
+from backend.datafeed.tv_model import Bar, LibrarySymbolInfo, MacdConfig, PeriodParams
 from czsc.analyze import CZSC
 from czsc.enum import Freq
 from czsc.objects import RawBar
+from asyncache import cached
+from cachetools import TTLCache
 
 
 def timedelta_to_duration_str(duration: timedelta) -> str:
@@ -30,7 +34,11 @@ def timedelta_to_duration_str(duration: timedelta) -> str:
 class Broker:
     class CacheItem:
         def __init__(
-            self, bars: ib_insync.BarDataList, macd_config=signal.macd.Config()
+            self,
+            bars: ib_insync.BarDataList,
+            macd_config=signal.macd.Config(
+                macd_config=[MacdConfig(fast=12, slow=26, signal=9)]
+            ),
         ) -> None:
             self.macd_signal = MACDArea(macd_config)
             raw_bars = [
@@ -49,11 +57,15 @@ class Broker:
                 for idx, bar in enumerate(bars)
             ]
             self.bars = bars
-            self.czsc = CZSC(raw_bars, get_signals=self.macd_signal.macd_area_bc)
+            self.czsc = CZSC(
+                raw_bars,
+                get_signals=self.macd_signal.macd_area_bc,
+                on_bi_break=[self.macd_signal.on_bi_break],
+            )
             self.bars.updateEvent += self.on_bar_update
 
         def on_bar_update(self, bars: ib_insync.BarDataList, hasNewBar):
-            print("update ", bars.contract.symbol, bars[-1])
+            logger.debug(f"update {bars.contract.symbol} {bars[-1]}")
             bar = bars[-1]
             self.czsc.update(
                 RawBar(
@@ -71,7 +83,7 @@ class Broker:
             )
 
         def destroy(self):
-            print(f"destroy {self.bars.contract}")
+            logger.debug(f"destroy {self.bars.contract}")
             Broker.ib.cancelHistoricalData(self.bars)
 
     class RequesterCache(TTLCache):
@@ -80,13 +92,30 @@ class Broker:
             v.destrop()
 
     ib = IB()
-    cache = RequesterCache(maxsize=20, ttl=timedelta(minutes=12).seconds)
+    cache = RequesterCache(maxsize=20, ttl=timedelta(minutes=60).total_seconds())
+    last_macd_config = OrderedDict()
 
     async def init():
         await Broker.ib.connectAsync("127.0.0.1", 4001, clientId=991)
 
+    @cached(LRUCache(1024))
+    async def get_head_time(symbol_info: LibrarySymbolInfo) -> int:
+        contract = ib_insync.Stock(
+            symbol_info.name,
+            "SMART",
+            "USD",
+            primaryExchange="NASDAQ"
+            if symbol_info.exchange == ""
+            else symbol_info.exchange,
+        )
+        ts = await Broker.ib.reqHeadTimeStampAsync(contract, "TRADES", True, 2)
+        return ts
+
     async def get_bars(
-        symbol_info: LibrarySymbolInfo, resolution: str, period_params: PeriodParams
+        symbol_info: LibrarySymbolInfo,
+        resolution: str,
+        period_params: PeriodParams,
+        macd_config: List[MacdConfig],
     ) -> (List[Bar], CacheItem):
         """
          barSizeSetting: Time period of one bar. Must be one of:
@@ -100,13 +129,13 @@ class Broker:
         mapping = {
             "1D": "1 day",
             "1M": "1 month",
-            # "2D": TimeFrame(amount=2, unit=TimeFrameUnit.Day),
             "1W": "1 week",
-            # "12M": TimeFrame(amount=12, unit=TimeFrame.Month),
             "240": "4 hours",
+            "180": "2 hours",
             "120": "2 hours",
             "60": "1 hour",
             "30": "30 mins",
+            "20": "20 mins",
             "15": "15 mins",
             "10": "10 mins",
             "5": "5 mins",
@@ -124,17 +153,42 @@ class Broker:
                 if symbol_info.exchange == ""
                 else symbol_info.exchange,
             )
-            cache_key = f"{resolution} - {str(contract)}"
-            print("contract ", contract, cache_key)
 
-            requester: Broker.CacheItem = Broker.cache.get(cache_key)
-            ib_bars = []
-            print(
+            if symbol_info.exchange == "option":
+                contract = ib_insync.Option(
+                    exchange="SMART",
+                    localSymbol=symbol_info.name,
+                    primaryExchange="CBOE",
+                )
+            [contract] = await Broker.ib.qualifyContractsAsync(contract)
+            cache_key = f"{resolution} - {macd_config} {str(contract)}"
+
+            logger.debug(
                 {
-                    "from": datetime.fromtimestamp(period_params.from_, pytz.utc),
-                    "to": datetime.fromtimestamp(period_params.to, pytz.utc),
+                    "contract ": contract,
+                    "key": cache_key,
                 }
             )
+            use_cache = (
+                datetime.now().timestamp() - period_params.to
+                < timedelta(days=365).total_seconds()
+            )
+            if len(macd_config) == 0:
+                if resolution in Broker.last_macd_config:
+                    macd_config = Broker.last_macd_config[resolution]
+            else:
+                logger.debug(f"++++++++++++{str(macd_config)}")
+                if resolution in Broker.last_macd_config and str(macd_config) != str(
+                    Broker.last_macd_config[resolution]
+                ):
+                    use_cache = False
+                Broker.last_macd_config[resolution] = macd_config
+
+            ib_bars = []
+            requester: Broker.CacheItem = None
+            if use_cache:
+                requester = Broker.cache.get(cache_key)
+
             if requester is not None:
                 if (
                     len(requester.bars) > 0
@@ -146,72 +200,95 @@ class Broker:
                     requester.destroy()
                     requester = None
 
-            if requester is None:
-                print(
-                    {
-                        "startDateTime": datetime.fromtimestamp(
-                            period_params.from_, pytz.utc
-                        ),
-                        "endDateTime": datetime.fromtimestamp(
-                            period_params.to, pytz.utc
-                        ),
-                        "durationStr": timedelta_to_duration_str(
+            logger.debug(
+                {
+                    "use_cache": use_cache,
+                    "peroid": period_params,
+                    "durationStr": timedelta_to_duration_str(
+                        (
                             datetime.now(pytz.utc)
-                            - datetime.fromtimestamp(period_params.from_, pytz.utc)
-                        ),
-                    }
-                )
+                            if use_cache
+                            else datetime.fromtimestamp(period_params.to, pytz.utc)
+                        )
+                        - datetime.fromtimestamp(period_params.from_, pytz.utc)
+                    ),
+                    "config": macd_config,
+                }
+            )
+            if requester is None:
                 ib_bars = await Broker.ib.reqHistoricalDataAsync(
                     contract,
-                    endDateTime="",  # datetime.fromtimestamp(period_params.to),
+                    endDateTime=""
+                    if use_cache
+                    else datetime.fromtimestamp(period_params.to),
                     durationStr=timedelta_to_duration_str(
-                        datetime.now(pytz.utc)
+                        (
+                            datetime.now(pytz.utc)
+                            if use_cache
+                            else datetime.fromtimestamp(period_params.to, pytz.utc)
+                        )
                         - datetime.fromtimestamp(period_params.from_, pytz.utc)
                     ),
                     barSizeSetting=mapping.get(resolution),
                     whatToShow="TRADES",
                     useRTH=True,
                     formatDate=2,
-                    keepUpToDate=True,
+                    keepUpToDate=use_cache,
                 )
-                if resolution != "1":
-                    requester = Broker.CacheItem(ib_bars)
-                else:
-                    requester = Broker.CacheItem(
-                        ib_bars,
-                        signal.Config(fastperiod=4, slowperiod=9, signalperiod=9),
-                    )
-                Broker.cache.update([(cache_key, requester)])
+
+                requester = Broker.CacheItem(
+                    ib_bars,
+                    signal.Config(macd_config=macd_config),
+                )
+                if use_cache:
+                    Broker.cache.update([(cache_key, requester)])
             else:
-                print(" ----------------------- use cache ---------------")
-                print(
+                requester.macd_signal.add_key(config=macd_config)
+                logger.debug(
                     {
+                        "caching": True,
                         "start": requester.bars[0].date,
                         "end": requester.bars[-1].date,
-                        "from": datetime.fromtimestamp(period_params.from_, pytz.utc),
-                        "to": datetime.fromtimestamp(period_params.to, pytz.utc),
                     }
                 )
-                if not isinstance(requester.bars[0].date, datetime):
-                    ib_bars = [
-                        bar
-                        for bar in requester.bars
-                        if datetime.fromisoformat(bar.date.isoformat())
-                        >= datetime.fromtimestamp(period_params.from_)
-                        and datetime.fromisoformat(bar.date.isoformat())
-                        <= datetime.fromtimestamp(period_params.to)
-                    ]
+                if period_params.countBack is None:
+                    if not isinstance(requester.bars[0].date, datetime):
+                        ib_bars = [
+                            bar
+                            for bar in requester.bars
+                            if datetime.fromisoformat(bar.date.isoformat())
+                            >= datetime.fromtimestamp(period_params.from_)
+                            and datetime.fromisoformat(bar.date.isoformat())
+                            <= datetime.fromtimestamp(period_params.to)
+                        ]
+                    else:
+                        ib_bars = [
+                            bar
+                            for bar in requester.bars
+                            if datetime.fromisoformat(bar.date.isoformat())
+                            >= datetime.fromtimestamp(period_params.from_, pytz.utc)
+                            and datetime.fromisoformat(bar.date.isoformat())
+                            <= datetime.fromtimestamp(period_params.to, pytz.utc)
+                        ]
                 else:
-                    ib_bars = [
-                        bar
-                        for bar in requester.bars
-                        if datetime.fromisoformat(bar.date.isoformat())
-                        >= datetime.fromtimestamp(period_params.from_, pytz.utc)
-                        and datetime.fromisoformat(bar.date.isoformat())
-                        <= datetime.fromtimestamp(period_params.to, pytz.utc)
-                    ]
+                    if not isinstance(requester.bars[0].date, datetime):
+                        ib_bars = [
+                            bar
+                            for bar in requester.bars
+                            if datetime.fromisoformat(bar.date.isoformat())
+                            <= datetime.fromtimestamp(period_params.to)
+                        ]
+                    else:
+                        ib_bars = [
+                            bar
+                            for bar in requester.bars
+                            if datetime.fromisoformat(bar.date.isoformat())
+                            <= datetime.fromtimestamp(period_params.to, pytz.utc)
+                        ]
+                    logger.debug(f"--- bars {ib_bars[-5:]}")
+                    ib_bars = ib_bars[max(len(ib_bars) - period_params.countBack, 0) :]
             df = ib_insync.util.df(ib_bars[:5] + ib_bars[-5:])
-            df is not None and not df.empty and print("ib bars", df)
+            df is not None and not df.empty and logger.debug(f"ib bars: {df}")
             return [
                 Bar(
                     time=datetime.fromisoformat(bar.date.isoformat()).timestamp(),

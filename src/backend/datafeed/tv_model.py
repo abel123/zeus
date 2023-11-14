@@ -2,12 +2,13 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Protocol, LiteralString, Union
 
 from pydantic import BaseModel, Field, RootModel
+from pydantic.dataclasses import dataclass as pyd_dataclass
 
 Market = {
     "china": {"session": "0930-1130,1300-1501", "timezone": "Asia/Shanghai"},
-    "hongkong": {"session": "0930-1200,1330-1601", "timezone": "Asia/Shanghai"},
+    "hongkong": {"session": "0930-1200,1300-1601", "timezone": "Asia/Shanghai"},
     "america": {
-        "session": "0400-0930,0930-1630,1600-2001",
+        "session": "0930-1631",
         "timezone": "America/New_York",
     },
 }
@@ -145,3 +146,20 @@ class PeriodParams(BaseModel):
     to: int
     countBack: int | None = None
     firstDataRequest: bool
+
+
+class MacdConfig(BaseModel):
+    fast: int
+    slow: int
+    signal: int
+
+    def __hash__(self) -> int:
+        return hash(self.fast + self.slow + self.signal)
+
+
+class RequestParam(BaseModel):
+    from_: int = Field(alias="from")
+    to: int
+    symbol: str
+    resolution: str
+    macd_config: List[MacdConfig]

@@ -215,6 +215,7 @@ class CZSC:
         bars: List[RawBar],
         get_signals=None,
         max_bi_num=envs.get_max_bi_num(),
+        on_bi_break=[],
     ):
         """
 
@@ -230,6 +231,7 @@ class CZSC:
         self.symbol = bars[0].symbol
         self.freq = bars[0].freq
         self.get_signals = get_signals
+        self.on_bi_break = on_bi_break
         self.signals = None
         # cache 是信号计算过程的缓存容器，需要信号计算函数自行维护
         self.cache = OrderedDict()
@@ -303,6 +305,8 @@ class CZSC:
             self.bars_ubi = last_bi.bars[:-2] + [
                 x for x in bars_ubi if x.dt >= last_bi.bars[-2].dt
             ]
+            for bk in self.on_bi_break:
+                bk(last_bi)
             self.bi_list.pop(-1)
 
     def update(self, bar: RawBar):

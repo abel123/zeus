@@ -1,11 +1,15 @@
 import dataclasses
 from datetime import datetime
+from typing import List
+from pydantic import BaseModel, Field
 from sanic import Request, Sanic, json
 from sanic.response import html
 from sanic_ext import Extend
 
 import socketio
 from mayim.extension import SanicMayimExtension
+from backend.broker.ib.broker import Broker
+from backend.broker.ib.options import get_tsla_option_list
 from backend.calculate.zen import signal
 from backend.calculate.zen.signal.macd import MACDArea
 from backend.curd.sqllite.model import SymbolExecutor
@@ -13,11 +17,9 @@ from backend.curd.sqllite.model import SymbolExecutor
 import logging
 
 from backend.datafeed.api import DataFeed
-from backend.datafeed.tv_model import LibrarySymbolInfo, PeriodParams
+from backend.datafeed.tv_model import LibrarySymbolInfo, PeriodParams, RequestParam
 from backend.datafeed.udf import UDF
-from czsc.analyze import CZSC
 from czsc.enum import Direction, Freq
-from czsc.objects import BI, RawBar
 from backend.utils.logger import InterceptHandler, logger
 
 logging.basicConfig(level=logging.DEBUG)
@@ -49,18 +51,10 @@ app.config.CORS_ORIGINS = "*"
 UDF(app)
 
 
-async def background_task():
-    """Example of how to send server generated events to clients."""
-    count = 0
-    while True:
-        await sio.sleep(10)
-        count += 1
-        # await sio.emit("my_response", {"data": "Server generated event"})
-
-
-@app.listener("before_server_start")
-def before_server_start(sanic, loop):
-    sio.start_background_task(background_task)
+@app.listener("before_server_stop")
+def before_server_stop(sanic, loop):
+    Broker.ib.disconnect()
+    ...
 
 
 @app.after_server_start
@@ -135,26 +129,31 @@ async def get_bars(request: Request):
     return json([bar.model_dump(mode="json", exclude_none=True) for bar in bars])
 
 
-@app.route("/zen/elements")
+@app.route("/zen/elements", methods=["POST"])
 async def zen_elements(request: Request):
-    symbol = request.args.get("symbol")
-    from_ts = int(request.args.get("from"))
-    to_ts = int(request.args.get("to"))
-    logger.debug(f'{datetime.now().timestamp(), "from", from_ts, " to ", to_ts}')
-    if from_ts > datetime.now().timestamp():
-        from_ts //= 1000
-        to_ts //= 1000
-    logger.debug(f'{datetime.now().timestamp(), "from", from_ts, " to ", to_ts}')
+    logger.debug(request.json)
+    param = RequestParam(**request.json)
+    symbol, from_ts, to_ts, resolution = (
+        param.symbol,
+        param.from_,
+        param.to,
+        param.resolution,
+    )
 
-    resolution = request.args.get("resolution")
+    if to_ts > datetime.now().timestamp():
+        to_ts = int(datetime.now().timestamp())
+    logger.debug(
+        f'{datetime.now().timestamp(), "from", from_ts, " to ", to_ts} param {param}'
+    )
+
     bars, item = await DataFeed.get_bars(
         symbol_info=LibrarySymbolInfo(
-            name=symbol,
+            name=symbol.split(":")[1] if ":" in symbol else symbol,
             full_name=symbol,
             description="",
             type="",
             session="",
-            exchange="",
+            exchange=symbol.split(":")[0] if ":" in symbol else "",
             listed_exchange="",
             timezone="",
             format="price",
@@ -171,9 +170,41 @@ async def zen_elements(request: Request):
                 "firstDataRequest": False,
             }
         ),
+        macd_config=param.macd_config,
     )
 
-    logger.debug(item.macd_signal.bc_records)
+    # logger.debug(item.macd_signal.bc_records)
+
+    beichi = []
+    for idx, config in enumerate(param.macd_config):
+        logger.debug(f"config {idx}: {config}")
+        if config in item.macd_signal.bc_records:
+            beichi.append(
+                [
+                    {
+                        "macd_a_dt": int(bc.macd_a_dt.timestamp()),
+                        "macd_a_val": bc.macd_a_val,
+                        "macd_b_dt": int(bc.macd_b_dt.timestamp()),
+                        "macd_b_val": bc.macd_b_val,
+                        "direction": "up" if bc.direction == Direction.Up else "down",
+                        "start": {
+                            "left_dt": bc.bi_a.sdt.timestamp(),
+                            "right_dt": bc.bi_a.edt.timestamp(),
+                        },
+                        "end": {
+                            "left_dt": bc.bi_b.sdt.timestamp(),
+                            "right_dt": bc.bi_b.edt.timestamp(),
+                        },
+                        "high": bc.high,
+                        "low": bc.low,
+                    }
+                    for bc in item.macd_signal.bc_records[config].values()
+                ]
+            )
+        else:
+            logger.debug(f"{config} not find")
+            beichi.append([])
+
     return json(
         {
             "bi": {
@@ -189,26 +220,7 @@ async def zen_elements(request: Request):
                 ],
                 "unfinished": [item.czsc.unfinished_bi],
             },
-            "beichi": [
-                {
-                    "macd_a_dt": int(bc.macd_a_dt.timestamp()),
-                    "macd_a_val": bc.macd_a_val,
-                    "macd_b_dt": int(bc.macd_b_dt.timestamp()),
-                    "macd_b_val": bc.macd_b_val,
-                    "direction": "up" if bc.direction == Direction.Up else "down",
-                    "start": {
-                        "left_dt": bc.bi_a.sdt.timestamp(),
-                        "right_dt": bc.bi_a.edt.timestamp(),
-                    },
-                    "end": {
-                        "left_dt": bc.bi_b.sdt.timestamp(),
-                        "right_dt": bc.bi_b.edt.timestamp(),
-                    },
-                    "high": bc.high,
-                    "low": bc.low,
-                }
-                for idx, bc in enumerate(item.macd_signal.bc_records)
-            ],
+            "beichi": beichi,
         },
         default=str,
     )

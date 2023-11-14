@@ -50,16 +50,21 @@ class UDF:
         GET /symbols?symbol=NYSE:MSFT
         """
         symbol: str = request.args.get("symbol", "")
+        type = "stock"
         if ":" in symbol:
             symbol = symbol.split(":")[1]
-
+            if symbol.split(":")[0] == "option":
+                type = "option"
+        if " " in symbol:
+            type = "option"
+        logger.debug(f" {symbol.split(":")} xxxxxxx {symbol} {type}")
         symbols = await DataFeed.resolve_symbol(
             screener="america",
-            type="stock",
+            type=type,
             symbol=symbol,
             executor=executor,
         )
-        logger.debug("symbols ---%s", symbols)
+        logger.debug(f"symbols --- {symbols}")
         return json(symbols[0].model_dump(mode="json", exclude_none=True))
 
     async def search_symbol(self, request: Request, executor: SymbolExecutor):
@@ -81,7 +86,9 @@ class UDF:
             screener=screener,
             executor=executor,
         )
-        logger.debug("symbols ---%s", symbols)
+        logger.debug(f"symbols ---{symbols}")
+        if symbols is None:
+            return json({})
         return json([sym.model_dump() for sym in symbols])
 
     async def history_bars(self, request: Request):
@@ -161,24 +168,22 @@ class UDF:
             **{
                 "from": request.args.get("from"),
                 "to": request.args.get("to"),
+                "countBack": request.args.get("countback"),
                 "firstDataRequest": False,
             }
         )
 
-        if (
-            period_params.from_
-            < datetime.now().timestamp() - timedelta(365 * 2).total_seconds()
-        ):
-            return json(
-                {
-                    "s": "no_data",
-                }
-            )
+        logger.debug(f"period: {period_params}")
+        if period_params.to > datetime.now().timestamp():
+            period_params.to = datetime.now().timestamp()
+        logger.debug(f"period: {period_params}")
+
         bars, _ = await DataFeed.get_bars(
             symbol_info=symbol_info, resolution=resolution, period_params=period_params
         )
+
         t, c, h, l, o, v = [], [], [], [], [], []
-        print(bars[:3])
+        logger.debug("bars:  ", bars[:3])
         for bar in bars:
             t.append(bar.time)
             c.append(bar.close)

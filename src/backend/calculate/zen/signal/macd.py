@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from datetime import datetime
 import math
-from typing import List, OrderedDict
+from typing import List, Mapping, OrderedDict, Set
 from loguru import logger
 from pydantic import BaseModel
+from backend.datafeed.tv_model import MacdConfig
 from czsc.analyze import CZSC
 from czsc.enum import Direction
 from czsc.objects import BI, ZS
@@ -19,11 +20,9 @@ class Config(BaseModel):
             - th: 背驰段的相应macd面积之和 <= 进入中枢段的相应面积之和 * th / 100
     """
 
-    fastperiod: int = 26
-    slowperiod: int = 12
-    signalperiod: int = 9
+    macd_config: List[MacdConfig]
     di: int = 1
-    th: int = 50
+    th: int = 90
 
 
 class MACDArea:
@@ -51,8 +50,28 @@ class MACDArea:
     def __init__(self, config: Config) -> None:
         self.config = config
         self.bc_set = OrderedDict()
+        for c in config.macd_config:
+            self.bc_set[c] = OrderedDict()
+
+    def add_key(self, config: List[MacdConfig]) -> None:
+        for c in config:
+            if c not in self.bc_set:
+                self.bc_set[c] = OrderedDict()
 
     def macd_area_bc(self, c: CZSC, **kwargs):
+        for key in self.bc_set.keys():
+            self.macd_area_bc_single(key, c, key)
+
+    def on_bi_break(self, bi: BI):
+        for key in self.bc_set.keys():
+            bc_set = self.bc_set[key]
+            for st1, st2 in bc_set.keys():
+                if st2 == bi.sdt:
+                    logger.debug(f"remove {(st1, st2)}")
+                    self.bc_set[key].pop((st1, st2))
+        ...
+
+    def macd_area_bc_single(self, index: MacdConfig, c: CZSC, config: MacdConfig):
         """MACD面积背驰
 
         参数模板："{freq}_D{di}T{th}MACD面积背驰_BS辅助V230422"
@@ -69,10 +88,6 @@ class MACDArea:
 
         - Signal('15分钟_D1T50MACD面积背驰_BS辅助_上涨_9笔_任意_0')
         - Signal('15分钟_D1T50MACD面积背驰_BS辅助_上涨_7笔_任意_0')
-        - Signal('15分钟_D1T50MACD面积背驰_BS辅助_下跌_5笔_任意_0')
-        - Signal('15分钟_D1T50MACD面积背驰_BS辅助_上涨_5笔_任意_0')
-        - Signal('15分钟_D1T50MACD面积背驰_BS辅助_下跌_7笔_任意_0')
-        - Signal('15分钟_D1T50MACD面积背驰_BS辅助_下跌_9笔_任意_0')
 
         :param c: 基础周期的 CZSC 对象
 
@@ -81,9 +96,9 @@ class MACDArea:
         if len(c.bars_raw) >= 2:
             cache_key = update_macd_cache(
                 c,
-                fastperiod=self.config.fastperiod,
-                slowperiod=self.config.slowperiod,
-                signalperiod=self.config.signalperiod,
+                fastperiod=config.fast,
+                slowperiod=config.slow,
+                signalperiod=config.signal,
             )
         di, th = self.config.di, self.config.th
         freq = c.freq.value
@@ -92,7 +107,7 @@ class MACDArea:
         if len(c.bi_list) < 7 or len(c.bars_ubi) > 7:
             return create_single_signal(k1=k1, k2=k2, k3=k3, v1=v1)
 
-        for n in (9, 7, 5):
+        for n in (9, 7, 5, 3):
             bis = get_sub_elements(c.bi_list, di=di, n=n)
             if len(bis) != n:
                 continue
@@ -106,8 +121,8 @@ class MACDArea:
             bi1_macd = [x.cache[cache_key]["macd"] for x in bi1.raw_bars[1:-1]]
             bi2_macd = [x.cache[cache_key]["macd"] for x in bi2.raw_bars[1:-1]]
 
-            bi1_dif = bi1.raw_bars[-2].cache[cache_key]["dif"]
-            bi2_dif = bi2.raw_bars[-2].cache[cache_key]["dif"]
+            bi1_dif = bi1.raw_bars[-1].cache[cache_key]["dif"]
+            bi2_dif = bi2.raw_bars[-1].cache[cache_key]["dif"]
 
             zs_fxb_raw = [y for x in zs.bis for y in x.fx_b.raw_bars]
 
@@ -120,6 +135,13 @@ class MACDArea:
                 bi2_area = sum([x for x in bi2_macd if x < 0])
                 dif_zero = max([x.cache[cache_key]["dif"] for x in zs_fxb_raw])
 
+            if bi2.raw_bars[-2].low == 3.65 and n == 3:
+                logger.debug(
+                    f"bi2 {config} xxxxxxxxxxxxxxxxxxxxx {bi2.raw_bars[-2].dt}"
+                )
+                logger.debug(f"{bi1_area} - {bi2_area} - {dif_zero}")
+                logger.debug(f"{bi1_dif} - {bi2_dif}")
+
             if abs(bi2_area) > abs(bi1_area) * th / 100:  # 如果面积背驰不成立，往下进行
                 continue
 
@@ -130,7 +152,7 @@ class MACDArea:
                 bi1.direction == Direction.Up
                 and bi1.low == min_low
                 and bi2.high == max_high
-                and dif_zero < 0
+                and dif_zero <= 0.00001
                 and bi1_dif > bi2_dif > 0
             ):
                 macd_a = max(
@@ -144,7 +166,7 @@ class MACDArea:
                 macd_b = max(
                     bi2.raw_bars[1:-1], key=lambda bar: bar.cache[cache_key]["macd"]
                 )
-                self.bc_set[(bi1.sdt, bi2.sdt)] = MACDArea.BC(
+                self.bc_set[index][(bi1.sdt, bi2.sdt)] = MACDArea.BC(
                     bi_a=bi1,
                     bi_b=bi2,
                     macd_a_dt=macd_a.dt,
@@ -163,7 +185,7 @@ class MACDArea:
                 bi1.direction == Direction.Down
                 and bi1.high == max_high
                 and bi2.low == min_low
-                and dif_zero > 0
+                and dif_zero >= -0.00001
                 and bi1_dif < bi2_dif < 0
             ):
                 macd_a = min(
@@ -172,7 +194,7 @@ class MACDArea:
                 macd_b = min(
                     bi2.raw_bars[1:-1], key=lambda bar: bar.cache[cache_key]["macd"]
                 )
-                self.bc_set[(bi1.sdt, bi2.sdt)] = MACDArea.BC(
+                self.bc_set[index][(bi1.sdt, bi2.sdt)] = MACDArea.BC(
                     bi_a=bi1,
                     bi_b=bi2,
                     macd_a_dt=macd_a.dt,
@@ -184,11 +206,11 @@ class MACDArea:
                     area_b=bi2_area,
                     direction=bi1.direction,
                 )
-                logger.debug(f"beichi {self.bc_set[(bi1.sdt, bi2.sdt)]}")
+                logger.debug(f"beichi {self.bc_set[index][(bi1.sdt, bi2.sdt)]}")
                 return create_single_signal(k1=k1, k2=k2, k3=k3, v1="下跌", v2=f"{n}笔")
 
         return create_single_signal(k1=k1, k2=k2, k3=k3, v1=v1)
 
     @property
     def bc_records(self):
-        return self.bc_set.values()
+        return self.bc_set
