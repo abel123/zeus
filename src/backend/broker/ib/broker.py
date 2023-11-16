@@ -65,7 +65,7 @@ class Broker:
             self.bars.updateEvent += self.on_bar_update
 
         def on_bar_update(self, bars: ib_insync.BarDataList, hasNewBar):
-            logger.debug(f"update {bars.contract.symbol} {bars[-1]}")
+            # logger.debug(f"update {bars.contract.symbol} {bars[-1]}")
             bar = bars[-1]
             self.czsc.update(
                 RawBar(
@@ -177,12 +177,17 @@ class Broker:
                 if resolution in Broker.last_macd_config:
                     macd_config = Broker.last_macd_config[resolution]
             else:
-                logger.debug(f"++++++++++++{str(macd_config)}")
-                if resolution in Broker.last_macd_config and str(macd_config) != str(
+                logger.debug(
+                    f"++++++++++++{str(macd_config)} {str(Broker.last_macd_config.get(resolution))}"
+                )
+                if resolution in Broker.last_macd_config and set(macd_config) <= set(
                     Broker.last_macd_config[resolution]
                 ):
+                    use_cache = True
+                else:
                     use_cache = False
-                Broker.last_macd_config[resolution] = macd_config
+                if not use_cache:
+                    Broker.last_macd_config[resolution] = macd_config
 
             ib_bars = []
             requester: Broker.CacheItem = None
@@ -287,8 +292,8 @@ class Broker:
                         ]
                     logger.debug(f"--- bars {ib_bars[-5:]}")
                     ib_bars = ib_bars[max(len(ib_bars) - period_params.countBack, 0) :]
-            df = ib_insync.util.df(ib_bars[:5] + ib_bars[-5:])
-            df is not None and not df.empty and logger.debug(f"ib bars: {df}")
+            # df = ib_insync.util.df(ib_bars[:5] + ib_bars[-5:])
+            # df is not None and not df.empty and logger.debug(f"ib bars: {df}")
             return [
                 Bar(
                     time=datetime.fromisoformat(bar.date.isoformat()).timestamp(),

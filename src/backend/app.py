@@ -221,6 +221,9 @@ async def zen_elements(request: Request):
                 "unfinished": [item.czsc.unfinished_bi],
             },
             "beichi": beichi,
+            "bar_beichi": [
+                list(bc.bar_beichi) for bc in item.macd_signal.bc_records.values()
+            ],
         },
         default=str,
     )

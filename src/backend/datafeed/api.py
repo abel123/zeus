@@ -35,14 +35,14 @@ class DataFeed:
             user_input=user_input, screener=screener, type=type
         )
         extras: List[SearchSymbolResultItem] = []
-        if user_input == "%TSLA%":
+        if user_input == "%TSLA%" or "%TSLA " in user_input:
             contracts = await get_tsla_option_list()
             logger.debug(f"contracts {contracts}")
             extras = [
                 SearchSymbolResultItem(
                     symbol=c.localSymbol,
                     full_name=c.localSymbol,
-                    description="tsla option",
+                    description=f"tsla {c.lastTradeDateOrContractMonth} - {"PUT" if c.right == "P" else "CALL"} {c.strike} option",
                     exchange=c.exchange,
                     ticker="option:" + c.localSymbol,
                     type="option",
@@ -147,6 +147,7 @@ class DataFeed:
                     "1",
                     "3",
                     "5",
+                    "10",
                     "15",
                     "30",
                     "60",

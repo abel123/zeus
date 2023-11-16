@@ -369,7 +369,7 @@ class CZSC:
 
         # 如果有信号计算函数，则进行信号计算
         if self.get_signals:
-            self.signals = self.get_signals(c=self)
+            self.signals = self.get_signals(c=self, has_new_bar=True)
         else:
             self.signals = OrderedDict()
 

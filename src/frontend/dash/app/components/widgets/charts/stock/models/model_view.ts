@@ -17,6 +17,7 @@ export class ModelView {
     beichi_to_note = new Map<string, EntityId>();
     line_to_beichi = new Map<EntityId, Beichi>();
     macd_config: MacdConfig[] = [];
+    hidden_extra_toolbar: boolean = false;
     constructor(macd_config: MacdConfig[]) {
         this.macd_config = macd_config;
     }
@@ -27,13 +28,34 @@ export class ModelView {
         }
         let promizes = [];
         for (var config of this.macd_config) {
+            let extras = {};
+            if (config.source == "volume") {
+                extras = {
+                    "palettes.palette_0.colors.0.color": "rgba(0, 0, 0, 0.86)",
+                    "palettes.palette_0.colors.1.color": "rgba(0, 0, 0, 0.4)",
+                    "palettes.palette_0.colors.2.color": "rgba(172, 229, 220, 1)",
+                    "palettes.palette_0.colors.3.color": "rgba(34, 171, 148, 1)",
+                };
+            }
             promizes.push(
-                this.chart.createStudy("MACD", false, false, {
-                    in_0: config.fast,
-                    in_1: config.slow,
-                    in_3: "close",
-                    in_2: config.signal,
-                })
+                this.chart.createStudy(
+                    "MACD",
+                    false,
+                    false,
+                    {
+                        in_0: config.fast,
+                        in_1: config.slow,
+                        in_3: config.source ?? "close",
+                        in_2: config.signal,
+                    },
+                    {
+                        ...{
+                            showLabelsOnPriceScale: false,
+                            showLegendValues: true,
+                        },
+                        ...extras,
+                    }
+                )
             );
         }
         this.macd_indicator_id = await Promise.all(promizes);
@@ -43,20 +65,40 @@ export class ModelView {
         let self = this;
         this.chart = api;
 
-        await this.createMACD();
-
-        api.onDataLoaded().subscribe(
-            null,
-            () => {
-                console.log("on data loaded");
-                self.debounced_draw_zen();
+        this.chart.createStudy("Volume", true);
+        this.chart.createStudy(
+            "Moving Average Multiple",
+            false,
+            false,
+            {
+                firstPeriods: 5,
+                secondPeriods: 10,
+                thirdPeriods: 20,
+                fourthPeriods: 30,
+                fifthPeriods: 60,
+                sixthPeriods: 120,
+                method: "Simple",
             },
-            true
+            {
+                showLabelsOnPriceScale: false,
+                showLegendValues: false,
+            }
         );
-        api.onVisibleRangeChanged().subscribe(this, function (visible_range: VisibleTimeRange) {
-            console.log("range change");
-            self.debounced_draw_zen();
-        });
+        await this.createMACD();
+        if (this.macd_indicator_id.length > 0) {
+            api.onDataLoaded().subscribe(
+                null,
+                () => {
+                    console.log("on data loaded");
+                    self.debounced_draw_zen();
+                },
+                true
+            );
+            api.onVisibleRangeChanged().subscribe(this, function (visible_range: VisibleTimeRange) {
+                console.log("range change");
+                self.debounced_draw_zen();
+            });
+        }
     }
 
     debounced_draw_zen = debounce(async () => {
@@ -64,7 +106,7 @@ export class ModelView {
     }, 400);
 
     draw_zen() {
-        if (this.chart == undefined) {
+        if (this.chart == undefined || this.macd_indicator_id.length == 0) {
             return;
         }
         let chart = this.chart;
@@ -176,6 +218,38 @@ export class ModelView {
                     this.groupIds.push(group_id);
                     chart.selection().clear();
                 }
+
+                chart.selection().clear();
+
+                response.data.bar_beichi.forEach((bars, index) => {
+                    bars.forEach((ts) => {
+                        let id = chart.createMultipointShape(
+                            [
+                                { time: ts, price: 0 },
+                                { time: ts, price: -1 },
+                            ],
+                            {
+                                shape: "ray",
+                                overrides: {
+                                    linestyle: 1,
+                                    linewidth: 2,
+                                    linecolor: "#999999",
+                                    showTime: false,
+                                },
+                                ownerStudyId: this.macd_indicator_id[index] ?? undefined,
+                                zOrder: "bottom",
+                            }
+                        );
+                        if (id) chart.selection().add(id);
+                    });
+                });
+                if (!chart.selection().isEmpty()) {
+                    let group_id = chart.shapesGroupController().createGroupFromSelection();
+                    chart.shapesGroupController().setGroupName(group_id, "bar_beichi");
+                    this.groupIds.push(group_id);
+                    chart.selection().clear();
+                }
+                chart.selection().clear();
             })
             .catch(function (error) {
                 console.log(error);
@@ -186,7 +260,7 @@ export class ModelView {
     }
 
     callback = (line_id: EntityId, event: DrawingEventType) => {
-        if (this.chart == undefined) {
+        if (this.chart == undefined || this.macd_indicator_id.length == 0) {
             return;
         }
         let chart = this.chart;

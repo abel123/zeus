@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { FullscreenButton } from "../components/widgets/button/fullscreen";
+
 export const NavBar = () => {
     return (
         <div className="navbar bg-base-100 h-8 px-4 py-2 min-h-0">
@@ -21,10 +24,17 @@ export const NavBar = () => {
                     </button>
                     <ul
                         tabIndex={0}
-                        className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52"
+                        className="menu menu-sm dropdown-content mt-5 z-[1] shadow bg-slate-100 rounded-box w-100"
                     >
-                        <li>
-                            <a>Item 1</a>
+                        <li className="p-2 border-2 border-sky-300 rounded">
+                            <Link href="/">
+                                <p className="text-xl">Home</p>
+                            </Link>
+                        </li>
+                        <li className="p-2 border-2 border-sky-300 rounded">
+                            <Link href="/research">
+                                <p className="text-xl">Research</p>
+                            </Link>
                         </li>
                         <li>
                             <details>
@@ -62,6 +72,7 @@ export const NavBar = () => {
                 <a className="normal-case text-xl">Terminal</a>
             </div>
             <div className="navbar-end">
+                <FullscreenButton></FullscreenButton>
                 <button className="btn-sm btn-ghost btn-circle">
                     <svg
                         xmlns="http://www.w3.org/2000/svg"

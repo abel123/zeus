@@ -1,7 +1,8 @@
+from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import datetime
 import math
-from typing import List, Mapping, OrderedDict, Set
+from typing import List
 from loguru import logger
 from pydantic import BaseModel
 from backend.datafeed.tv_model import MacdConfig
@@ -26,6 +27,13 @@ class Config(BaseModel):
 
 
 class MACDArea:
+    class RecordCache(OrderedDict):
+        def __init__(self):
+            OrderedDict.__init__(self)
+            self.bar_beichi = set()
+
+        ...
+
     @dataclass
     class BC:
         bi_a: BI
@@ -51,27 +59,33 @@ class MACDArea:
         self.config = config
         self.bc_set = OrderedDict()
         for c in config.macd_config:
-            self.bc_set[c] = OrderedDict()
+            self.bc_set[c] = MACDArea.RecordCache()
 
     def add_key(self, config: List[MacdConfig]) -> None:
         for c in config:
             if c not in self.bc_set:
-                self.bc_set[c] = OrderedDict()
+                self.bc_set[c] = MACDArea.RecordCache()
 
-    def macd_area_bc(self, c: CZSC, **kwargs):
+    def macd_area_bc(self, c: CZSC, has_new_bar: bool, **kwargs):
         for key in self.bc_set.keys():
-            self.macd_area_bc_single(key, c, key)
+            try:
+                self.macd_area_bc_single(key, c, key, has_new_bar)
+            except Exception as e:
+                logger.debug(e)
+                ...
 
     def on_bi_break(self, bi: BI):
         for key in self.bc_set.keys():
             bc_set = self.bc_set[key]
             for st1, st2 in bc_set.keys():
                 if st2 == bi.sdt:
-                    logger.debug(f"remove {(st1, st2)}")
+                    # logger.debug(f"remove {(st1, st2)}")
                     self.bc_set[key].pop((st1, st2))
         ...
 
-    def macd_area_bc_single(self, index: MacdConfig, c: CZSC, config: MacdConfig):
+    def macd_area_bc_single(
+        self, index: MacdConfig, c: CZSC, config: MacdConfig, has_new_bar: bool
+    ):
         """MACD面积背驰
 
         参数模板："{freq}_D{di}T{th}MACD面积背驰_BS辅助V230422"
@@ -93,6 +107,8 @@ class MACDArea:
 
         :return: 信号字典
         """
+        if config.source == "volume":
+            return
         if len(c.bars_raw) >= 2:
             cache_key = update_macd_cache(
                 c,
@@ -100,6 +116,20 @@ class MACDArea:
                 slowperiod=config.slow,
                 signalperiod=config.signal,
             )
+            if False and has_new_bar and len(c.bars_raw) >= 3:  # disable for now
+                a_macd, b_macd = (
+                    c.bars_raw[-3].cache[cache_key]["macd"],
+                    c.bars_raw[-2].cache[cache_key]["macd"],
+                )
+                a_price, b_price = c.bars_raw[-3].close, c.bars_raw[-2].close
+                # down
+                if a_price > b_price and a_macd < b_macd < 0:
+                    self.bc_set[index].bar_beichi.add(c.bars_raw[-2].dt.timestamp())
+                # up
+                if a_price < b_price and a_macd > b_macd > 0:
+                    self.bc_set[index].bar_beichi.add(c.bars_raw[-2].dt.timestamp())
+                ...
+
         di, th = self.config.di, self.config.th
         freq = c.freq.value
         k1, k2, k3 = f"{freq}_D{di}T{th}MACD面积背驰_BS辅助".split("_")
@@ -134,13 +164,6 @@ class MACDArea:
                 bi1_area = sum([x for x in bi1_macd if x < 0])
                 bi2_area = sum([x for x in bi2_macd if x < 0])
                 dif_zero = max([x.cache[cache_key]["dif"] for x in zs_fxb_raw])
-
-            if bi2.raw_bars[-2].low == 3.65 and n == 3:
-                logger.debug(
-                    f"bi2 {config} xxxxxxxxxxxxxxxxxxxxx {bi2.raw_bars[-2].dt}"
-                )
-                logger.debug(f"{bi1_area} - {bi2_area} - {dif_zero}")
-                logger.debug(f"{bi1_dif} - {bi2_dif}")
 
             if abs(bi2_area) > abs(bi1_area) * th / 100:  # 如果面积背驰不成立，往下进行
                 continue
@@ -206,7 +229,7 @@ class MACDArea:
                     area_b=bi2_area,
                     direction=bi1.direction,
                 )
-                logger.debug(f"beichi {self.bc_set[index][(bi1.sdt, bi2.sdt)]}")
+                # logger.debug(f"beichi {self.bc_set[index][(bi1.sdt, bi2.sdt)]}")
                 return create_single_signal(k1=k1, k2=k2, k3=k3, v1="下跌", v2=f"{n}笔")
 
         return create_single_signal(k1=k1, k2=k2, k3=k3, v1=v1)

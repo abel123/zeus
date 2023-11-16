@@ -35,12 +35,18 @@ interface ChartConfig {
     default_symbol: string;
     resolution: ResolutionString;
     macd_config: MacdConfig[];
+    hidden_extra_toolbar: boolean;
 }
 
 export const StockChart = (props: ChartConfig) => {
     let mv = new ModelView(props.macd_config);
+    mv.hidden_extra_toolbar = props.hidden_extra_toolbar;
 
-    let tv = <TVChartContainer {...{ ...defaultWidgetProps, symbol: props.default_symbol, model_view: mv }} />;
+    let tv = (
+        <TVChartContainer
+            {...{ ...defaultWidgetProps, interval: props.resolution, symbol: props.default_symbol, model_view: mv }}
+        />
+    );
 
     return <>{tv}</>;
 };

@@ -41,7 +41,7 @@ async def get_tsla_option_list() -> List[Contract]:
         strikes = [
             strike
             for strike in chain.strikes
-            if strike % 5 == 0 and spxValue - 10 < strike < spxValue + 10
+            if strike % 2.5 == 0 and spxValue - 10 < strike < spxValue + 10
         ]
         expirations = sorted(exp for exp in chain.expirations)[:2]
         rights = ["P", "C"]

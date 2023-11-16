@@ -38,12 +38,13 @@ export const TVChartContainer = (props: Partial<ChartingLibraryWidgetOptions> & 
                 "trading_account_manager",
                 //"keep_object_tree_widget_in_right_toolbar",
                 //"right_toolbar",
-                "drawing_templates",
+                //"drawing_templates",
                 /* // for reduce extra display space
                 "hide_left_toolbar_by_default",
                 "left_toolbar",
                 "timeframes_toolbar",
-                */
+                "header_widget",
+                                */
             ],
             enabled_features: ["hide_left_toolbar_by_default"],
             charts_storage_url: props.charts_storage_url,
@@ -63,19 +64,21 @@ export const TVChartContainer = (props: Partial<ChartingLibraryWidgetOptions> & 
                 "mainSeriesProperties.candleStyle.wickDownColor": "#089981",
                 "mainSeriesProperties.candleStyle.wickUpColor": "#F23645",
             },
+            studies_overrides: {
+                "MACD.palettes.palette_0.colors.0.color": "rgba(242, 54, 69, 1)",
+                "MACD.palettes.palette_0.colors.1.color": "rgba(252, 203, 205, 1)",
+                "MACD.palettes.palette_0.colors.2.color": "rgba(172, 229, 220, 1)",
+                "MACD.palettes.palette_0.colors.3.color": "rgba(34, 171, 148, 1)",
+            },
         };
+        if (props.model_view.hidden_extra_toolbar) {
+            widgetOptions.disabled_features?.push("left_toolbar", "timeframes_toolbar", "header_widget");
+        }
         const tvWidget = new Widget(widgetOptions);
         // @ts-ignore
         window.tvWidget = tvWidget;
         tvWidget.onChartReady(() => {
             let chart = tvWidget.activeChart();
-            chart.crossHairMoved().subscribe(
-                null,
-                (p: CrossHairMovedEventParams) => {
-                    console.log("crosshair", p);
-                },
-                false
-            );
             props.model_view.attach(chart).then(() => {
                 console.log("model_view attached");
             });

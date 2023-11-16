@@ -152,9 +152,10 @@ class MacdConfig(BaseModel):
     fast: int
     slow: int
     signal: int
+    source: str = "close"
 
     def __hash__(self) -> int:
-        return hash(self.fast + self.slow + self.signal)
+        return hash(hash(self.fast + self.slow + self.signal) + hash(self.source))
 
 
 class RequestParam(BaseModel):

@@ -2,11 +2,13 @@ export interface MacdConfig {
     fast: number;
     slow: number;
     signal: number;
+    source?: string;
 }
 
 export interface Zen {
     bi: Bi;
     beichi: Beichi[][];
+    bar_beichi: number[][];
 }
 
 export interface Bi {
