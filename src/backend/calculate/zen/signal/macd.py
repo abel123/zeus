@@ -1,13 +1,15 @@
+import asyncio
 from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import datetime
 import math
-from typing import List
+from typing import Any, List
 from loguru import logger
 from pydantic import BaseModel
 from backend.datafeed.tv_model import MacdConfig
+from backend.utils.notify import Notify
 from czsc.analyze import CZSC
-from czsc.enum import Direction
+from czsc.enum import Direction, Freq
 from czsc.objects import BI, ZS
 from czsc.signals.tas import update_macd_cache
 from czsc.utils.sig import create_single_signal, get_sub_elements
@@ -31,6 +33,21 @@ class MACDArea:
         def __init__(self):
             OrderedDict.__init__(self)
             self.bar_beichi = set()
+
+        def __setitem__(self, __key: Any, __value: Any) -> None:
+            try:
+                bc: MACDArea.BC = __value
+                asyncio.ensure_future(
+                    Notify.instance.send(
+                        title=str(bc.bi_a.fx_a.raw_bars[-1].freq)+" "+ ("顶" if bc.direction == Direction.Up else "底") + "背驰",
+                        message=f"{bc.bi_a.sdt.strftime("%Y-%m-%d %H:%M:%S")} - {bc.bi_b.sdt.strftime("%Y-%m-%d %H:%M:%S")}",
+                        sound=True
+                    )
+                )
+            except Exception as e:
+                logger.warning(f"notify err {e}")
+                ...
+            return super().__setitem__(__key, __value)
 
         ...
 
@@ -81,7 +98,16 @@ class MACDArea:
                 if st2 == bi.sdt:
                     # logger.debug(f"remove {(st1, st2)}")
                     self.bc_set[key].pop((st1, st2))
-        ...
+        if False and bi.fx_b.raw_bars[-1].freq in [Freq.F1, Freq.F3, Freq.F5]:
+            asyncio.ensure_future(
+                Notify.instance.send(f"{bi.fx_b.raw_bars[-1].freq} 破坏", 
+                                                       message=f"{bi.fx_b.raw_bars[-1].dt.strftime("%Y-%m-%d %H:%M:%S")}"))
+
+    def on_bi_create(self, bi: BI):
+        if False and bi.fx_b.raw_bars[-1].freq in [Freq.F1, Freq.F3, Freq.F5]:
+            asyncio.ensure_future(
+                Notify.instance.send(f"{bi.fx_b.raw_bars[-1].freq} 生成", 
+                                                       message=f"{bi.fx_b.raw_bars[-1].dt.strftime("%Y-%m-%d %H:%M:%S")}"))
 
     def macd_area_bc_single(
         self, index: MacdConfig, c: CZSC, config: MacdConfig, has_new_bar: bool
@@ -116,19 +142,6 @@ class MACDArea:
                 slowperiod=config.slow,
                 signalperiod=config.signal,
             )
-            if False and has_new_bar and len(c.bars_raw) >= 3:  # disable for now
-                a_macd, b_macd = (
-                    c.bars_raw[-3].cache[cache_key]["macd"],
-                    c.bars_raw[-2].cache[cache_key]["macd"],
-                )
-                a_price, b_price = c.bars_raw[-3].close, c.bars_raw[-2].close
-                # down
-                if a_price > b_price and a_macd < b_macd < 0:
-                    self.bc_set[index].bar_beichi.add(c.bars_raw[-2].dt.timestamp())
-                # up
-                if a_price < b_price and a_macd > b_macd > 0:
-                    self.bc_set[index].bar_beichi.add(c.bars_raw[-2].dt.timestamp())
-                ...
 
         di, th = self.config.di, self.config.th
         freq = c.freq.value
@@ -189,7 +202,8 @@ class MACDArea:
                 macd_b = max(
                     bi2.raw_bars[1:-1], key=lambda bar: bar.cache[cache_key]["macd"]
                 )
-                self.bc_set[index][(bi1.sdt, bi2.sdt)] = MACDArea.BC(
+                if self.bc_set[index].get((bi1.sdt, bi2.sdt)) == None:
+                    self.bc_set[index][(bi1.sdt, bi2.sdt)] = MACDArea.BC(
                     bi_a=bi1,
                     bi_b=bi2,
                     macd_a_dt=macd_a.dt,
@@ -217,7 +231,8 @@ class MACDArea:
                 macd_b = min(
                     bi2.raw_bars[1:-1], key=lambda bar: bar.cache[cache_key]["macd"]
                 )
-                self.bc_set[index][(bi1.sdt, bi2.sdt)] = MACDArea.BC(
+                if self.bc_set[index].get((bi1.sdt, bi2.sdt)) == None:
+                    self.bc_set[index][(bi1.sdt, bi2.sdt)] = MACDArea.BC(
                     bi_a=bi1,
                     bi_b=bi2,
                     macd_a_dt=macd_a.dt,

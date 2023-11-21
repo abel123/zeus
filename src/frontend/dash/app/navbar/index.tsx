@@ -3,7 +3,7 @@ import { FullscreenButton } from "../components/widgets/button/fullscreen";
 
 export const NavBar = () => {
     return (
-        <div className="navbar bg-base-100 h-8 px-4 py-2 min-h-0">
+        <div className="navbar bg-base-50 h-8 px-4 py-2 min-h-0">
             <div className="navbar-start">
                 <div className="dropdown">
                     <button tabIndex={0} className="btn-sm btn-ghost btn-circle">

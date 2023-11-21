@@ -172,8 +172,14 @@ class UDF:
                 "firstDataRequest": False,
             }
         )
-
         logger.debug(f"period: {period_params}")
+        if period_params.to < 0:
+            return json(
+                {
+                    "s": "no_data",
+                }
+            )
+        
         if period_params.to > datetime.now().timestamp():
             period_params.to = datetime.now().timestamp()
         logger.debug(f"period: {period_params}")

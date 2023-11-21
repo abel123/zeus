@@ -1,3 +1,4 @@
+import calendar
 from collections import OrderedDict
 from datetime import date, datetime, timedelta, timezone
 import math
@@ -32,6 +33,22 @@ def timedelta_to_duration_str(duration: timedelta) -> str:
 
 
 class Broker:
+    freq_map = {
+        "1 day": Freq.D,
+        "1 month": Freq.M,
+        "1 week": Freq.W,
+        "2 hours": Freq.F120,
+        "1 hour": Freq.F60,
+        "30 mins": Freq.F30,
+        "20 mins": Freq.F20,
+        "15 mins": Freq.F15,
+        "10 mins": Freq.F10,
+        "5 mins": Freq.F5,
+        "3 mins": Freq.F3,
+        "2 mins": Freq.F2,
+        "1 min": Freq.F1,
+    }
+
     class CacheItem:
         def __init__(
             self,
@@ -41,12 +58,13 @@ class Broker:
             ),
         ) -> None:
             self.macd_signal = MACDArea(macd_config)
+            bars.barSizeSetting
             raw_bars = [
                 RawBar(
                     symbol=bars.contract.symbol,
                     id=datetime.fromisoformat(bar.date.isoformat()).timestamp(),
                     dt=datetime.fromisoformat(bar.date.isoformat()),
-                    freq=Freq.D,
+                    freq=Broker.freq_map.get(bars.barSizeSetting, Freq.D),
                     open=bar.open,
                     close=bar.close,
                     high=bar.high,
@@ -60,7 +78,8 @@ class Broker:
             self.czsc = CZSC(
                 raw_bars,
                 get_signals=self.macd_signal.macd_area_bc,
-                on_bi_break=[self.macd_signal.on_bi_break],
+                on_bi_break=self.macd_signal.on_bi_break,
+                on_bi_create=self.macd_signal.on_bi_create,
             )
             self.bars.updateEvent += self.on_bar_update
 
@@ -72,7 +91,7 @@ class Broker:
                     symbol=bars.contract.symbol,
                     id=datetime.fromisoformat(bar.date.isoformat()).timestamp(),
                     dt=datetime.fromisoformat(bar.date.isoformat()),
-                    freq=Freq.D,
+                    freq=Broker.freq_map.get(bars.barSizeSetting, Freq.D),
                     open=bar.open,
                     close=bar.close,
                     high=bar.high,
@@ -92,7 +111,7 @@ class Broker:
             v.destrop()
 
     ib = IB()
-    cache = RequesterCache(maxsize=20, ttl=timedelta(minutes=60).total_seconds())
+    cache = RequesterCache(maxsize=20, ttl=timedelta(hours=6).total_seconds())
     last_macd_config = OrderedDict()
 
     async def init():
@@ -292,11 +311,16 @@ class Broker:
                         ]
                     logger.debug(f"--- bars {ib_bars[-5:]}")
                     ib_bars = ib_bars[max(len(ib_bars) - period_params.countBack, 0) :]
-            # df = ib_insync.util.df(ib_bars[:5] + ib_bars[-5:])
-            # df is not None and not df.empty and logger.debug(f"ib bars: {df}")
+            # df = ib_insync.util.df(requester.bars[:5] + requester.bars[-6:])
+            # df is not None and not df.empty and logger.debug(f"ib bars:\n {df}")
             return [
                 Bar(
-                    time=datetime.fromisoformat(bar.date.isoformat()).timestamp(),
+                    time=bar.date.timestamp()
+                    if isinstance(bar.date, datetime)
+                    else datetime.utcfromtimestamp(
+                        calendar.timegm(bar.date.timetuple())
+                    ).timestamp()
+                    + timedelta(hours=1).total_seconds(),
                     # bar.date.timestamp() * 1000,
                     close=bar.close,
                     open=bar.open,
@@ -307,8 +331,8 @@ class Broker:
                 for bar in ib_bars
             ], requester
         except Exception as e:
-            print("exception =========={}", e)
-            raise e
+            logger.warning(f"exception =========={e}")
+            # raise e
             return None
 
         ...

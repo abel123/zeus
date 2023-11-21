@@ -23,17 +23,8 @@ from czsc.enum import Direction, Freq
 from backend.utils.logger import InterceptHandler, logger
 
 logging.basicConfig(level=logging.DEBUG)
-logging.debug("This will get logged")
 
-import asyncio
-from rubicon.objc.eventloop import EventLoopPolicy
 from sanic import log
-
-# Install the event loop policy
-asyncio.set_event_loop_policy(EventLoopPolicy())
-
-# Get an event loop, and run it!
-loop = asyncio.get_event_loop()
 
 sio = socketio.AsyncServer(async_mode="sanic")
 

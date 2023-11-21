@@ -31,15 +31,15 @@ export class ModelView {
             let extras = {};
             if (config.source == "volume") {
                 extras = {
-                    "palettes.palette_0.colors.0.color": "rgba(0, 0, 0, 0.86)",
-                    "palettes.palette_0.colors.1.color": "rgba(0, 0, 0, 0.4)",
-                    "palettes.palette_0.colors.2.color": "rgba(172, 229, 220, 1)",
-                    "palettes.palette_0.colors.3.color": "rgba(34, 171, 148, 1)",
+                    "palettes.palette_0.colors.0.color": "rgba(0, 0, 0, 0.65)",
+                    "palettes.palette_0.colors.1.color": "rgba(0, 0, 0, 0.3)",
+                    "palettes.palette_0.colors.2.color": "rgba(152, 6, 101, 0.3)",
+                    "palettes.palette_0.colors.3.color": "rgba(152, 6, 101, 0.7)",
                 };
             }
             promizes.push(
                 this.chart.createStudy(
-                    "MACD",
+                    config.source == "volume" ? "MACD" : "MACD-XD",
                     false,
                     false,
                     {
@@ -81,7 +81,7 @@ export class ModelView {
             },
             {
                 showLabelsOnPriceScale: false,
-                showLegendValues: false,
+                showLegendValues: true,
             }
         );
         await this.createMACD();
@@ -172,9 +172,11 @@ export class ModelView {
                             //disableSelection: true,
                             lock: true,
                             overrides: {
-                                linewidth: 1,
-                                linecolor: "#ff7373",
+                                linewidth: 2,
+                                //linestyle: 1,
+                                linecolor: "rgba(0, 0, 0, 0.6)",
                             },
+                            //zOrder: "top",
                         }
                     );
                     if (bi_id) chart.selection().add(bi_id);

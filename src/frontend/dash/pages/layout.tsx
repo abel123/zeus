@@ -1,12 +1,14 @@
-"use client";
 import "@/styles/globals.css";
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { NavBar } from "../app/navbar";
+import Head from "next/head";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="en">
+            <Head>
+                <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"></link>
+                <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"></link>
+            </Head>
             <body className="h-screen">
                 <>
                     <div id="nav_bar">

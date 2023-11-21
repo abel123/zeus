@@ -13,18 +13,19 @@ import {
     ShapesGroupId,
     TradingTerminalWidgetOptions,
     CrossHairMovedEventParams,
+    ChartingLibraryFeatureset,
+    PineJS,
 } from "@/public/static/charting_library";
-import axios from "axios";
-import { debounce } from "lodash";
 import React from "react";
 import { UDFCompatibleDatafeed } from "@/public/static/datafeeds/udf/src/udf-compatible-datafeed";
 import { ModelView } from "../stock/models/model_view";
+import { macd_xd } from "./custom_indicator";
 
 export const TVChartContainer = (props: Partial<ChartingLibraryWidgetOptions> & { model_view: ModelView }) => {
     const chartContainerRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLInputElement>;
 
     useEffect(() => {
-        const widgetOptions: TradingTerminalWidgetOptions = {
+        const widgetOptions: ChartingLibraryWidgetOptions = {
             symbol: props.symbol,
             // BEWARE: no trailing slash is expected in feed URL
             //datafeed: (globalThis as any).datafeed ?? DataFeedFactory("http://127.0.0.1:8000"),
@@ -35,7 +36,7 @@ export const TVChartContainer = (props: Partial<ChartingLibraryWidgetOptions> & 
             locale: props.locale as LanguageCode,
             disabled_features: [
                 "use_localstorage_for_settings",
-                "trading_account_manager",
+                //"trading_account_manager",
                 //"keep_object_tree_widget_in_right_toolbar",
                 //"right_toolbar",
                 //"drawing_templates",
@@ -45,7 +46,11 @@ export const TVChartContainer = (props: Partial<ChartingLibraryWidgetOptions> & 
                 "timeframes_toolbar",
                 "header_widget",
                                 */
+                "widget_logo" as ChartingLibraryFeatureset,
             ],
+            custom_indicators_getter: (pineJs: PineJS) => {
+                return Promise.resolve([macd_xd(pineJs)]);
+            },
             enabled_features: ["hide_left_toolbar_by_default"],
             charts_storage_url: props.charts_storage_url,
             charts_storage_api_version: props.charts_storage_api_version,
