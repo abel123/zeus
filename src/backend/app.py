@@ -1,3 +1,4 @@
+import asyncio
 import dataclasses
 from datetime import datetime
 from typing import List
@@ -20,9 +21,7 @@ from backend.datafeed.api import DataFeed
 from backend.datafeed.tv_model import LibrarySymbolInfo, PeriodParams, RequestParam
 from backend.datafeed.udf import UDF
 from czsc.enum import Direction, Freq
-from backend.utils.logger import InterceptHandler, logger
-
-logging.basicConfig(level=logging.DEBUG)
+from backend.utils.logger import logger
 
 from sanic import log
 
@@ -52,7 +51,7 @@ def before_server_stop(sanic, loop):
 async def after_server_start(sanic, loop):
     logger.debug("testing")
 
-    await DataFeed.init()
+    asyncio.ensure_future(DataFeed.init())
 
 
 @app.route("/")
@@ -163,7 +162,8 @@ async def zen_elements(request: Request):
         ),
         macd_config=param.macd_config,
     )
-
+    if bars is None:
+        return json("")
     # logger.debug(item.macd_signal.bc_records)
 
     beichi = []

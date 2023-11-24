@@ -203,6 +203,7 @@ class MACDArea:
                     bi2.raw_bars[1:-1], key=lambda bar: bar.cache[cache_key]["macd"]
                 )
                 if self.bc_set[index].get((bi1.sdt, bi2.sdt)) == None:
+                    logger.debug(f"upsert {bi1.sdt}-{bi2.sdt}")
                     self.bc_set[index][(bi1.sdt, bi2.sdt)] = MACDArea.BC(
                     bi_a=bi1,
                     bi_b=bi2,

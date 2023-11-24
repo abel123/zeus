@@ -187,7 +187,9 @@ class UDF:
         bars, _ = await DataFeed.get_bars(
             symbol_info=symbol_info, resolution=resolution, period_params=period_params
         )
-
+        if bars is None:
+            return json({"s": "error", "errmsg": "error in get_bars"})
+        
         t, c, h, l, o, v = [], [], [], [], [], []
         logger.debug("bars:  ", bars[:3])
         for bar in bars:

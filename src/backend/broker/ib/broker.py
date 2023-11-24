@@ -102,7 +102,7 @@ class Broker:
             )
 
         def destroy(self):
-            logger.debug(f"destroy {self.bars.contract}")
+            logger.warning(f"destroy {self.bars.barSizeSetting} - {self.bars.contract}")
             Broker.ib.cancelHistoricalData(self.bars)
 
     class RequesterCache(TTLCache):
@@ -110,11 +110,12 @@ class Broker:
             k, v = super().popitem()
             v.destrop()
 
-    ib = IB()
+    ib: IB = None
     cache = RequesterCache(maxsize=20, ttl=timedelta(hours=6).total_seconds())
     last_macd_config = OrderedDict()
 
     async def init():
+        Broker.ib = IB()
         await Broker.ib.connectAsync("127.0.0.1", 4001, clientId=991)
 
     @cached(LRUCache(1024))
@@ -164,6 +165,11 @@ class Broker:
         }
 
         try:
+            if (
+                Broker.ib.isConnected() == False
+                and Broker.ib.client.connState != Broker.ib.client.CONNECTING
+            ):
+                await Broker.init()
             contract = ib_insync.Stock(
                 symbol_info.name,
                 "SMART",
@@ -186,6 +192,7 @@ class Broker:
                 {
                     "contract ": contract,
                     "key": cache_key,
+                    "connect_state": Broker.ib.client.connState,
                 }
             )
             use_cache = (
@@ -247,7 +254,7 @@ class Broker:
                     else datetime.fromtimestamp(period_params.to),
                     durationStr=timedelta_to_duration_str(
                         (
-                            datetime.now(pytz.utc)
+                            datetime.now(pytz.utc) + timedelta(days=2)
                             if use_cache
                             else datetime.fromtimestamp(period_params.to, pytz.utc)
                         )
@@ -309,7 +316,6 @@ class Broker:
                             if datetime.fromisoformat(bar.date.isoformat())
                             <= datetime.fromtimestamp(period_params.to, pytz.utc)
                         ]
-                    logger.debug(f"--- bars {ib_bars[-5:]}")
                     ib_bars = ib_bars[max(len(ib_bars) - period_params.countBack, 0) :]
             # df = ib_insync.util.df(requester.bars[:5] + requester.bars[-6:])
             # df is not None and not df.empty and logger.debug(f"ib bars:\n {df}")
@@ -333,6 +339,6 @@ class Broker:
         except Exception as e:
             logger.warning(f"exception =========={e}")
             # raise e
-            return None
+            return None, None
 
         ...

@@ -8,7 +8,7 @@ from ib_insync import *
 ib = IB()
 ib.connect("127.0.0.1", 4001, clientId=12)
 
-tsla = Stock("TSLA", "SMART", "USD")
+tsla = Stock("SPX", "SMART", "USD")
 ib.qualifyContracts(tsla)
 ib.reqMarketDataType(4)
 his = ib.reqHistoricalData(tsla, datetime.now(), "2 D", "1 hour", "TRADES", True, 2)

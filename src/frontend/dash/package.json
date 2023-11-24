@@ -19,6 +19,7 @@
     "readline": false
   },
   "dependencies": {
+    "@mui/toolpad": "^0.1.38",
     "@preline/overlay": "^1.4.0",
     "@types/lodash": "^4.14.200",
     "axios": "^1.5.1",

@@ -28,5 +28,8 @@ class SimpleInterceptHandler(logging.Handler):
         logger_opt.log(record.levelno, msg)
 
 
-logging.basicConfig(handlers=[InterceptHandler()], level=logging.DEBUG)
+logging.basicConfig(handlers=[InterceptHandler()], level=logging.DEBUG, force=True)
 logger.configure(handlers=[{"sink": sys.stdout, "level": "DEBUG"}])
+logger.add("warning.log", level="WARNING")
+logger.add("error.log", level="ERROR")
+logging.getLogger("ib_insync.client").setLevel(logging.INFO)
