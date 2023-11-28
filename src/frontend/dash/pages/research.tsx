@@ -23,7 +23,6 @@ export default function Home() {
             <>
                 {isScriptReady && (
                     <StockChart
-                        default_symbol={"TSLA"}
                         resolution={"1D" as ResolutionString}
                         macd_config={[
                             { fast: 4, slow: 9, signal: 9, source: "volume" },
@@ -31,6 +30,7 @@ export default function Home() {
                             { fast: 12, slow: 26, signal: 9 },
                         ]}
                         hidden_extra_toolbar={false}
+                        standalone={false}
                     />
                 )}
             </>

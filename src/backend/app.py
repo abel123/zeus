@@ -1,6 +1,7 @@
 import asyncio
 import dataclasses
 from datetime import datetime
+import time
 from typing import List
 from pydantic import BaseModel, Field
 from sanic import Request, Sanic, json
@@ -10,6 +11,8 @@ from sanic_ext import Extend
 import socketio
 from mayim.extension import SanicMayimExtension
 from backend.broker.ib.broker import Broker
+from backend.broker.futu.broker import Broker as FutuBroker
+
 from backend.broker.ib.options import get_tsla_option_list
 from backend.calculate.zen import signal
 from backend.calculate.zen.signal.macd import MACDArea
@@ -44,14 +47,34 @@ UDF(app)
 @app.listener("before_server_stop")
 def before_server_stop(sanic, loop):
     Broker.ib.disconnect()
-    ...
+    asyncio.ensure_future(FutuBroker.close())
+    time.sleep(1)
 
 
 @app.after_server_start
 async def after_server_start(sanic, loop):
     logger.debug("testing")
-
     asyncio.ensure_future(DataFeed.init())
+
+
+@app.middleware("request")
+async def add_start_time(request):
+    """Add start time."""
+    request.ctx.start_time = time.perf_counter()
+
+
+@app.middleware("response")
+async def write_access_log(request, response):
+    """Log access log."""
+    spent_time = round((time.perf_counter() - request.ctx.start_time) * 1000)
+    remote = f"{request.remote_addr or request.ip}:{request.port}"
+    if response.body:
+        body_byte = len(response.body)
+    else:
+        body_byte = 0
+    logger.info(
+        f"{remote} {request.method} {request.url} {response.status} {body_byte} {spent_time}ms",
+    )
 
 
 @app.route("/")
@@ -162,7 +185,7 @@ async def zen_elements(request: Request):
         ),
         macd_config=param.macd_config,
     )
-    if bars is None:
+    if bars is None or item is None:
         return json("")
     # logger.debug(item.macd_signal.bc_records)
 

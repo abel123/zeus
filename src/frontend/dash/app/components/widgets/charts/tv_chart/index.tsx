@@ -1,7 +1,7 @@
 "use client";
 
 import styles from "./index.module.css";
-import { useEffect, useRef } from "react";
+import { useContext, useEffect, useRef } from "react";
 import {
     ChartingLibraryWidgetOptions,
     LanguageCode,
@@ -20,13 +20,18 @@ import React from "react";
 import { UDFCompatibleDatafeed } from "@/public/static/datafeeds/udf/src/udf-compatible-datafeed";
 import { ModelView } from "../stock/models/model_view";
 import { macd_xd } from "./custom_indicator";
+import { useRecoilState } from "recoil";
+import { symbolState } from "@/app/store/dashboard";
 
-export const TVChartContainer = (props: Partial<ChartingLibraryWidgetOptions> & { model_view: ModelView }) => {
+export const TVChartContainer = (
+    props: Partial<ChartingLibraryWidgetOptions> & { model_view: ModelView; standalone: boolean }
+) => {
     const chartContainerRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLInputElement>;
+    const [symbol, setSymbol] = useRecoilState(symbolState);
 
     useEffect(() => {
         const widgetOptions: ChartingLibraryWidgetOptions = {
-            symbol: props.symbol,
+            symbol: props.standalone ? props.symbol : symbol,
             // BEWARE: no trailing slash is expected in feed URL
             //datafeed: (globalThis as any).datafeed ?? DataFeedFactory("http://127.0.0.1:8000"),
             datafeed: new UDFCompatibleDatafeed("http://127.0.0.1:8000/datafeed/udf", 5 * 1000),
@@ -96,12 +101,34 @@ export const TVChartContainer = (props: Partial<ChartingLibraryWidgetOptions> & 
             tvWidget.subscribe("drawing_event", function (line_id: EntityId, event: DrawingEventType) {
                 props.model_view.callback(line_id, event);
             });
+
+            chart.onSymbolChanged().subscribe(
+                null,
+                () => {
+                    //setSymbol(chart.symbol().split(" ")[0]);
+                },
+                false
+            );
         });
 
         return () => {
             tvWidget.remove();
         };
-    }, [props]);
+    }, [
+        props.autosize,
+        props.charts_storage_api_version,
+        props.charts_storage_url,
+        props.client_id,
+        props.fullscreen,
+        props.interval,
+        props.library_path,
+        props.locale,
+        props.model_view,
+        props.standalone,
+        props.symbol,
+        props.user_id,
+        props.standalone ? "" : symbol,
+    ]);
 
     return (
         <>

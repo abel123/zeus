@@ -6,6 +6,8 @@ from typing import Any, List, Protocol, LiteralString
 from ib_insync import IB
 from loguru import logger
 from backend.broker.ib.broker import Broker
+from backend.broker.futu.broker import Broker as FutuBroker
+
 from backend.broker.ib.options import get_tsla_option_list
 from backend.curd.sqllite.model import SymbolExecutor
 
@@ -23,8 +25,10 @@ from backend.datafeed.tv_model import (
 
 class DataFeed:
     async def init():
-        await Broker.init()
-
+        #await Broker.init()
+        #await FutuBroker.init()
+        ...
+    
     async def search_symbols(
         user_input: LiteralString,
         screener: LiteralString,
@@ -131,8 +135,8 @@ class DataFeed:
         return [
             LibrarySymbolInfo(
                 name=sym.symbol,
-                ticker=f"{sym.exchange}:{sym.symbol}",
-                full_name=f"{sym.exchange}:{sym.symbol}",
+                ticker=f"{sym.exchange}:{sym.symbol}" if screener == "america" else sym.symbol,
+                full_name=f"{sym.exchange}:{sym.symbol}" if screener == "america" else sym.symbol,
                 description=sym.desc,
                 exchange=sym.exchange,
                 type=sym.type,
@@ -196,6 +200,13 @@ class DataFeed:
         period_params: PeriodParams,
         macd_config: List[MacdConfig] = [],
     ) -> (List[Bar], Broker.CacheItem):
+        if symbol_info.exchange in ["SSE", "HKEX", "SZSE"]:
+             return await FutuBroker.get_bars(
+                symbol_info=symbol_info,
+                resolution=resolution,
+                period_params=period_params,
+                macd_config=macd_config,
+            )
         return await Broker.get_bars(
             symbol_info=symbol_info,
             resolution=resolution,

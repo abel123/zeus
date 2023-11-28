@@ -51,15 +51,26 @@ class UDF:
         """
         symbol: str = request.args.get("symbol", "")
         type = "stock"
+        screener="america"
+        exchange = ""
         if ":" in symbol:
+            exchange = symbol.split(":")[0]
             symbol = symbol.split(":")[1]
-            if symbol.split(":")[0] == "option":
+            if exchange == "option":
                 type = "option"
+            elif exchange == "HKEX":
+                screener = "hongkong"
+            elif exchange in ["SSE", "SZSE"]:
+                screener = "china"
+        
         if " " in symbol:
             type = "option"
-        logger.debug(f" {symbol.split(":")} xxxxxxx {symbol} {type}")
+        if screener != "america":
+            symbol = f"{exchange}:{symbol}"
+        
+        logger.debug(f"{screener}== {symbol.split(":")} xxxxxxx {symbol} {type}")
         symbols = await DataFeed.resolve_symbol(
-            screener="america",
+            screener=screener,
             type=type,
             symbol=symbol,
             executor=executor,

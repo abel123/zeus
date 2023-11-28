@@ -85,7 +85,7 @@ export class ModelView {
             }
         );
         await this.createMACD();
-        if (this.macd_indicator_id.length > 0) {
+        if (true || this.macd_indicator_id.length > 0) {
             api.onDataLoaded().subscribe(
                 null,
                 () => {
@@ -106,7 +106,7 @@ export class ModelView {
     }, 400);
 
     draw_zen() {
-        if (this.chart == undefined || this.macd_indicator_id.length == 0) {
+        if (this.chart == undefined) {
             return;
         }
         let chart = this.chart;

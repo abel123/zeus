@@ -162,3 +162,5 @@ cython_debug/
 
 ./src/pine_rscript
 ./TODO.md
+./src/error.log
+./src/warning.log

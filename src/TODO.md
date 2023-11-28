@@ -8,7 +8,7 @@ TODO list:
 - ~~多级别dashboard 全屏支持~~
 - ~~不同场景不同页面~~
 - ~~notification~~
-- 自定义扩展 macd indicator
+- ~~自定义扩展 macd indicator~~
 - watchlist
 - offline processing
 - 选股程序开发 
@@ -16,7 +16,7 @@ TODO list:
 - 正股触及价格下期权订单
 - czsc library里的策略阅读
 
-- midterm:integrate futu hongkong
+- ~~midterm:integrate futu hongkong、china~~
 - midterm:websocket based request/response
 
 - midterm: react builder `puck` based dashboard
@@ -25,4 +25,4 @@ TODO list:
 
 
 其它想法：
-基于开源项目 strapi（后端接口生成） + puck（前端页面定制）开发 headless CMS 产品
+基于开源项目 strapi（后端接口生成） + puck、mui toolpad（前端页面定制）开发 headless CMS 产品

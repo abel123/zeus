@@ -17,8 +17,8 @@ with sqlite3.connect("tradingview.db") as con:
 
 SCREENER = {
     "america": ["United States", "en"],
-    "hongkong": ["Hong Kong", "zh"],
-    "china": ["China", "zh"],
+    # "hongkong": ["Hong Kong", "zh"],
+    # "china": ["China", "zh"],
 }
 
 for x, config in SCREENER.items():
@@ -93,6 +93,9 @@ for x, config in SCREENER.items():
             res["d"][13],
             res["d"][17],
         )
+
+        if x != "america":
+            symbol = res["s"]
         data.append(
             (
                 x,

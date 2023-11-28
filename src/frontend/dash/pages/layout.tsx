@@ -1,6 +1,7 @@
 import "@/styles/globals.css";
 import { NavBar } from "../app/navbar";
 import Head from "next/head";
+import { RecoilRoot } from "recoil";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
@@ -10,12 +11,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"></link>
             </Head>
             <body className="h-screen">
-                <>
-                    <div id="nav_bar">
-                        <NavBar />
-                    </div>
-                </>
-                {children}
+                <RecoilRoot>
+                    <>
+                        <div id="nav_bar">
+                            <NavBar />
+                        </div>
+                    </>
+                    {children}
+                </RecoilRoot>
             </body>
         </html>
     );

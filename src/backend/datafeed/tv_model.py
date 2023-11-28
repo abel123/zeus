@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, RootModel
 from pydantic.dataclasses import dataclass as pyd_dataclass
 
 Market = {
-    "china": {"session": "0930-1130,1300-1501", "timezone": "Asia/Shanghai"},
+    "china": {"session": "0930-1131,1300-1501", "timezone": "Asia/Shanghai"},
     "hongkong": {"session": "0930-1200,1300-1601", "timezone": "Asia/Shanghai"},
     "america": {
         "session": "0930-1701",

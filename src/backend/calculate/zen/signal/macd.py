@@ -30,16 +30,18 @@ class Config(BaseModel):
 
 class MACDArea:
     class RecordCache(OrderedDict):
-        def __init__(self):
+        def __init__(self, enable_notify=True):
             OrderedDict.__init__(self)
             self.bar_beichi = set()
+            self.enable_notify = enable_notify
 
         def __setitem__(self, __key: Any, __value: Any) -> None:
             try:
                 bc: MACDArea.BC = __value
-                asyncio.ensure_future(
-                    Notify.instance.send(
-                        title=str(bc.bi_a.fx_a.raw_bars[-1].freq)+" "+ ("顶" if bc.direction == Direction.Up else "底") + "背驰",
+                if self.enable_notify:
+                    asyncio.ensure_future(
+                        Notify.send(
+                        title=bc.bi_a.fx_a.raw_bars[-1].symbol+" "+ str(bc.bi_a.fx_a.raw_bars[-1].freq)+" "+ ("顶" if bc.direction == Direction.Up else "底") + "背驰",
                         message=f"{bc.bi_a.sdt.strftime("%Y-%m-%d %H:%M:%S")} - {bc.bi_b.sdt.strftime("%Y-%m-%d %H:%M:%S")}",
                         sound=True
                     )
@@ -72,11 +74,11 @@ class MACDArea:
         def low(self):
             return min(self.bi_a.low, self.bi_b.low)
 
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Config,enable_notify = True) -> None:
         self.config = config
         self.bc_set = OrderedDict()
         for c in config.macd_config:
-            self.bc_set[c] = MACDArea.RecordCache()
+            self.bc_set[c] = MACDArea.RecordCache(enable_notify)
 
     def add_key(self, config: List[MacdConfig]) -> None:
         for c in config:
@@ -100,13 +102,13 @@ class MACDArea:
                     self.bc_set[key].pop((st1, st2))
         if False and bi.fx_b.raw_bars[-1].freq in [Freq.F1, Freq.F3, Freq.F5]:
             asyncio.ensure_future(
-                Notify.instance.send(f"{bi.fx_b.raw_bars[-1].freq} 破坏", 
+                Notify.send(f"{bi.fx_b.raw_bars[-1].freq} 破坏", 
                                                        message=f"{bi.fx_b.raw_bars[-1].dt.strftime("%Y-%m-%d %H:%M:%S")}"))
 
     def on_bi_create(self, bi: BI):
         if False and bi.fx_b.raw_bars[-1].freq in [Freq.F1, Freq.F3, Freq.F5]:
             asyncio.ensure_future(
-                Notify.instance.send(f"{bi.fx_b.raw_bars[-1].freq} 生成", 
+                Notify.send(f"{bi.fx_b.raw_bars[-1].freq} 生成", 
                                                        message=f"{bi.fx_b.raw_bars[-1].dt.strftime("%Y-%m-%d %H:%M:%S")}"))
 
     def macd_area_bc_single(
@@ -203,12 +205,12 @@ class MACDArea:
                     bi2.raw_bars[1:-1], key=lambda bar: bar.cache[cache_key]["macd"]
                 )
                 if self.bc_set[index].get((bi1.sdt, bi2.sdt)) == None:
-                    logger.debug(f"upsert {bi1.sdt}-{bi2.sdt}")
+                    #logger.debug(f"upsert {bi1.sdt}-{bi2.sdt}")
                     self.bc_set[index][(bi1.sdt, bi2.sdt)] = MACDArea.BC(
                     bi_a=bi1,
                     bi_b=bi2,
                     macd_a_dt=macd_a.dt,
-                    macd_a_val=macd_a.cache[cache_key]["macd"],
+                    macd_a_val=0.0 if math.isnan(macd_a.cache[cache_key]["macd"]) else macd_a.cache[cache_key]["macd"],
                     macd_b_dt=macd_b.dt,
                     macd_b_val=macd_b.cache[cache_key]["macd"],
                     zs=zs,
@@ -237,7 +239,7 @@ class MACDArea:
                     bi_a=bi1,
                     bi_b=bi2,
                     macd_a_dt=macd_a.dt,
-                    macd_a_val=macd_a.cache[cache_key]["macd"],
+                    macd_a_val=0.0 if math.isnan(macd_a.cache[cache_key]["macd"]) else macd_a.cache[cache_key]["macd"],
                     macd_b_dt=macd_b.dt,
                     macd_b_val=macd_b.cache[cache_key]["macd"],
                     zs=zs,

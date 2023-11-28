@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { FullscreenButton } from "../components/widgets/button/fullscreen";
+import { useRecoilState } from "recoil";
+import { symbolState } from "../store/dashboard";
 
 export const NavBar = () => {
+    const [symbol, setSymbol] = useRecoilState(symbolState);
+
     return (
         <div className="navbar bg-base-50 h-8 px-4 py-2 min-h-0">
             <div className="navbar-start">
@@ -67,6 +71,14 @@ export const NavBar = () => {
                         </li>
                     </ul>
                 </div>
+                <input
+                    type="text"
+                    placeholder="Symbol"
+                    className="input input-bordered input-primary w-full max-w-xs"
+                    onChange={(event) => {
+                        if (event.target.value != "") setSymbol(event.target.value);
+                    }}
+                />
             </div>
             <div className="navbar-center">
                 <a className="normal-case text-xl">Terminal</a>

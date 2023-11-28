@@ -58,7 +58,6 @@ class Broker:
             ),
         ) -> None:
             self.macd_signal = MACDArea(macd_config)
-            bars.barSizeSetting
             raw_bars = [
                 RawBar(
                     symbol=bars.contract.symbol,
@@ -106,17 +105,22 @@ class Broker:
             Broker.ib.cancelHistoricalData(self.bars)
 
     class RequesterCache(TTLCache):
-        def popitem():
+        def popitem(self):
             k, v = super().popitem()
-            v.destrop()
+            v.destroy()
 
-    ib: IB = None
-    cache = RequesterCache(maxsize=20, ttl=timedelta(hours=6).total_seconds())
+    ib: IB = IB()
+    cache = RequesterCache(maxsize=40, ttl=timedelta(hours=6).total_seconds())
     last_macd_config = OrderedDict()
 
     async def init():
-        Broker.ib = IB()
-        await Broker.ib.connectAsync("127.0.0.1", 4001, clientId=991)
+        if (
+            Broker.ib.isConnected() == False
+            and Broker.ib.client.connState != Broker.ib.client.CONNECTING
+        ):
+            await Broker.ib.connectAsync(
+                "127.0.0.1", 4001, clientId=999  # Broker.ib.client.clientId + 2
+            )
 
     @cached(LRUCache(1024))
     async def get_head_time(symbol_info: LibrarySymbolInfo) -> int:
@@ -165,11 +169,8 @@ class Broker:
         }
 
         try:
-            if (
-                Broker.ib.isConnected() == False
-                and Broker.ib.client.connState != Broker.ib.client.CONNECTING
-            ):
-                await Broker.init()
+            await Broker.init()
+
             contract = ib_insync.Stock(
                 symbol_info.name,
                 "SMART",
@@ -337,8 +338,8 @@ class Broker:
                 for bar in ib_bars
             ], requester
         except Exception as e:
-            logger.warning(f"exception =========={e}")
-            # raise e
+            # logger.warning(f"exception =========={e}")
+            raise e
             return None, None
 
         ...

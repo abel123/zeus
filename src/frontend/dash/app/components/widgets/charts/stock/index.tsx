@@ -9,6 +9,8 @@ import { useMemo } from "react";
 import { TVChartContainer } from "../tv_chart";
 import { ModelView } from "./models/model_view";
 import { MacdConfig } from "./models/zen";
+import { symbolState } from "@/app/store/dashboard";
+import { useRecoilState } from "recoil";
 
 const getLanguageFromURL = (): LanguageCode | null => {
     if (typeof window != "undefined") {
@@ -29,24 +31,40 @@ const defaultWidgetProps: Partial<ChartingLibraryWidgetOptions> = {
     user_id: "zen_user_id",
     fullscreen: false,
     autosize: true,
+    symbol: "TSLA",
 };
 
 interface ChartConfig {
-    default_symbol: string;
     resolution: ResolutionString;
     macd_config: MacdConfig[];
     hidden_extra_toolbar: boolean;
+    standalone: boolean;
 }
 
 export const StockChart = (props: ChartConfig) => {
-    let mv = new ModelView(props.macd_config);
-    mv.hidden_extra_toolbar = props.hidden_extra_toolbar;
+    const [symbol, setSymbol] = useRecoilState(symbolState);
 
-    let tv = (
-        <TVChartContainer
-            {...{ ...defaultWidgetProps, interval: props.resolution, symbol: props.default_symbol, model_view: mv }}
-        />
-    );
+    let tv = useMemo(() => {
+        let mv = new ModelView(props.macd_config);
+        mv.hidden_extra_toolbar = props.hidden_extra_toolbar;
+
+        return (
+            <TVChartContainer
+                {...{
+                    ...defaultWidgetProps,
+                    interval: props.resolution,
+                    model_view: mv,
+                    standalone: props.standalone,
+                }}
+            />
+        );
+    }, [
+        props.standalone ? "" : symbol,
+        props.hidden_extra_toolbar,
+        props.macd_config,
+        props.resolution,
+        props.standalone,
+    ]);
 
     return <>{tv}</>;
 };
