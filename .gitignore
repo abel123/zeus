@@ -160,7 +160,6 @@ cython_debug/
 #.idea/
 
 
-./src/pine_rscript
 ./TODO.md
 ./src/error.log
 ./src/warning.log

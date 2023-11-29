@@ -25,8 +25,6 @@ from backend.datafeed.tv_model import (
 
 class DataFeed:
     async def init():
-        #await Broker.init()
-        #await FutuBroker.init()
         ...
     
     async def search_symbols(

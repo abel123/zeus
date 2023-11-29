@@ -118,6 +118,8 @@ class Broker:
             Broker.ib.isConnected() == False
             and Broker.ib.client.connState != Broker.ib.client.CONNECTING
         ):
+            logger.warning("reconnecting to IB")
+            Broker.cache.clear()
             await Broker.ib.connectAsync(
                 "127.0.0.1", 4001, clientId=999  # Broker.ib.client.clientId + 2
             )
@@ -186,7 +188,7 @@ class Broker:
                     localSymbol=symbol_info.name,
                     primaryExchange="CBOE",
                 )
-            [contract] = await Broker.ib.qualifyContractsAsync(contract)
+            # [contract] = await Broker.ib.qualifyContractsAsync(contract)
             cache_key = f"{resolution} - {macd_config} {str(contract)}"
 
             logger.debug(

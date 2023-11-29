@@ -71,9 +71,10 @@ class Broker:
             Broker.inited = True
 
     async def close():
-        await asyncio.get_running_loop().run_in_executor(
-            futu_exec, Broker.quote_ctx.close()
-        )
+        if hasattr(Broker, "quote_ctx"):
+            await asyncio.get_running_loop().run_in_executor(
+                futu_exec, Broker.quote_ctx.close()
+            )
 
     async def get_bars(
         symbol_info: LibrarySymbolInfo,
@@ -138,6 +139,7 @@ class Broker:
                 AuType.QFQ,
             ),
         )
+
         if ret != RET_OK:
             logger.error(f"get_cur_kline {symbol}-{ktype} error, {data}")
             del Broker.subscribed[f"{symbol}:{ktype}"]
