@@ -139,20 +139,22 @@ export class ModelView {
 
                 chart.selection().clear();
                 response.data.bi.finished.forEach((bi: BiInfo) => {
-                    let bi_id = chart.createMultipointShape(
-                        [
-                            { price: bi.start, time: bi.start_ts },
-                            { price: bi.end, time: bi.end_ts },
-                        ],
-                        {
-                            shape: "trend_line",
-                            //disableSelection: true,
-                            showInObjectsTree: false,
-                            lock: true,
-                            text: "test",
-                        }
-                    );
-                    if (bi_id !== null) chart.selection().add(bi_id);
+                    if (bi.end_ts >= range.from) {
+                        let bi_id = chart.createMultipointShape(
+                            [
+                                { price: bi.start, time: bi.start_ts },
+                                { price: bi.end, time: bi.end_ts },
+                            ],
+                            {
+                                shape: "trend_line",
+                                //disableSelection: true,
+                                showInObjectsTree: false,
+                                lock: true,
+                                text: "test",
+                            }
+                        );
+                        if (bi_id !== null) chart.selection().add(bi_id);
+                    }
                 });
                 if (!chart.selection().isEmpty()) {
                     let group_id = chart.shapesGroupController().createGroupFromSelection();
