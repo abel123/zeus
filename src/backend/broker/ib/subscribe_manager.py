@@ -10,7 +10,10 @@ from backend.utils.magic import SingletonABCMeta
 
 
 class WatcherProtocol(Protocol):
-    def on_bar_update(bars: BarDataList, hasNewBar):
+    def id() -> str:
+        ...
+
+    def on_bar_update(bars: BarData, hasNewBar):
         ...
 
     def reset():
@@ -29,12 +32,11 @@ class ExtendCache(TTLCache):
 
     def popitem(self):
         k, v = super().popitem()
+        logger.debug(f"destroy cache item, {v.bars.contract} {v.bars.barSizeSetting}")
         v.destroy()
 
 
-class SubscribeManager(object):
-    __metaclass__ = SingletonABCMeta
-
+class SubscribeManager(metaclass=SingletonABCMeta):
     def __init__(self, realtime: bool = True, subscribers_limit=40) -> None:
         self.watchers: Dict[str, Set[WatcherProtocol]] = dict()
         self.realtime: bool = realtime
@@ -43,12 +45,12 @@ class SubscribeManager(object):
         )
         self.ib = IB()
 
-    async def init(self):
+    async def _connect(self) -> None:
         if (
             self.ib.isConnected() == False
             and self.ib.client.connState != Client.CONNECTING
         ):
-            logger.warning("connecting to IB")
+            logger.warning(f"{self} connecting to IB")
             self.subscribers.clear()
             await self.ib.connectAsync("127.0.0.1", 4001, clientId=999)
 
@@ -58,21 +60,41 @@ class SubscribeManager(object):
         self.watchers[barSize].add(watcher)
 
     def remove_watcher(self, barSize: str, watcher: WatcherProtocol):
-        self.watchers[barSize].remove(watcher)
+        candicates = [
+            w for w in self.watchers.get(barSize, set()) if w.id() == watcher.id()
+        ]
+        for c in candicates:
+            self.watchers[barSize].remove(c)
+
+    def get_watcher(self, barSize: str, id: str):
+        for w in self.watchers.get(barSize, set()):
+            if w.id() == id:
+                return w
+        return None
 
     def _update_data(self, bars: BarDataList, hasNewBar):
         watchers = self.watchers.get(bars.barSizeSetting, set())
         for w in watchers:
-            w.on_bar_update(bars, hasNewBar)
+            w.on_bar_update(bars[-1], hasNewBar)
+
+    def _proceed_data(self, barSizeSetting: str, bar: BarData, hasNewBar):
+        watchers = self.watchers.get(barSizeSetting, set())
+        for w in watchers:
+            w.on_bar_update(bar, hasNewBar)
 
     def _reset_watcher(self, barSize: str):
         watchers = self.watchers.get(barSize, set())
         for w in watchers:
             w.reset()
 
+    def raw_bars(self, barSize: str):
+        return self.subscribers.get(barSize).bars
+
     async def subscribe(
         self, contract: Contract, barSize: str, from_: int, to: int, countBack: int
     ) -> (List[BarData], bool):
+        await self._connect()
+
         use_cache = (
             datetime.now().timestamp() - to < timedelta(days=365).total_seconds()
         ) and self.realtime
@@ -89,12 +111,17 @@ class SubscribeManager(object):
                 ).timestamp()
                 > from_
             ):
+                logger.debug(
+                    f"{datetime.fromisoformat(subscriber.bars[0].date.isoformat()).timestamp()} = {from_}"
+                )
+                logger.debug(f"destroy {contract} {barSize}")
                 subscriber.destroy()
                 subscriber = None
 
         new_subscribe = False
+        ib_bars = []
         if subscriber is None:
-            bars = await self.ib.reqHistoricalDataAsync(
+            ib_bars = await self.ib.reqHistoricalDataAsync(
                 contract,
                 endDateTime="" if use_cache else datetime.fromtimestamp(to),
                 durationStr=timedelta_to_duration_str(
@@ -113,8 +140,10 @@ class SubscribeManager(object):
             )
 
             if use_cache:
-                bars.updateEvent += self._update_data
-                self.subscribers[barSize] = ExtendCache.Item(bars)
+                for bar in ib_bars:
+                    self._proceed_data(barSize, bar, True)
+                ib_bars.updateEvent += self._update_data
+                self.subscribers[barSize] = ExtendCache.Item(ib_bars)
                 new_subscribe = True
         else:
             if countBack is None:

@@ -212,6 +212,8 @@ def check_bi(bars: List[NewBar], benchmark=None):
 class CZSC:
     def __init__(
         self,
+        symbol,
+        freq,
         bars: List[RawBar],
         get_signals=None,
         max_bi_num=envs.get_max_bi_num(),
@@ -229,8 +231,8 @@ class CZSC:
         self.bars_raw: List[RawBar] = []  # 原始K线序列
         self.bars_ubi: List[NewBar] = []  # 未完成笔的无包含K线序列
         self.bi_list: List[BI] = []
-        self.symbol = bars[0].symbol
-        self.freq = bars[0].freq
+        self.symbol = symbol
+        self.freq = freq
         self.get_signals = get_signals
         self.on_bi_break = on_bi_break
         self.on_bi_create = on_bi_create
@@ -319,7 +321,7 @@ class CZSC:
         :param bar: 单根K线对象
         """
         # 更新K线序列
-        if not self.bars_raw or bar.dt != self.bars_raw[-1].dt:
+        if len(self.bars_raw) == 0 or bar.dt != self.bars_raw[-1].dt:
             self.bars_raw.append(bar)
             last_bars = [bar]
         else:

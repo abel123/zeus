@@ -14,6 +14,7 @@ from backend.broker.ib.broker import Broker
 from backend.broker.futu.broker import Broker as FutuBroker
 
 from backend.broker.ib.options import get_tsla_option_list
+from backend.broker.ib.subscribe_manager import SubscribeManager
 from backend.calculate.zen import signal
 from backend.calculate.zen.signal.macd import MACDArea
 from backend.curd.sqllite.model import SymbolExecutor
@@ -46,7 +47,7 @@ UDF(app)
 
 @app.listener("before_server_stop")
 def before_server_stop(sanic, loop):
-    Broker.ib.disconnect()
+    SubscribeManager().ib.disconnect()
     asyncio.ensure_future(FutuBroker.close())
     time.sleep(1)
 
@@ -143,7 +144,6 @@ async def get_bars(request: Request):
 
 @app.route("/zen/elements", methods=["POST"])
 async def zen_elements(request: Request):
-    logger.debug(request.json)
     param = RequestParam(**request.json)
     symbol, from_ts, to_ts, resolution = (
         param.symbol,
@@ -185,12 +185,12 @@ async def zen_elements(request: Request):
         macd_config=param.macd_config,
     )
     if bars is None or item is None:
-        return json("")
+        return json(f"bars is None: {bars is None}, item is None: {item is None}")
     # logger.debug(item.macd_signal.bc_records)
 
     beichi = []
     for idx, config in enumerate(param.macd_config):
-        logger.debug(f"config {idx}: {config}")
+        # logger.debug(f"config {idx}: {config}")
         if config in item.macd_signal.bc_records:
             beichi.append(
                 [

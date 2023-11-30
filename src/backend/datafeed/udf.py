@@ -107,7 +107,6 @@ class UDF:
         GET /history?symbol=<ticker_name>&from=<unix_timestamp>&to=<unix_timestamp>
         &resolution=<resolution>&countback=<countback>
         """
-        logger.debug(request.args)
         symbol: str = request.args.get("symbol", "")
         exchange = ""
         if ":" in symbol:
@@ -202,7 +201,7 @@ class UDF:
             return json({"s": "error", "errmsg": "error in get_bars"})
         
         t, c, h, l, o, v = [], [], [], [], [], []
-        logger.debug("bars:  ", bars[:3])
+        #logger.debug("bars:  ", bars[:3])
         for bar in bars:
             t.append(bar.time)
             c.append(bar.close)

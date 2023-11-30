@@ -9,6 +9,7 @@ from backend.broker.ib.broker import Broker
 from backend.broker.futu.broker import Broker as FutuBroker
 
 from backend.broker.ib.options import get_tsla_option_list
+from backend.broker.ib.signals import Watcher
 from backend.curd.sqllite.model import SymbolExecutor
 
 from backend.datafeed.tv_model import (
@@ -197,7 +198,7 @@ class DataFeed:
         resolution: str,
         period_params: PeriodParams,
         macd_config: List[MacdConfig] = [],
-    ) -> (List[Bar], Broker.CacheItem):
+    ) -> (List[Bar], Watcher):
         if symbol_info.exchange in ["SSE", "HKEX", "SZSE"]:
              return await FutuBroker.get_bars(
                 symbol_info=symbol_info,

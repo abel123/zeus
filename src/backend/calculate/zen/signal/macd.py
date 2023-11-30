@@ -90,7 +90,7 @@ class MACDArea:
             try:
                 self.macd_area_bc_single(key, c, key, has_new_bar)
             except Exception as e:
-                logger.debug(e)
+                logger.error(e)
                 ...
 
     def on_bi_break(self, bi: BI):

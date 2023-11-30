@@ -1,3 +1,7 @@
+from datetime import timedelta
+import math
+
+
 def timedelta_to_duration_str(duration: timedelta) -> str:
     if duration.days >= 360:
         return f"{math.ceil(duration.total_seconds()*1.0 / timedelta(365).total_seconds()):.0f} Y"
