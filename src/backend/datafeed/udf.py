@@ -182,7 +182,6 @@ class UDF:
                 "firstDataRequest": False,
             }
         )
-        logger.debug(f"period: {period_params}")
         if period_params.to < 0:
             return json(
                 {

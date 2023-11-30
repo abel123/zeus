@@ -10,7 +10,7 @@ from loguru import logger
 import pytz
 from backend.broker.ib.signals import Watcher
 from backend.broker.ib.subscribe_manager import SubscribeManager
-from backend.broker.ib.util import timedelta_to_duration_str
+from backend.broker.ib.util import get_symbol, timedelta_to_duration_str
 from backend.calculate.zen import signal
 from backend.calculate.zen.signal.macd import Config, MACDArea
 
@@ -20,10 +20,6 @@ from czsc.analyze import CZSC
 from czsc.enum import Freq
 from czsc.objects import RawBar
 from asyncache import cached
-
-
-def get_symbol(contract: Contract):
-    return contract.symbol if contract.symbol != "" else contract.localSymbol
 
 
 class Broker(object):
@@ -129,14 +125,11 @@ class Broker(object):
 
             use_cache = False
             if len(macd_config) != 0:
-                if set(macd_config) <= set(
-                    Broker.last_macd_config.get(resolution, set())
-                ):
+                if set(macd_config) <= Broker.last_macd_config.get(resolution, set()):
                     use_cache = True
                 else:
                     use_cache = False
-                if not use_cache:
-                    Broker.last_macd_config[resolution] = macd_config
+                    Broker.last_macd_config[resolution] = set(macd_config)
 
             barSize = mapping.get(resolution)
 
@@ -164,20 +157,24 @@ class Broker(object):
                     "peroid": period_params,
                     "config": macd_config,
                     "new_subscriber": new_subscriber,
+                    "id": id,
+                    "barSize": barSize,
                 }
             )
 
             if (new_subscriber or use_cache == False) and len(macd_config) > 0:
                 watcher = Watcher(
-                    SubscribeManager().raw_bars(barSize),
+                    SubscribeManager().raw_bars(contract, barSize),
                     get_symbol(contract),
                     freq_map.get(resolution),
                     Config(macd_config=macd_config),
                 )
-                SubscribeManager().remove_watcher(barSize, watcher)
-                SubscribeManager().add_watcher(barSize, watcher)
+                SubscribeManager().remove_watcher(contract, barSize, watcher)
+                logger.warning(f"add watcher {id} {barSize} {watcher}")
+                SubscribeManager().add_watcher(contract, barSize, watcher)
             elif len(macd_config) > 0:
                 watcher = SubscribeManager().get_watcher(
+                    contract,
                     barSize,
                     id,
                 )
@@ -201,6 +198,6 @@ class Broker(object):
                 for bar in ib_bars
             ], watcher
         except Exception as e:
-            # logger.warning(f"exception =========={e}")
+            logger.warning(f"exception =========={e}")
             raise e
             return None, None

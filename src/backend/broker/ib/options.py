@@ -7,6 +7,7 @@ from shelved_cache import PersistentCache
 from cachetools import TTLCache
 
 from backend.broker.ib.broker import Broker
+from backend.broker.ib.subscribe_manager import SubscribeManager
 
 filename = "./data/cache/option_list"
 
@@ -19,8 +20,8 @@ pc = PersistentCache(
 @cached(pc)
 async def get_tsla_option_list() -> List[Contract]:
     try:
-        ib = Broker.ib
-
+        ib = SubscribeManager().ib
+        await SubscribeManager()._connect()
         tsla = Stock("TSLA", "SMART", "USD")
         await ib.qualifyContractsAsync(tsla)
 

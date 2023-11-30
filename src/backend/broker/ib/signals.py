@@ -1,4 +1,5 @@
 from datetime import datetime
+import traceback
 from typing import Dict, List
 
 from ib_insync import BarData, BarDataList
@@ -10,21 +11,6 @@ from backend.datafeed.tv_model import MacdConfig
 from czsc.analyze import CZSC
 from czsc.enum import Freq
 from czsc.objects import RawBar
-
-
-def convert(symbol, freq, bar: RawBar):
-    return RawBar(
-        symbol=symbol,
-        id=datetime.fromisoformat(bar.date.isoformat()).timestamp(),
-        dt=datetime.fromisoformat(bar.date.isoformat()),
-        freq=freq,
-        open=bar.open,
-        close=bar.close,
-        high=bar.high,
-        low=bar.low,
-        vol=bar.volume,
-        amount=0.0,
-    )
 
 
 class Watcher(WatcherProtocol):
@@ -47,7 +33,7 @@ class Watcher(WatcherProtocol):
             self.on_bar_update(bar, True)
 
     def id(self) -> str:
-        return f"macd_realtime_{self.symbol}:{self.freq}"
+        return f"{__name__}-{self.symbol}:{self.freq}"
 
     def on_bar_update(self, bar: BarData, hasNewBar):
         self.czsc.update(
@@ -67,13 +53,14 @@ class Watcher(WatcherProtocol):
         self.macd_signal.macd_area_bc(self.czsc, hasNewBar)
 
     def reset(self):
-        logger.debug(f"reset {self.symbol} - {self.freq}")
+        logger.warning(f"reset {self.symbol} - {self.freq}")
+
         self.macd_signal = MACDArea(self.macd_config)
         self.czsc: CZSC = CZSC(
             self.symbol,
             self.freq,
             bars=[],
-            get_signals=self.macd_signal.macd_area_bc,
+            get_signals=None,  # self.macd_signal.macd_area_bc,
             on_bi_break=self.macd_signal.on_bi_break,
             on_bi_create=self.macd_signal.on_bi_create,
         )

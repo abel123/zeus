@@ -3,6 +3,7 @@ import dataclasses
 from datetime import datetime
 import time
 from typing import List
+from ib_insync import Stock
 from pydantic import BaseModel, Field
 from sanic import Request, Sanic, json
 from sanic.response import html
@@ -15,6 +16,7 @@ from backend.broker.futu.broker import Broker as FutuBroker
 
 from backend.broker.ib.options import get_tsla_option_list
 from backend.broker.ib.subscribe_manager import SubscribeManager
+from backend.calculate.custom.quanty_price_macd_reverse import QPMReverseSignals
 from backend.calculate.zen import signal
 from backend.calculate.zen.signal.macd import MACDArea
 from backend.curd.sqllite.model import SymbolExecutor
@@ -55,6 +57,11 @@ def before_server_stop(sanic, loop):
 @app.after_server_start
 async def after_server_start(sanic, loop):
     asyncio.ensure_future(DataFeed.init())
+    SubscribeManager().add_watcher(
+        Stock(symbol="TSLA", currency="USD", exchange="SMART"),
+        "1 min",
+        QPMReverseSignals("TSLA", Freq.F1),
+    )
 
 
 @app.middleware("request")
