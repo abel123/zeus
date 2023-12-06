@@ -9,8 +9,9 @@ interface Props {}
 export const MainGrid = (props: Props) => {
     return (
         <>
-            <div className="grid grid-cols-7 h-full">
-                <div className="col-span-5 grid grid-cols-9 grid-rows-8">
+            <div className="grid grid-cols-10 h-full">
+                {/* left grids */}
+                <div className="col-span-7 grid grid-cols-9 grid-rows-8">
                     <div className="row-span-3 col-span-5 border-solid border-2 border-slate-300" key="1-1">
                         <StockChart
                             resolution={"1" as ResolutionString}
@@ -58,16 +59,8 @@ export const MainGrid = (props: Props) => {
                     </div>
                 </div>
                 {/* right grids */}
-                <div className="col-span-2 grid grid-rows-3">
+                <div className="col-span-3 grid grid-rows-3">
                     <div key="2-1" className="border-solid border-2 border-slate-300">
-                        <StockChart
-                            resolution={"10" as ResolutionString}
-                            macd_config={[{ fast: 4, slow: 9, signal: 9 }]}
-                            hidden_extra_toolbar={true}
-                            standalone={false}
-                        />
-                    </div>
-                    <div key="2-2" className="border-solid border-2 border-slate-300">
                         <StockChart
                             resolution={"15" as ResolutionString}
                             macd_config={[{ fast: 4, slow: 9, signal: 9 }]}
@@ -75,10 +68,18 @@ export const MainGrid = (props: Props) => {
                             standalone={false}
                         />
                     </div>
-                    <div key="2-3" className="border-solid border-2 border-slate-300">
+                    <div key="2-2" className="border-solid border-2 border-slate-300">
                         <StockChart
                             resolution={"30" as ResolutionString}
-                            macd_config={[]}
+                            macd_config={[{ fast: 4, slow: 9, signal: 9 }]}
+                            hidden_extra_toolbar={true}
+                            standalone={false}
+                        />
+                    </div>
+                    <div key="2-3" className="border-solid border-2 border-slate-300">
+                        <StockChart
+                            resolution={"60" as ResolutionString}
+                            macd_config={[{ fast: 4, slow: 9, signal: 9 }]}
                             hidden_extra_toolbar={true}
                             standalone={false}
                         />

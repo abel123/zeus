@@ -16,9 +16,10 @@ from backend.broker.futu.broker import Broker as FutuBroker
 
 from backend.broker.ib.options import get_tsla_option_list
 from backend.broker.ib.subscribe_manager import SubscribeManager
-from backend.calculate.custom.quanty_price_macd_reverse import QPMReverseSignals
-from backend.calculate.zen import signal
-from backend.calculate.zen.signal.macd import MACDArea
+from backend.calculate.custom.macd_area import MACDArea
+from backend.calculate.custom.mix_in import ContractSignals, MultipleContractSignals
+from backend.calculate.custom.quanty_price_reverse import QPReverseSignals
+from backend.calculate.protocol import Symbol, SymbolType
 from backend.curd.sqllite.model import SymbolExecutor
 
 import logging
@@ -30,6 +31,9 @@ from czsc.enum import Direction, Freq
 from backend.utils.logger import logger
 
 from sanic import log
+import nest_asyncio
+
+nest_asyncio.apply()
 
 sio = socketio.AsyncServer(async_mode="sanic")
 
@@ -57,11 +61,29 @@ def before_server_stop(sanic, loop):
 @app.after_server_start
 async def after_server_start(sanic, loop):
     asyncio.ensure_future(DataFeed.init())
-    SubscribeManager().add_watcher(
-        Stock(symbol="TSLA", currency="USD", exchange="SMART"),
-        "1 min",
-        QPMReverseSignals("TSLA", Freq.F1),
+
+    cs_f1 = ContractSignals(
+        Symbol(raw="TSLA", type=SymbolType.STOCK),
+        Freq.F1,
+        [QPReverseSignals(), MACDArea()],
     )
+    cs_f3 = ContractSignals(
+        Symbol(raw="TSLA", type=SymbolType.STOCK),
+        Freq.F3,
+        [MACDArea()],
+    )
+    cs_f5 = ContractSignals(
+        Symbol(raw="TSLA", type=SymbolType.STOCK),
+        Freq.F5,
+        [MACDArea()],
+    )
+    cs_f10 = ContractSignals(
+        Symbol(raw="TSLA", type=SymbolType.STOCK),
+        Freq.F10,
+        [MACDArea()],
+    )
+    mcs = MultipleContractSignals([cs_f1, cs_f3, cs_f5, cs_f10])
+    SubscribeManager().upsert_watcher(mcs)
 
 
 @app.middleware("request")
@@ -161,9 +183,6 @@ async def zen_elements(request: Request):
 
     if to_ts > datetime.now().timestamp():
         to_ts = int(datetime.now().timestamp())
-    logger.debug(
-        f'{datetime.now().timestamp(), "from", from_ts, " to ", to_ts} param {param}'
-    )
 
     bars, item = await DataFeed.get_bars(
         symbol_info=LibrarySymbolInfo(
@@ -196,8 +215,7 @@ async def zen_elements(request: Request):
     # logger.debug(item.macd_signal.bc_records)
 
     beichi = []
-    for idx, config in enumerate(param.macd_config):
-        # logger.debug(f"config {idx}: {config}")
+    for config in param.macd_config:
         if config in item.macd_signal.bc_records:
             beichi.append(
                 [
@@ -217,6 +235,7 @@ async def zen_elements(request: Request):
                         },
                         "high": bc.high,
                         "low": bc.low,
+                        "type": bc.type.value,
                     }
                     for bc in item.macd_signal.bc_records[config].values()
                 ]
@@ -236,9 +255,11 @@ async def zen_elements(request: Request):
                         "end": bi.low if bi.direction == Direction.Down else bi.high,
                         "direction": str(bi.direction),
                     }
-                    for bi in item.czsc.finished_bis
+                    for bi in item.czsc.bi_list
                 ],
-                "unfinished": [item.czsc.unfinished_bi],
+                "unfinished": [item.czsc.unfinished_bi]
+                if item.czsc.unfinished_bi is not None
+                else [],
             },
             "beichi": beichi,
             "bar_beichi": [],

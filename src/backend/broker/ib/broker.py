@@ -1,24 +1,19 @@
 import calendar
 from collections import OrderedDict
-from datetime import date, datetime, timedelta, timezone
-import math
+from datetime import datetime, timedelta, timezone
 from typing import Any, List
-from cachetools import LRUCache, TLRUCache, TTLCache
-from ib_insync import IB, Contract
+from cachetools import LRUCache
 import ib_insync
 from loguru import logger
-import pytz
 from backend.broker.ib.signals import Watcher
 from backend.broker.ib.subscribe_manager import SubscribeManager
-from backend.broker.ib.util import get_symbol, timedelta_to_duration_str
-from backend.calculate.zen import signal
-from backend.calculate.zen.signal.macd import Config, MACDArea
+from backend.broker.ib.util import timedelta_to_duration_str
+from backend.calculate.protocol import Symbol, SymbolType
+from backend.calculate.zen.signal.macd import Config
 
 from backend.datafeed.tv_model import Bar, LibrarySymbolInfo, MacdConfig, PeriodParams
 from backend.utils.magic import SingletonABCMeta
-from czsc.analyze import CZSC
 from czsc.enum import Freq
-from czsc.objects import RawBar
 from asyncache import cached
 
 
@@ -106,79 +101,76 @@ class Broker(object):
             "1": Freq.F1,
         }
         try:
-            contract = ib_insync.Stock(
-                symbol_info.name,
-                "SMART",
-                "USD",
-                primaryExchange="NASDAQ"
-                if symbol_info.exchange == ""
-                else symbol_info.exchange,
+            symbol = Symbol(
+                raw=symbol_info.name,
+                exchange=symbol_info.exchange,
+                type=SymbolType.OPTION
+                if symbol_info.exchange == "option"
+                else SymbolType.STOCK,
             )
 
-            if symbol_info.exchange == "option":
-                contract = ib_insync.Option(
-                    exchange="SMART",
-                    localSymbol=symbol_info.name,
-                    primaryExchange="CBOE",
-                )
             # [contract] = await Broker.ib.qualifyContractsAsync(contract)
-
+            freq = freq_map.get(resolution)
             use_cache = False
             if len(macd_config) != 0:
-                if set(macd_config) <= Broker.last_macd_config.get(resolution, set()):
+                if set(macd_config) <= Broker.last_macd_config.get(
+                    (symbol.raw, resolution), set()
+                ):
                     use_cache = True
                 else:
                     use_cache = False
-                    Broker.last_macd_config[resolution] = set(macd_config)
-
-            barSize = mapping.get(resolution)
+                    Broker.last_macd_config[(symbol.raw, resolution)] = set(macd_config)
 
             watcher = None
             id = Watcher(
                 [],
-                get_symbol(contract),
-                freq_map.get(resolution),
+                symbol,
+                freq,
                 reset=False,
             ).id()
 
-            ib_bars, new_subscriber = await SubscribeManager().subscribe(
-                contract,
-                barSize,
-                period_params.from_,
-                period_params.to,
-                period_params.countBack,
-            )
-
             logger.debug(
                 {
-                    "contract ": contract.symbol + contract.localSymbol,
+                    "contract ": symbol.raw,
                     "connect_state": SubscribeManager().ib.client.connState,
                     "use_cache": use_cache,
                     "peroid": period_params,
                     "config": macd_config,
-                    "new_subscriber": new_subscriber,
                     "id": id,
-                    "barSize": barSize,
+                    "freq": freq,
+                }
+            )
+
+            ib_bars, new_subscriber = await SubscribeManager().subscribe(
+                symbol,
+                freq,
+                period_params.from_,
+                period_params.to,
+                period_params.countBack,
+            )
+            logger.debug(
+                {
+                    "new_subscriber": new_subscriber,
                 }
             )
 
             if (new_subscriber or use_cache == False) and len(macd_config) > 0:
                 watcher = Watcher(
-                    SubscribeManager().raw_bars(contract, barSize),
-                    get_symbol(contract),
-                    freq_map.get(resolution),
+                    SubscribeManager().raw_bars(symbol, freq),
+                    symbol,
+                    freq,
                     Config(macd_config=macd_config),
                 )
-                SubscribeManager().remove_watcher(contract, barSize, watcher)
-                logger.warning(f"add watcher {id} {barSize} {watcher}")
-                SubscribeManager().add_watcher(contract, barSize, watcher)
+                SubscribeManager().remove_watcher(watcher)
+                logger.warning(f"add watcher {id} {freq} {watcher}")
+                SubscribeManager().upsert_watcher(watcher)
             elif len(macd_config) > 0:
                 watcher = SubscribeManager().get_watcher(
-                    contract,
-                    barSize,
+                    symbol,
+                    freq,
                     id,
                 )
-            # df = ib_insync.util.df(requester.bars[:5] + requester.bars[-6:])
+            # df = ib_insync.util.df(ib_bars[:5] + ib_bars[-10:])
             # df is not None and not df.empty and logger.debug(f"ib bars:\n {df}")
             return [
                 Bar(
@@ -188,7 +180,6 @@ class Broker(object):
                         calendar.timegm(bar.date.timetuple())
                     ).timestamp()
                     + timedelta(hours=1).total_seconds(),
-                    # bar.date.timestamp() * 1000,
                     close=bar.close,
                     open=bar.open,
                     high=bar.high,
@@ -198,6 +189,5 @@ class Broker(object):
                 for bar in ib_bars
             ], watcher
         except Exception as e:
-            logger.warning(f"exception =========={e}")
-            raise e
+            logger.exception(f"exception ==========")
             return None, None

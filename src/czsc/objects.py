@@ -199,9 +199,9 @@ def create_fake_bis(fxs: List[FX]) -> List[FakeBI]:
 @dataclass
 class BI:
     symbol: str
-    fx_a: FX    # 笔开始的分型
-    fx_b: FX    # 笔结束的分型
-    fxs: List   # 笔内部的分型列表
+    fx_a: FX  # 笔开始的分型
+    fx_b: FX  # 笔结束的分型
+    fxs: List  # 笔内部的分型列表
     direction: Direction
     bars: List[NewBar] = field(default_factory=list)
     cache: dict = field(default_factory=dict)  # cache 用户缓存
@@ -411,6 +411,13 @@ class ZS:
 
 
 @dataclass
+class Shape:
+    type: str
+    start_ts: int
+    end_ts: int
+
+
+@dataclass
 class Signal:
     signal: str = ""
 
@@ -427,6 +434,7 @@ class Signal:
     v2: str = "任意"
     v3: str = "任意"
 
+    shape: Shape = None
     # 任意 出现在模板信号中可以指代任何值
 
     def __post_init__(self):

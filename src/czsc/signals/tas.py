@@ -95,8 +95,9 @@ def update_macd_cache(c: CZSC, **kwargs):
     fastperiod = int(kwargs.get("fastperiod", 12))
     slowperiod = int(kwargs.get("slowperiod", 26))
     signalperiod = int(kwargs.get("signalperiod", 9))
-
-    cache_key = f"MACD{fastperiod}#{slowperiod}#{signalperiod}"
+    source = str(kwargs.get("source", 9))
+    
+    cache_key = f"MACD#{source}#{fastperiod}#{slowperiod}#{signalperiod}"
     if c.bars_raw[-1].cache and c.bars_raw[-1].cache.get(cache_key, None):
         # 如果最后一根K线已经有对应的缓存，不执行更新
         return cache_key

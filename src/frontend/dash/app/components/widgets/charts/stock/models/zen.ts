@@ -34,6 +34,7 @@ export interface Beichi {
     end: End;
     high: number;
     low: number;
+    type: string;
 }
 
 export interface Start {

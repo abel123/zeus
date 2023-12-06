@@ -15,7 +15,3 @@ def timedelta_to_duration_str(duration: timedelta) -> str:
         return f"{math.ceil(duration.total_seconds()*1.0/timedelta(1).total_seconds()):.0f} D"
     else:
         return f"{max(30, duration.total_seconds()):.0f} S"
-
-
-def get_symbol(contract: Contract):
-    return contract.symbol if contract.symbol != "" else contract.localSymbol

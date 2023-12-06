@@ -56,7 +56,7 @@ export const TVChartContainer = (
             custom_indicators_getter: (pineJs: PineJS) => {
                 return Promise.resolve([macd_xd(pineJs)]);
             },
-            enabled_features: ["hide_left_toolbar_by_default"],
+            enabled_features: ["hide_left_toolbar_by_default", "pre_post_market_sessions"],
             charts_storage_url: props.charts_storage_url,
             charts_storage_api_version: props.charts_storage_api_version,
             client_id: props.client_id,

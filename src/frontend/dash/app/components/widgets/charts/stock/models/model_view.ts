@@ -72,11 +72,11 @@ export class ModelView {
             false,
             {
                 firstPeriods: 5,
-                secondPeriods: 10,
-                thirdPeriods: 20,
-                fourthPeriods: 30,
-                fifthPeriods: 60,
-                sixthPeriods: 120,
+                secondPeriods: 15,
+                thirdPeriods: 30,
+                fourthPeriods: 60,
+                fifthPeriods: 120,
+                sixthPeriods: 200,
                 method: "Simple",
             },
             {
@@ -139,22 +139,23 @@ export class ModelView {
 
                 chart.selection().clear();
                 response.data.bi.finished.forEach((bi: BiInfo) => {
-                    if (bi.end_ts >= range.from) {
-                        let bi_id = chart.createMultipointShape(
-                            [
-                                { price: bi.start, time: bi.start_ts },
-                                { price: bi.end, time: bi.end_ts },
-                            ],
-                            {
-                                shape: "trend_line",
-                                //disableSelection: true,
-                                showInObjectsTree: false,
-                                lock: true,
-                                text: "test",
-                            }
-                        );
-                        if (bi_id !== null) chart.selection().add(bi_id);
+                    if (bi.end_ts < range.from) {
+                        return;
                     }
+                    let bi_id = chart.createMultipointShape(
+                        [
+                            { price: bi.start, time: bi.start_ts },
+                            { price: bi.end, time: bi.end_ts },
+                        ],
+                        {
+                            shape: "trend_line",
+                            //disableSelection: true,
+                            showInObjectsTree: false,
+                            lock: true,
+                            text: "test",
+                        }
+                    );
+                    if (bi_id !== null) chart.selection().add(bi_id);
                 });
                 if (!chart.selection().isEmpty()) {
                     let group_id = chart.shapesGroupController().createGroupFromSelection();
@@ -192,6 +193,13 @@ export class ModelView {
 
                 response.data.beichi.forEach((bc_list: Beichi[], index: number) => {
                     bc_list.forEach((bc: Beichi) => {
+                        if (bc.macd_b_dt < range.from) {
+                            return;
+                        }
+                        let color = bc.direction == "down" ? "rgba(255, 20, 147, 1)" : "rgba(0, 206, 9, 1)";
+                        if (bc.type == "area") {
+                            color = bc.direction == "down" ? "rgba(255, 20, 147, 1)" : "rgba(0, 206, 9, 1)";
+                        }
                         let bc_id = chart.createMultipointShape(
                             [
                                 { price: bc.macd_a_val, time: bc.macd_a_dt },
@@ -202,9 +210,9 @@ export class ModelView {
                                 lock: true,
                                 text: JSON.stringify({ type: "beichi", data: bc }),
                                 overrides: {
-                                    //linestyle: 1,
-                                    linewidth: 2,
-                                    linecolor: bc.direction == "down" ? "#ff1493" : "#00ce09",
+                                    linestyle: 0,
+                                    linewidth: bc.type == "area" ? 1.5 : 2.3,
+                                    linecolor: color,
                                 },
                                 ownerStudyId: this.macd_indicator_id[index] ?? undefined,
                                 zOrder: "top",

@@ -5,6 +5,7 @@ from backend.curd.sqllite.model import SymbolExecutor
 
 from backend.datafeed import tv_model
 from backend.datafeed.api import DataFeed
+from backend.utils.options import Options
 
 
 class UDF:
@@ -76,6 +77,8 @@ class UDF:
             executor=executor,
         )
         logger.debug(f"symbols --- {symbols}")
+        if Options().config().enable_overnight and symbol == "TSLA":
+            symbols[0].session = "0000-2300"
         return json(symbols[0].model_dump(mode="json", exclude_none=True))
 
     async def search_symbol(self, request: Request, executor: SymbolExecutor):

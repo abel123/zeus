@@ -2,11 +2,13 @@ import asyncio
 from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 import math
 from typing import Any, List
 from loguru import logger
 from pydantic import BaseModel
 from backend.datafeed.tv_model import MacdConfig
+from backend.utils.convert import local_time
 from backend.utils.notify import Notify
 from czsc.analyze import CZSC
 from czsc.enum import Direction, Freq
@@ -26,7 +28,9 @@ class Config(BaseModel):
     macd_config: List[MacdConfig]
     di: int = 1
     th: int = 90
-
+class BCType(Enum):
+    AREA_WITH_DIFF="area_with_diff"
+    AREA = "area"
 
 class MACDArea:
     class RecordCache(OrderedDict):
@@ -42,7 +46,7 @@ class MACDArea:
                     asyncio.ensure_future(
                         Notify.send(
                         title=bc.bi_a.fx_a.raw_bars[-1].symbol+" "+ str(bc.bi_a.fx_a.raw_bars[-1].freq)+" "+ ("顶" if bc.direction == Direction.Up else "底") + "背驰",
-                        message=f"{bc.bi_a.sdt.strftime("%Y-%m-%d %H:%M:%S")} - {bc.bi_b.sdt.strftime("%Y-%m-%d %H:%M:%S")}",
+                        message=f"{local_time(bc.bi_a.sdt).strftime("%Y-%m-%d %H:%M:%S")} - {local_time(bc.bi_b.sdt).strftime("%Y-%m-%d %H:%M:%S")}",
                         sound=True
                     )
                 )
@@ -52,6 +56,7 @@ class MACDArea:
             return super().__setitem__(__key, __value)
 
         ...
+
 
     @dataclass
     class BC:
@@ -65,6 +70,7 @@ class MACDArea:
         macd_b_val: float
         zs: ZS
         direction: Direction
+        type: BCType
 
         @property
         def high(self):
@@ -90,7 +96,7 @@ class MACDArea:
             try:
                 self.macd_area_bc_single(key, c, key, has_new_bar)
             except Exception as e:
-                logger.error(e)
+                logger.exception(e)
                 ...
 
     def on_bi_break(self, bi: BI):
@@ -159,7 +165,7 @@ class MACDArea:
 
             # 假定离开中枢的都是一笔
             zs = ZS(bis[1:-1])
-            if not zs.is_valid:  # 如果中枢不成立，往下进行
+            if not zs.is_valid or len(bis[-1].raw_bars) < 1:  # 如果中枢不成立，往下进行
                 continue
 
             bi1, bi2 = bis[0], bis[-1]
@@ -185,13 +191,14 @@ class MACDArea:
 
             min_low = min(x.low for x in bis)
             max_high = max(x.high for x in bis)
+            type=BCType.AREA
 
             if (
                 bi1.direction == Direction.Up
                 and bi1.low == min_low
                 and bi2.high == max_high
                 and (dif_zero <= 0.00001 or math.fabs(dif_zero) < math.fabs(bi1_dif)/4)
-                and bi1_dif > bi2_dif > 0
+                and (bi1_dif > 0 and bi2_dif >0 )
             ):
                 macd_a = max(
                     [
@@ -203,7 +210,11 @@ class MACDArea:
                 )
                 macd_b = max(
                     bi2.raw_bars[1:-1], key=lambda bar: bar.cache[cache_key]["macd"]
-                )
+                ) if len(bi2.raw_bars[1:-1])>0 else bi2.raw_bars[-1]
+
+                if bi1_dif > bi2_dif > 0:
+                    type = BCType.AREA_WITH_DIFF
+
                 if self.bc_set[index].get((bi1.sdt, bi2.sdt)) == None:
                     #logger.debug(f"upsert {bi1.sdt}-{bi2.sdt}")
                     self.bc_set[index][(bi1.sdt, bi2.sdt)] = MACDArea.BC(
@@ -216,6 +227,7 @@ class MACDArea:
                     zs=zs,
                     area_a=bi1_area,
                     area_b=bi2_area,
+                    type=type,
                     direction=bi1.direction,
                 )
 
@@ -226,14 +238,17 @@ class MACDArea:
                 and bi1.high == max_high
                 and bi2.low == min_low
                 and (dif_zero >= -0.00001 or math.fabs(dif_zero) < math.fabs(bi1_dif)/4)
-                and bi1_dif < bi2_dif < 0
+                and (bi1_dif < 0 and bi2_dif < 0)
             ):
                 macd_a = min(
                     bi1.raw_bars[1:-1], key=lambda bar: bar.cache[cache_key]["macd"]
                 )
                 macd_b = min(
                     bi2.raw_bars[1:-1], key=lambda bar: bar.cache[cache_key]["macd"]
-                )
+                ) if len(bi2.raw_bars[1:-1])>0 else bi2.raw_bars[-1]
+                if bi1_dif < bi2_dif < 0:
+                    type = BCType.AREA_WITH_DIFF
+
                 if self.bc_set[index].get((bi1.sdt, bi2.sdt)) == None:
                     self.bc_set[index][(bi1.sdt, bi2.sdt)] = MACDArea.BC(
                     bi_a=bi1,
@@ -244,6 +259,7 @@ class MACDArea:
                     macd_b_val=macd_b.cache[cache_key]["macd"],
                     zs=zs,
                     area_a=bi1_area,
+                    type=type,
                     area_b=bi2_area,
                     direction=bi1.direction,
                 )

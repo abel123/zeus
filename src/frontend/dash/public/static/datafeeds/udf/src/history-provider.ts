@@ -1,8 +1,8 @@
-import {Bar, HistoryMetadata, LibrarySymbolInfo, PeriodParams,} from '../../../charting_library/datafeed-api';
+import { Bar, HistoryMetadata, LibrarySymbolInfo, PeriodParams } from "../../../charting_library/datafeed-api";
 
-import {getErrorMessage, RequestParams, UdfErrorResponse, UdfOkResponse, UdfResponse,} from './helpers';
+import { getErrorMessage, RequestParams, UdfErrorResponse, UdfOkResponse, UdfResponse } from "./helpers";
 
-import {IRequester} from './irequester';
+import { IRequester } from "./irequester";
 
 // tslint:disable: no-any
 interface HistoryPartialDataResponse extends UdfOkResponse {
@@ -12,14 +12,6 @@ interface HistoryPartialDataResponse extends UdfOkResponse {
     h?: never;
     l?: never;
     v?: never;
-    bis?: any;
-    xds?: any;
-    zsds?: any;
-    bi_zss?: any;
-    xd_zss?: any;
-    zsd_zss?: any;
-    bcs?: any;
-    mmds?: any;
 }
 
 interface HistoryFullDataResponse extends UdfOkResponse {
@@ -41,13 +33,13 @@ interface HistoryFullDataResponse extends UdfOkResponse {
 
 // tslint:enable: no-any
 interface HistoryNoDataResponse extends UdfResponse {
-    s: 'no_data';
+    s: "no_data";
     nextTime?: number;
 }
 
 type HistoryResponse = HistoryFullDataResponse | HistoryPartialDataResponse | HistoryNoDataResponse;
 
-export type PeriodParamsWithOptionalCountback = Omit<PeriodParams, 'countBack'> & { countBack?: number };
+export type PeriodParamsWithOptionalCountback = Omit<PeriodParams, "countBack"> & { countBack?: number };
 
 export interface GetBarsResult {
     bars: Bar[];
@@ -76,7 +68,7 @@ export interface LimitedResponseConfiguration {
      * response then `expectedOrder` specifies whether the server
      * will send the latest (newest) or earliest (older) data first.
      */
-    expectedOrder: 'latestFirst' | 'earliestFirst';
+    expectedOrder: "latestFirst" | "earliestFirst";
 }
 
 export class HistoryProvider {
@@ -102,7 +94,7 @@ export class HistoryProvider {
         periodParams: PeriodParamsWithOptionalCountback
     ): Promise<GetBarsResult> {
         const requestParams: RequestParams = {
-            symbol: symbolInfo.ticker || '',
+            symbol: symbolInfo.ticker || "",
             resolution: resolution,
             from: periodParams.from,
             to: periodParams.to,
@@ -123,49 +115,44 @@ export class HistoryProvider {
             requestParams.unitId = symbolInfo.unit_id;
         }
 
-        return new Promise(
-            async (
-                resolve: (result: GetBarsResult) => void,
-                reject: (reason: string) => void
-            ) => {
-                try {
-                    const initialResponse = await this._requester.sendRequest<HistoryResponse>(
-                        this._datafeedUrl,
-                        'history',
-                        requestParams
-                    );
-                    const result = this._processHistoryResponse(initialResponse, requestParams);
+        return new Promise(async (resolve: (result: GetBarsResult) => void, reject: (reason: string) => void) => {
+            try {
+                const initialResponse = await this._requester.sendRequest<HistoryResponse>(
+                    this._datafeedUrl,
+                    "history",
+                    requestParams
+                );
+                const result = this._processHistoryResponse(initialResponse, requestParams);
 
-                    if (this._limitedServerResponse) {
-                        await this._processTruncatedResponse(result, requestParams);
-                    }
-                    resolve(result);
-                } catch (e: unknown) {
-                    if (e instanceof Error || typeof e === 'string') {
-                        const reasonString = getErrorMessage(e);
-                        // tslint:disable-next-line:no-console
-                        console.warn(
-                            `HistoryProvider: getBars() failed, error=${reasonString}`
-                        );
-                        reject(reasonString);
-                    }
+                if (this._limitedServerResponse) {
+                    await this._processTruncatedResponse(result, requestParams);
+                }
+                resolve(result);
+            } catch (e: unknown) {
+                if (e instanceof Error || typeof e === "string") {
+                    const reasonString = getErrorMessage(e);
+                    // tslint:disable-next-line:no-console
+                    console.warn(`HistoryProvider: getBars() failed, error=${reasonString}`);
+                    reject(reasonString);
                 }
             }
-        );
+        });
     }
 
     private async _processTruncatedResponse(result: GetBarsResult, requestParams: RequestParams) {
         let lastResultLength = result.bars.length;
         try {
-            while (this._limitedServerResponse &&
-            this._limitedServerResponse.maxResponseLength > 0 &&
-            this._limitedServerResponse.maxResponseLength === lastResultLength &&
-            requestParams.from < requestParams.to) {
+            while (
+                this._limitedServerResponse &&
+                this._limitedServerResponse.maxResponseLength > 0 &&
+                this._limitedServerResponse.maxResponseLength === lastResultLength &&
+                requestParams.from < requestParams.to
+            ) {
                 // adjust request parameters for follow-up request
                 if (requestParams.countback) {
                     requestParams.countback = (requestParams.countback as number) - lastResultLength;
                 }
-                if (this._limitedServerResponse.expectedOrder === 'earliestFirst') {
+                if (this._limitedServerResponse.expectedOrder === "earliestFirst") {
                     requestParams.from = Math.round(result.bars[result.bars.length - 1].time / 1000);
                 } else {
                     requestParams.to = Math.round(result.bars[0].time / 1000);
@@ -173,15 +160,13 @@ export class HistoryProvider {
 
                 const followupResponse = await this._requester.sendRequest<HistoryResponse>(
                     this._datafeedUrl,
-                    'history',
+                    "history",
                     requestParams
                 );
-                const followupResult = this._processHistoryResponse(
-                    followupResponse, requestParams
-                );
+                const followupResult = this._processHistoryResponse(followupResponse, requestParams);
                 lastResultLength = followupResult.bars.length;
                 // merge result with results collected so far
-                if (this._limitedServerResponse.expectedOrder === 'earliestFirst') {
+                if (this._limitedServerResponse.expectedOrder === "earliestFirst") {
                     if (followupResult.bars[0].time === result.bars[result.bars.length - 1].time) {
                         // Datafeed shouldn't include a value exactly matching the `to` timestamp but in case it does
                         // we will remove the duplicate.
@@ -202,18 +187,16 @@ export class HistoryProvider {
              * Error occurred during followup request. We won't reject the original promise
              * because the initial response was valid so we will return what we've got so far.
              */
-            if (e instanceof Error || typeof e === 'string') {
+            if (e instanceof Error || typeof e === "string") {
                 const reasonString = getErrorMessage(e);
                 // tslint:disable-next-line:no-console
-                console.warn(
-                    `HistoryProvider: getBars() warning during followup request, error=${reasonString}`
-                );
+                console.warn(`HistoryProvider: getBars() warning during followup request, error=${reasonString}`);
             }
         }
     }
 
     private _processHistoryResponse(response: HistoryResponse | UdfErrorResponse, requestParams: RequestParams) {
-        if (response.s !== 'ok' && response.s !== 'no_data') {
+        if (response.s !== "ok" && response.s !== "no_data") {
             throw new Error(response.errmsg);
         }
 
@@ -242,23 +225,14 @@ export class HistoryProvider {
             zsd_zss: zsd_zss,
             bcs: bcs,
             mmds: mmds,
-        }
+        };
 
-        if (response.s === 'no_data') {
+        if (response.s === "no_data") {
             meta.noData = true;
             meta.nextTime = response.nextTime;
         } else {
             const volumePresent = response.v !== undefined;
             const ohlPresent = response.o !== undefined;
-
-            bis = response.bis;
-            xds = response.xds;
-            zsds = response.zsds;
-            bi_zss = response.bi_zss;
-            xd_zss = response.xd_zss;
-            zsd_zss = response.zsd_zss;
-            bcs = response.bcs;
-            mmds = response.mmds;
 
             for (let i = 0; i < response.t.length; ++i) {
                 const barValue: Bar = {
@@ -284,26 +258,17 @@ export class HistoryProvider {
             let result = {
                 bars: bars,
                 meta: meta,
-                bis: bis,
-                xds: xds,
-                zsds: zsds,
-                bi_zss: bi_zss,
-                xd_zss: xd_zss,
-                zsd_zss: zsd_zss,
-                bcs: bcs,
-                mmds: mmds,
-            }
-            let obj_res = this.bars_result.get(requestParams['symbol'].toString().toLowerCase())
+            };
+            let obj_res = this.bars_result.get(requestParams["symbol"].toString().toLowerCase());
             if (obj_res == undefined) {
                 let obj_res: Map<String, any> = new Map();
-                obj_res.set(requestParams['resolution'].toString().toLowerCase(), result)
-                this.bars_result.set(requestParams['symbol'].toString().toLowerCase(), obj_res);
+                obj_res.set(requestParams["resolution"].toString().toLowerCase(), result);
+                this.bars_result.set(requestParams["symbol"].toString().toLowerCase(), obj_res);
             } else {
-                obj_res.set(requestParams['resolution'].toString().toLowerCase(), result)
-                this.bars_result.set(requestParams['symbol'].toString().toLowerCase(), obj_res);
+                obj_res.set(requestParams["resolution"].toString().toLowerCase(), result);
+                this.bars_result.set(requestParams["symbol"].toString().toLowerCase(), obj_res);
             }
         }
-
 
         return result;
     }

@@ -170,6 +170,7 @@ def check_bi(bars: List[NewBar], benchmark=None):
                 return None, bars
 
             fx_b = fxs_b[0]
+
             for fx in fxs_b[1:]:
                 if fx.low <= fx_b.low:
                     fx_b = fx
@@ -194,7 +195,13 @@ def check_bi(bars: List[NewBar], benchmark=None):
         power_enough = False
 
     # 成笔的条件：1）顶底分型之间没有包含关系；2）笔长度大于等于min_bi_len 或 当前笔的涨跌幅已经够大
-    if (not ab_include) and (len(bars_a) >= min_bi_len or power_enough):
+    if (not ab_include) and (
+        (
+            len(bars_a) >= min_bi_len
+            and sum([len(bar.raw_bars) for bar in bars_a[1:-1]]) >= 5
+        )
+        or power_enough
+    ):
         fxs_ = [x for x in fxs if fx_a.elements[0].dt <= x.dt <= fx_b.elements[2].dt]
         bi = BI(
             symbol=fx_a.symbol,
@@ -206,6 +213,11 @@ def check_bi(bars: List[NewBar], benchmark=None):
         )
         return bi, bars_b
     else:
+        if envs.get_verbose():
+            logger.info(
+                f"{len(bars_a)} >= {min_bi_len} - {sum([len(bar.raw_bars) for bar in bars_a[1:-1]])} - {bars_a[1:-1]}"
+            )
+
         return None, bars
 
 
@@ -289,7 +301,6 @@ class CZSC:
         bi, bars_ubi_ = check_bi(bars_ubi, benchmark)
         self.bars_ubi = bars_ubi_
         if isinstance(bi, BI):
-            # print("bi ============ ", bi)
             if self.on_bi_create != None:
                 self.on_bi_create(bi)
             self.bi_list.append(bi)
@@ -308,12 +319,13 @@ class CZSC:
         ):
             # 当前笔被破坏，将当前笔的bars与bars_ubi进行合并，并丢弃，这里容易出错，多一根K线就可能导致错误
             # 必须是 -2，因为最后一根无包含K线有可能是未完成的
-            self.bars_ubi = last_bi.bars[:-2] + [
-                x for x in bars_ubi if x.dt >= last_bi.bars[-2].dt
-            ]
-            if self.on_bi_break != None:
-                self.on_bi_break(last_bi)
-            self.bi_list.pop(-1)
+            if len(last_bi.bars) >= 2:
+                self.bars_ubi = last_bi.bars[:-2] + [
+                    x for x in bars_ubi if x.dt >= last_bi.bars[-2].dt
+                ]
+                if self.on_bi_break != None:
+                    self.on_bi_break(last_bi)
+                self.bi_list.pop(-1)
 
     def update(self, bar: RawBar):
         """更新分析结果
@@ -494,20 +506,13 @@ class CZSC:
 
     @property
     def unfinished_bi(self):
-        if len(self.bars_ubi) < 5 and len(self.bi_list) > 0:
-            bi = self.bi_list[-1]
-            return {
-                "start_ts": int(bi.sdt.timestamp()),
-                "end_ts": int(bi.edt.timestamp()),
-                "start": bi.high if bi.direction == Direction.Down else bi.low,
-                "end": bi.low if bi.direction == Direction.Down else bi.high,
-                "direction": str(bi.direction),
-            }
         ubi_fxs = self.ubi_fxs
         if not self.bars_ubi or not self.bi_list or not ubi_fxs:
             return None
 
-        bars_raw = [y for x in self.bars_ubi for y in x.raw_bars]
+        bars_raw = self.bars_ubi[
+            1:
+        ]  # [y for x in self.bars_ubi[1:] for y in x.raw_bars]
         # 获取最高点和最低点，以及对应的时间
         high_bar = max(bars_raw, key=lambda x: x.high)
         low_bar = min(bars_raw, key=lambda x: x.low)
