@@ -9,9 +9,6 @@ class TslaOptionSignal:
     def __init__(self) -> None:
         self.tsla_price = 0.0
 
-    def id(self) -> str:
-        return f"{__name__}"
-
     def process(self, czsc: CZSC, new_bar: bool):
         last_bar = czsc.bars_raw[-1]
         if czsc.symbol == "TSLA":

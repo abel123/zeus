@@ -30,7 +30,7 @@ class ContractSignals(WatcherProtocol):
         self.reset()
 
     def id(self) -> str:
-        return f"{__name__}:{self.symbol.raw}-{self.freq}"
+        return f"{__name__}_{self.__class__.__name__}:{self.symbol.raw}-{self.freq}"
 
     def contracts(self) -> List[Tuple[Symbol, Freq]]:
         return [(self.symbol, self.freq)]
@@ -87,8 +87,8 @@ class MultipleContractSignals(WatcherProtocol):
     def id(self) -> str:
         id = ""
         for cs in self.contract_signals:
-            id = id + "|" + cs.id()
-        return f"{__name__}:{id}"
+            id = id + f"{cs.symbol}-{cs.freq.value} "
+        return f"{__name__}_{self.__class__.__name__}:[ {id}] "
 
     def contracts(self) -> List[Tuple[Symbol, Freq]]:
         result = []
@@ -129,7 +129,7 @@ class MultipleContractSignals(WatcherProtocol):
         if self.matcher is not None:
             self.matcher(events)
         if False and bar.freq == Freq.F1:
-            logger.warning(f"{local_time(bar.dt)}generated events {events}")
+            logger.warning(f"{local_time(bar.dt)} generated events {events}")
         return events
 
     def reset(self):

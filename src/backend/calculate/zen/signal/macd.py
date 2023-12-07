@@ -1,10 +1,11 @@
 import asyncio
 from collections import OrderedDict
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 import math
 from typing import Any, List
+from desktop_notifier import Urgency
 from loguru import logger
 from pydantic import BaseModel
 from backend.datafeed.tv_model import MacdConfig
@@ -40,20 +41,26 @@ class MACDArea:
             self.enable_notify = enable_notify
 
         def __setitem__(self, __key: Any, __value: Any) -> None:
+            super().__setitem__(__key, __value)
             try:
                 bc: MACDArea.BC = __value
                 if self.enable_notify:
+                    if bc.bi_a.raw_bars[-1].freq in [Freq.F1, Freq.F3, Freq.F5, Freq.F10, Freq.F15] and \
+                        bc.bi_b.edt.timestamp() < datetime.now().timestamp()-timedelta(minutes=10).total_seconds():
+                        return
                     asyncio.ensure_future(
                         Notify.send(
                         title=bc.bi_a.fx_a.raw_bars[-1].symbol+" "+ str(bc.bi_a.fx_a.raw_bars[-1].freq)+" "+ ("顶" if bc.direction == Direction.Up else "底") + "背驰",
                         message=f"{local_time(bc.bi_a.sdt).strftime("%Y-%m-%d %H:%M:%S")} - {local_time(bc.bi_b.sdt).strftime("%Y-%m-%d %H:%M:%S")}",
-                        sound=True
+                        sound=True,
+                        thread="背驰",
+                        urgency=Urgency.Critical
                     )
                 )
             except Exception as e:
-                logger.warning(f"notify err {e}")
+                logger.exception(f"notify err {e}")
                 ...
-            return super().__setitem__(__key, __value)
+            return None
 
         ...
 

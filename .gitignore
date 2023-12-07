@@ -163,3 +163,4 @@ cython_debug/
 ./TODO.md
 ./src/error.log
 ./src/warning.log
+.DS_Store

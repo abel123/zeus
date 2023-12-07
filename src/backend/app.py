@@ -3,21 +3,18 @@ import dataclasses
 from datetime import datetime, timedelta
 import time
 from typing import List
-from ib_insync import Stock
-from pydantic import BaseModel, Field
 from sanic import Request, Sanic, json
 from sanic.response import html
 from sanic_ext import Extend
 
 import socketio
 from mayim.extension import SanicMayimExtension
-from backend.broker.ib.broker import Broker
 from backend.broker.futu.broker import Broker as FutuBroker
 
-from backend.broker.ib.options import get_tsla_option_list
 from backend.broker.ib.subscribe_manager import SubscribeManager
 from backend.calculate.custom.ma_hit import MAHit
 from backend.calculate.custom.macd_area import MACDArea
+from backend.calculate.custom.matcher import DefaultMatcher
 from backend.calculate.custom.mix_in import ContractSignals, MultipleContractSignals
 from backend.calculate.custom.quanty_price_reverse import QPReverseSignals
 from backend.calculate.protocol import Symbol, SymbolType
@@ -36,8 +33,6 @@ import nest_asyncio
 
 nest_asyncio.apply()
 
-sio = socketio.AsyncServer(async_mode="sanic")
-
 d = log.LOGGING_CONFIG_DEFAULTS
 d["handlers"]["console"]["class"] = "backend.utils.logger.InterceptHandler"
 d["handlers"]["error_console"]["class"] = "backend.utils.logger.InterceptHandler"
@@ -47,7 +42,6 @@ del d["handlers"]["error_console"]["stream"]
 del d["handlers"]["access_console"]["stream"]
 
 app = Sanic(name="zeus", log_config=d)
-sio.attach(app)
 app.config.CORS_ORIGINS = "*"
 UDF(app)
 
@@ -98,7 +92,9 @@ async def after_server_start(sanic, loop):
         Freq.F60,
         [MAHit()],
     )
-    mcs = MultipleContractSignals([cs_f1, cs_f3, cs_f5, cs_f15, cs_f30, cs_f10, cs_f60])
+    mcs = MultipleContractSignals(
+        [cs_f1, cs_f3, cs_f5, cs_f15, cs_f30, cs_f10, cs_f60], DefaultMatcher.match
+    )
     SubscribeManager().upsert_watcher(mcs)
 
 
@@ -121,22 +117,6 @@ async def write_access_log(request, response):
     logger.info(
         f"{remote} {request.method} {request.url} {response.status} {body_byte} {spent_time}ms",
     )
-
-
-@app.route("/")
-async def index(request):
-    with open("app.html") as f:
-        return html(f.read())
-
-
-@sio.event
-async def connect(sid, environ):
-    await sio.emit("my_response", {"data": "Connected", "count": 0}, room=sid)
-
-
-@sio.event
-def disconnect(sid):
-    print("Client disconnected")
 
 
 app.static("/static", "./static")

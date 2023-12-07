@@ -4,6 +4,7 @@ from typing import List
 
 from pydantic import BaseModel
 from backend.datafeed.tv_model import MacdConfig
+from backend.utils.convert import local_time
 from czsc.analyze import CZSC
 from czsc.enum import Direction
 from czsc.objects import ZS, Signal

@@ -176,10 +176,10 @@ class Broker(object):
                 Bar(
                     time=bar.date.timestamp()
                     if isinstance(bar.date, datetime)
-                    else datetime.utcfromtimestamp(
+                    else datetime.fromtimestamp(
                         calendar.timegm(bar.date.timetuple())
                     ).timestamp()
-                    + timedelta(hours=1).total_seconds(),
+                    + timedelta(hours=5).total_seconds(),
                     close=bar.close,
                     open=bar.open,
                     high=bar.high,

@@ -5,8 +5,10 @@ email: zeng_bin8888@163.com
 create_dt: 2021/3/10 12:21
 describe: 常用对象结构
 """
+import asyncio
 import math
 import hashlib
+from desktop_notifier import Urgency
 import pandas as pd
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -14,6 +16,7 @@ from datetime import datetime
 from loguru import logger
 from deprecated import deprecated
 from typing import List, Callable, Dict
+from backend.utils.notify import Notify
 from czsc.enum import Mark, Direction, Freq, Operate
 from czsc.utils.corr import single_linear
 
@@ -434,7 +437,7 @@ class Signal:
     v2: str = "任意"
     v3: str = "任意"
 
-    shape: Shape = None
+    extra: str = ""
     # 任意 出现在模板信号中可以指代任何值
 
     def __post_init__(self):
@@ -451,7 +454,7 @@ class Signal:
                 score,
             ) = self.signal.split("_")
             self.score = int(score)
-
+        
         if self.score > 100 or self.score < 0:
             raise ValueError("score 必须在0~100之间")
 
@@ -491,6 +494,7 @@ class Signal:
         key = self.key
         v = s.get(key, None)
         if not v:
+            return False
             raise ValueError(f"{key} 不在信号列表中")
 
         v1, v2, v3, score = v.split("_")
@@ -514,6 +518,8 @@ class Factor:
     signals_not: List[Signal] = field(default_factory=list)
 
     name: str = ""
+
+    enable_notify: bool = False
 
     def __post_init__(self):
         if not self.signals_all:
@@ -547,12 +553,42 @@ class Factor:
                 return False
 
         if not self.signals_any:
+            self.notify(self.signals_all, self.signals_not, None)
             return True
 
         for signal in self.signals_any:
             if signal.is_match(s):
+                self.notify(self.signals_all, self.signals_not, signal)
                 return True
         return False
+
+    def notify(
+        self, signal_all: List[Signal], signal_not: List[Signal], signal_any: Signal
+    ):
+        if self.enable_notify == False:
+            return
+        msg = ""
+        if len(signal_all) > 0:
+            msg += "all:\n"
+            for s in self.signals_all:
+                msg += f"  {s.key} {s.value} {s.score}"
+        if len(signal_not) > 0:
+            msg += "not:\n"
+            for s in self.signals_all:
+                msg += f"  {s.key} {s.value} {s.score}"
+        if signal_any is not None:
+            msg += (
+                f"one in any:  {signal_any.key} {signal_any.value} {signal_any.score}"
+            )
+        asyncio.ensure_future(
+            Notify.send(
+                self.name,
+                message=msg,
+                urgency=Urgency.Critical,
+                sound=True,
+                thread="factor",
+            )
+        )
 
     def dump(self) -> dict:
         """将 Factor 对象转存为 dict"""
@@ -684,7 +720,7 @@ class Event:
         # 因子放入事件中时，建议因子列表按关注度从高到低排序
         for factor in self.factors:
             if factor.is_match(s):
-                return True, factor.name
+                return True, factor
 
         return False, None
 

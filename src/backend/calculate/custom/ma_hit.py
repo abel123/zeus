@@ -3,6 +3,7 @@ from math import fabs
 
 from loguru import logger
 from backend.calculate.protocol import Processor
+from backend.utils.convert import local_time
 from backend.utils.notify import Notify
 from czsc.analyze import CZSC
 from talipp.indicators import EMA, SMA
@@ -54,7 +55,11 @@ class MAHit(Processor):
                     v3=last_bar.freq.value,
                 )
                 asyncio.ensure_future(
-                    Notify.send(title=signal.key, message=signal.value, sound=True)
+                    Notify.send(
+                        title=signal.key,
+                        message=f"{local_time(last_bar.dt)} {signal.value}",
+                        sound=True,
+                    )
                 )
                 return Signal(
                     k1=k1,
