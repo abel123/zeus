@@ -22,4 +22,11 @@ class Notify:
         timeout: int = -1,
     ) -> Notification:
         if True or Notify.realtime is True:
-            await Notify._instance.send(title=title, message=message)
+            await Notify._instance.send(
+                title=title,
+                message=message,
+                urgency=urgency,
+                sound=sound,
+                thread=thread,
+                attachment=attachment,
+            )

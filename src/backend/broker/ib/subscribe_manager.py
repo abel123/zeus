@@ -103,6 +103,9 @@ class SubscribeManager(metaclass=SingletonABCMeta):
                 self.conn_lock.release()
 
     def _on_error(self, reqId, errorCode, errorString, contract):
+        logger.error(
+            f"ib error reqId: {reqId}, errCode:{errorCode}, errString: {errorString}, contract: {contract}"
+        )
         if errorCode == 1102:
             # "Connectivity between IB and Trader Workstation has been
             # restored": Resubscribe to account summary.

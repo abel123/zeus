@@ -7,7 +7,7 @@ from loguru import logger
 from backend.broker.ib.options import get_tsla_option_list
 from backend.calculate.custom.tsla_option_signal import TslaOptionSignal
 from backend.calculate.protocol import Processor, Symbol, WatcherProtocol
-from backend.utils.convert import to_czsc_bar
+from backend.utils.convert import local_time, to_czsc_bar
 from czsc.analyze import CZSC
 from czsc.enum import Freq
 from czsc.objects import RawBar, Signal
@@ -104,7 +104,12 @@ class MultipleContractSignals(WatcherProtocol):
             return
 
         cs = self.contract_to_signals.get((bar.symbol, bar.freq))
-        cs.on_bar_update(bar, new_bar, skip_event=True)
+
+        events: List[Signal] = []
+        evs = cs.on_bar_update(bar, new_bar)
+        if evs is not None:
+            events.extend(evs)
+
         if bar.freq == Freq.F1 and bar.symbol == "TSLA":
             self.tsla_price = bar.close
             # contracts = asyncio.get_event_loop().run_until_complete(
@@ -112,19 +117,19 @@ class MultipleContractSignals(WatcherProtocol):
             # )
             # logger.debug(f"contracts: {contracts[:5]}")
 
-        events: List[Signal] = []
-
         for k, v in self.contract_to_signals.items():
             # logger.debug(f"process events {k}")
-            if len(v.czsc.bars_raw) > 0:
+            if (cs.symbol.raw != bar.symbol or cs.freq != bar.freq) and len(
+                v.czsc.bars_raw
+            ) > 0:
                 evs = v.on_bar_update(v.czsc.bars_raw[-1], False, False)
                 if evs is not None:
                     events.extend(evs)
 
         if self.matcher is not None:
             self.matcher(events)
-
-        # logger.warning(f"generated events {events}")
+        if False and bar.freq == Freq.F1:
+            logger.warning(f"{local_time(bar.dt)}generated events {events}")
         return events
 
     def reset(self):

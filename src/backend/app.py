@@ -1,6 +1,6 @@
 import asyncio
 import dataclasses
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 from typing import List
 from ib_insync import Stock
@@ -16,6 +16,7 @@ from backend.broker.futu.broker import Broker as FutuBroker
 
 from backend.broker.ib.options import get_tsla_option_list
 from backend.broker.ib.subscribe_manager import SubscribeManager
+from backend.calculate.custom.ma_hit import MAHit
 from backend.calculate.custom.macd_area import MACDArea
 from backend.calculate.custom.mix_in import ContractSignals, MultipleContractSignals
 from backend.calculate.custom.quanty_price_reverse import QPReverseSignals
@@ -82,7 +83,22 @@ async def after_server_start(sanic, loop):
         Freq.F10,
         [MACDArea()],
     )
-    mcs = MultipleContractSignals([cs_f1, cs_f3, cs_f5, cs_f10])
+    cs_f15 = ContractSignals(
+        Symbol(raw="TSLA", type=SymbolType.STOCK),
+        Freq.F15,
+        [MACDArea()],
+    )
+    cs_f30 = ContractSignals(
+        Symbol(raw="TSLA", type=SymbolType.STOCK),
+        Freq.F30,
+        [MACDArea(), MAHit()],
+    )
+    cs_f60 = ContractSignals(
+        Symbol(raw="TSLA", type=SymbolType.STOCK),
+        Freq.F60,
+        [MAHit()],
+    )
+    mcs = MultipleContractSignals([cs_f1, cs_f3, cs_f5, cs_f15, cs_f30, cs_f10, cs_f60])
     SubscribeManager().upsert_watcher(mcs)
 
 
@@ -94,7 +110,8 @@ async def add_start_time(request):
 
 @app.middleware("response")
 async def write_access_log(request, response):
-    """Log access log."""
+    if request.method == "OPTIONS":
+        return
     spent_time = round((time.perf_counter() - request.ctx.start_time) * 1000)
     remote = f"{request.remote_addr or request.ip}:{request.port}"
     if response.body:
