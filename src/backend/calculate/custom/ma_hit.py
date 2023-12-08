@@ -17,9 +17,6 @@ class MAHit(Processor):
         super().__init__()
         self.sma = SMA(period=period)
 
-    def id(self) -> str:
-        return f"{__name__}"
-
     def process(self, czsc: CZSC, new_bar: bool):
         last_bar = czsc.bars_raw[-1]
 

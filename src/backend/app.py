@@ -12,6 +12,7 @@ from mayim.extension import SanicMayimExtension
 from backend.broker.futu.broker import Broker as FutuBroker
 
 from backend.broker.ib.subscribe_manager import SubscribeManager
+from backend.calculate.custom.fx_check import FxCheck
 from backend.calculate.custom.ma_hit import MAHit
 from backend.calculate.custom.macd_area import MACDArea
 from backend.calculate.custom.matcher import DefaultMatcher
@@ -60,37 +61,37 @@ async def after_server_start(sanic, loop):
     cs_f1 = ContractSignals(
         Symbol(raw="TSLA", type=SymbolType.STOCK),
         Freq.F1,
-        [QPReverseSignals(), MACDArea()],
+        [QPReverseSignals(), MACDArea(), FxCheck()],
     )
     cs_f3 = ContractSignals(
         Symbol(raw="TSLA", type=SymbolType.STOCK),
         Freq.F3,
-        [MACDArea()],
+        [MACDArea(), FxCheck()],
     )
     cs_f5 = ContractSignals(
         Symbol(raw="TSLA", type=SymbolType.STOCK),
         Freq.F5,
-        [MACDArea()],
+        [MACDArea(), FxCheck()],
     )
     cs_f10 = ContractSignals(
         Symbol(raw="TSLA", type=SymbolType.STOCK),
         Freq.F10,
-        [MACDArea()],
+        [MACDArea(), FxCheck()],
     )
     cs_f15 = ContractSignals(
         Symbol(raw="TSLA", type=SymbolType.STOCK),
         Freq.F15,
-        [MACDArea()],
+        [MACDArea(), FxCheck()],
     )
     cs_f30 = ContractSignals(
         Symbol(raw="TSLA", type=SymbolType.STOCK),
         Freq.F30,
-        [MACDArea(), MAHit()],
+        [MACDArea(), MAHit(), FxCheck()],
     )
     cs_f60 = ContractSignals(
         Symbol(raw="TSLA", type=SymbolType.STOCK),
         Freq.F60,
-        [MAHit()],
+        [MAHit(), FxCheck()],
     )
     mcs = MultipleContractSignals(
         [cs_f1, cs_f3, cs_f5, cs_f15, cs_f30, cs_f10, cs_f60], DefaultMatcher.match

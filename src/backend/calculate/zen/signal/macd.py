@@ -176,8 +176,8 @@ class MACDArea:
                 continue
 
             bi1, bi2 = bis[0], bis[-1]
-            bi1_macd = [x.cache[cache_key]["macd"] for x in bi1.raw_bars[1:-1]]
-            bi2_macd = [x.cache[cache_key]["macd"] for x in bi2.raw_bars[1:-1]]
+            bi1_macd = [x.cache[cache_key]["macd"] for x in bi1.raw_bars]
+            bi2_macd = [x.cache[cache_key]["macd"] for x in bi2.raw_bars]
 
             bi1_dif = bi1.raw_bars[-1].cache[cache_key]["dif"]
             bi2_dif = bi2.raw_bars[-1].cache[cache_key]["dif"]
@@ -210,14 +210,14 @@ class MACDArea:
                 macd_a = max(
                     [
                         bar
-                        for bar in bi1.raw_bars[1:-1]
+                        for bar in bi1.raw_bars
                         if not math.isnan(bar.cache[cache_key]["macd"])
                     ],
                     key=lambda bar: bar.cache[cache_key]["macd"],
                 )
                 macd_b = max(
-                    bi2.raw_bars[1:-1], key=lambda bar: bar.cache[cache_key]["macd"]
-                ) if len(bi2.raw_bars[1:-1])>0 else bi2.raw_bars[-1]
+                    bi2.raw_bars, key=lambda bar: bar.cache[cache_key]["macd"]
+                ) if len(bi2.raw_bars)>0 else bi2.raw_bars[-1]
 
                 if bi1_dif > bi2_dif > 0:
                     type = BCType.AREA_WITH_DIFF
@@ -248,11 +248,11 @@ class MACDArea:
                 and (bi1_dif < 0 and bi2_dif < 0)
             ):
                 macd_a = min(
-                    bi1.raw_bars[1:-1], key=lambda bar: bar.cache[cache_key]["macd"]
+                    bi1.raw_bars, key=lambda bar: bar.cache[cache_key]["macd"]
                 )
                 macd_b = min(
-                    bi2.raw_bars[1:-1], key=lambda bar: bar.cache[cache_key]["macd"]
-                ) if len(bi2.raw_bars[1:-1])>0 else bi2.raw_bars[-1]
+                    bi2.raw_bars, key=lambda bar: bar.cache[cache_key]["macd"]
+                ) if len(bi2.raw_bars)>0 else bi2.raw_bars[-1]
                 if bi1_dif < bi2_dif < 0:
                     type = BCType.AREA_WITH_DIFF
 

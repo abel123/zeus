@@ -9,7 +9,7 @@ from loguru import logger
 import pytz
 from backend.broker.ib.util import timedelta_to_duration_str
 from backend.calculate.protocol import Symbol, SymbolType, WatcherProtocol
-from backend.utils.convert import to_czsc_bar
+from backend.utils.model_convert import to_czsc_bar
 from backend.utils.magic import SingletonABCMeta
 from backend.utils.options import Options
 from czsc.enum import Freq

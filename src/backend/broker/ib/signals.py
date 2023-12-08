@@ -1,5 +1,4 @@
 from datetime import datetime
-import traceback
 from typing import Dict, List, Tuple
 
 from ib_insync import BarData, BarDataList
@@ -9,7 +8,7 @@ from backend.calculate.protocol import Symbol, SymbolType
 from backend.calculate.zen import signal
 from backend.calculate.zen.signal.macd import MACDArea
 from backend.datafeed.tv_model import MacdConfig
-from backend.utils.convert import to_czsc_bar
+from backend.utils.model_convert import to_czsc_bar
 from czsc.analyze import CZSC
 from czsc.enum import Freq
 from czsc.objects import RawBar

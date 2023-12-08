@@ -3,6 +3,7 @@ import math
 from typing import List
 
 from pydantic import BaseModel
+from backend.calculate.protocol import Processor
 from backend.datafeed.tv_model import MacdConfig
 from backend.utils.convert import local_time
 from czsc.analyze import CZSC
@@ -30,7 +31,7 @@ class Config(BaseModel):
     th: int = 90
 
 
-class MACDArea:
+class MACDArea(Processor):
     def __init__(
         self,
         config: Config = Config(
@@ -104,8 +105,8 @@ class MACDArea:
                 continue
 
             bi1, bi2 = bis[0], bis[-1]
-            bi1_macd = [x.cache[cache_key]["macd"] for x in bi1.raw_bars[1:-1]]
-            bi2_macd = [x.cache[cache_key]["macd"] for x in bi2.raw_bars[1:-1]]
+            bi1_macd = [x.cache[cache_key]["macd"] for x in bi1.raw_bars]
+            bi2_macd = [x.cache[cache_key]["macd"] for x in bi2.raw_bars]
 
             bi1_dif = bi1.raw_bars[-1].cache[cache_key]["dif"]
             bi2_dif = bi2.raw_bars[-1].cache[cache_key]["dif"]
@@ -139,7 +140,7 @@ class MACDArea:
                 if bi1_dif > bi2_dif > 0:
                     score = 100
 
-                return Signal(k1=k1, k2=k2, k3=k3, v1="顶背", v2=f"{n}笔", score=score)
+                return Signal(k1=k1, k2=k2, k3=k3, v1="顶", v2=f"{n}笔", score=score)
 
             if (
                 bi1.direction == Direction.Down
@@ -153,7 +154,7 @@ class MACDArea:
                 if bi1_dif < bi2_dif < 0:
                     score = 100
 
-                return Signal(k1=k1, k2=k2, k3=k3, v1="底背", v2=f"{n}笔", score=score)
+                return Signal(k1=k1, k2=k2, k3=k3, v1="底", v2=f"{n}笔", score=score)
 
         return Signal(k1=k1, k2=k2, k3=k3, v1=v1)
 

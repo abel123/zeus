@@ -25,10 +25,6 @@ class Symbol(BaseModel):
 
 class Processor(Protocol):
     @abstractmethod
-    def id(self) -> str:
-        ...
-
-    @abstractmethod
     def process(self, czsc: CZSC, new_bar: bool):
         ...
 

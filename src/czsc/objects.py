@@ -16,6 +16,7 @@ from datetime import datetime
 from loguru import logger
 from deprecated import deprecated
 from typing import List, Callable, Dict
+from backend.utils.convert import local_time, local_time_str
 from backend.utils.notify import Notify
 from czsc.enum import Mark, Direction, Freq, Operate
 from czsc.utils.corr import single_linear
@@ -454,7 +455,7 @@ class Signal:
                 score,
             ) = self.signal.split("_")
             self.score = int(score)
-        
+
         if self.score > 100 or self.score < 0:
             raise ValueError("score 必须在0~100之间")
 
@@ -541,48 +542,59 @@ class Factor:
         signals = {x.signal if isinstance(x, Signal) else x for x in signals}
         return list(signals)
 
-    def is_match(self, s: dict) -> bool:
+    def is_match(self, s: dict, dt: datetime) -> bool:
         """判断 factor 是否满足"""
+        score_all, score_not = [], []
         if self.signals_not:
             for signal in self.signals_not:
                 if signal.is_match(s):
                     return False
+                score_not.append(s[signal.key].split('_')[3])
 
         for signal in self.signals_all:
             if not signal.is_match(s):
                 return False
+            score_all.append(s[signal.key].split('_')[3])
 
         if not self.signals_any:
-            self.notify(self.signals_all, self.signals_not, None)
+            self.notify(dt, self.signals_all, score_all, self.signals_not, score_not, None)
             return True
 
         for signal in self.signals_any:
             if signal.is_match(s):
-                self.notify(self.signals_all, self.signals_not, signal)
+                self.notify(dt, self.signals_all, score_all, self.signals_not, score_not,signal)
                 return True
         return False
 
     def notify(
-        self, signal_all: List[Signal], signal_not: List[Signal], signal_any: Signal
+        self,
+        dt: datetime,
+        signal_all: List[Signal],
+        score_all: List[int],
+        signal_not: List[Signal],
+        score_not:List[int],
+        signal_any: Signal,
     ):
         if self.enable_notify == False:
             return
-        msg = ""
+
+        msg = f""
         if len(signal_all) > 0:
             msg += "all:\n"
-            for s in self.signals_all:
-                msg += f"  {s.key} {s.value} {s.score}"
+            for idx, s in enumerate(self.signals_all):
+                msg += f" {s.key} {s.value} {score_all[idx]}\n"
         if len(signal_not) > 0:
             msg += "not:\n"
-            for s in self.signals_all:
-                msg += f"  {s.key} {s.value} {s.score}"
+            for idx, s in enumerate(self.signals_all):
+                msg += f"  {s.key} {s.value} {score_not[idx]}\n"
         if signal_any is not None:
             msg += (
-                f"one in any:  {signal_any.key} {signal_any.value} {signal_any.score}"
+                f"oneof:  {signal_any.key} {signal_any.value} {signal_any.score}\n"
             )
+
         asyncio.ensure_future(
             Notify.send(
-                self.name,
+                f"{local_time(dt).strftime("%m-%d %H:%M")} {self.name.split("#", 2)[0]}",
                 message=msg,
                 urgency=Urgency.Critical,
                 sound=True,
@@ -682,7 +694,7 @@ class Event:
 
         return get_signals_config(self.unique_signals, signals_module)
 
-    def is_match(self, s: dict):
+    def is_match(self, s: dict, dt: datetime):
         """判断 event 是否满足
 
         代码的执行逻辑如下：
@@ -719,7 +731,7 @@ class Event:
         # 判断因子是否满足，顺序遍历，找到第一个满足的因子就退出
         # 因子放入事件中时，建议因子列表按关注度从高到低排序
         for factor in self.factors:
-            if factor.is_match(s):
+            if factor.is_match(s, dt):
                 return True, factor
 
         return False, None

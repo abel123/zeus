@@ -1,13 +1,15 @@
 import asyncio
+from datetime import datetime
 from typing import Callable, Dict, List, Protocol, Tuple
 from cachetools import LRUCache
 
 from ib_insync import BarData
 from loguru import logger
+import pytz
 from backend.broker.ib.options import get_tsla_option_list
 from backend.calculate.custom.tsla_option_signal import TslaOptionSignal
 from backend.calculate.protocol import Processor, Symbol, WatcherProtocol
-from backend.utils.convert import local_time, to_czsc_bar
+from backend.utils.convert import local_time
 from czsc.analyze import CZSC
 from czsc.enum import Freq
 from czsc.objects import RawBar, Signal
@@ -27,6 +29,7 @@ class ContractSignals(WatcherProtocol):
         self.czsc: CZSC = None
         self.processors = processors
         self.matcher = matcher
+        self.latest_dt = datetime.now()
         self.reset()
 
     def id(self) -> str:
@@ -52,7 +55,7 @@ class ContractSignals(WatcherProtocol):
                         events.extend(ev)
 
             if self.matcher is not None:
-                self.matcher(events)
+                self.matcher(events, self.latest_dt)
 
             return events
         except Exception as e:
@@ -80,9 +83,7 @@ class MultipleContractSignals(WatcherProtocol):
         for cs in self.contract_signals:
             self.contract_to_signals[(cs.symbol.raw, cs.freq)] = cs
         self.matcher = matcher
-        self.tsla_option_signal_calls = LRUCache(maxsize=2)
-        self.tsla_option_signal_puts = LRUCache(maxsize=2)
-        self.tsla_price: float = 0.0
+        self.latest_dt = datetime.fromtimestamp(0, pytz.UTC)
 
     def id(self) -> str:
         id = ""
@@ -104,6 +105,7 @@ class MultipleContractSignals(WatcherProtocol):
             return
 
         cs = self.contract_to_signals.get((bar.symbol, bar.freq))
+        self.latest_dt = max(self.latest_dt, bar.dt)
 
         events: List[Signal] = []
         evs = cs.on_bar_update(bar, new_bar)
@@ -127,8 +129,8 @@ class MultipleContractSignals(WatcherProtocol):
                     events.extend(evs)
 
         if self.matcher is not None:
-            self.matcher(events)
-        if False and bar.freq == Freq.F1:
+            self.matcher(events, self.latest_dt)
+        if True or bar.freq == Freq.F1:
             logger.warning(f"{local_time(bar.dt)} generated events {events}")
         return events
 
