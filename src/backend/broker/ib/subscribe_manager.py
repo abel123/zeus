@@ -71,7 +71,7 @@ class SubscribeManager(metaclass=SingletonABCMeta):
         Freq.F1: "1 min",
     }
 
-    def __init__(self, realtime: bool = True, subscribers_limit=40) -> None:
+    def __init__(self, realtime: bool = True, subscribers_limit=80) -> None:
         self.watchers: Dict[str, Set[WatcherProtocol]] = dict()
         self.realtime: bool = realtime
         self.subscribers: Dict[str, ExtendCache.Item] = ExtendCache(
@@ -97,9 +97,9 @@ class SubscribeManager(metaclass=SingletonABCMeta):
                     logger.warning(f"{self} connecting to IB")
                     self.subscribers.clear()
                     await self.ib.connectAsync("127.0.0.1", 4001, clientId=999)
-                self.conn_lock.release()
             except Exception as e:
                 logger.exception(f"connect except {e}")
+            finally:
                 self.conn_lock.release()
 
     def _on_error(self, reqId, errorCode, errorString, contract):
@@ -186,7 +186,7 @@ class SubscribeManager(metaclass=SingletonABCMeta):
         logger.warning(f"reset watcher {cache_key} {barSize}")
         watchers = self.watchers.get(cache_key, set())
         for w in watchers:
-            w.reset()
+            w.reset(self._get_symbol(contract), self.freq_map.get(barSize))
 
     def raw_bars(self, symbol: Symbol, freq: Freq):
         barSize = self.czsc_to_ib_map.get(freq)
@@ -197,11 +197,14 @@ class SubscribeManager(metaclass=SingletonABCMeta):
         self, symbol: Symbol, freq: Freq, from_: int, to: int, countBack: int
     ) -> (List[BarData], bool):
         # await self.sub_lock.acquire()
-
-        data, bol = await self._subscribe(symbol, freq, from_, to, countBack)
-        # self.sub_lock.release()
-
-        return data, bol
+        try:
+            data, bol = await self._subscribe(symbol, freq, from_, to, countBack)
+            return data, bol
+        except:
+            ...
+        finally:
+            # self.sub_lock.release()
+            ...
 
     async def _subscribe(
         self, symbol: Symbol, freq: Freq, from_: int, to: int, countBack: int

@@ -7,7 +7,7 @@ export const NavBar = () => {
     const [symbol, setSymbol] = useRecoilState(symbolState);
 
     return (
-        <div className="navbar bg-base-50 h-8 px-4 py-2 min-h-0">
+        <div className="navbar bg-white h-8 px-4 py-2 min-h-0">
             <div className="navbar-start">
                 <div className="dropdown">
                     <button tabIndex={0} className="btn-sm btn-ghost btn-circle">

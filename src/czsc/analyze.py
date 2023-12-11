@@ -10,7 +10,7 @@ import webbrowser
 from loguru import logger
 from typing import List
 from collections import OrderedDict
-from czsc.enum import Mark, Direction
+from czsc.enum import Freq, Mark, Direction
 from czsc.objects import BI, FX, RawBar, NewBar
 from czsc.utils.echarts_plot import kline_pro
 from czsc import envs
@@ -225,7 +225,7 @@ class CZSC:
     def __init__(
         self,
         symbol,
-        freq,
+        freq: Freq,
         bars: List[RawBar],
         get_signals=None,
         max_bi_num=envs.get_max_bi_num(),
@@ -511,7 +511,7 @@ class CZSC:
             return None
 
         bars_raw = self.bars_ubi[
-            1:
+            0:
         ]  # [y for x in self.bars_ubi[1:] for y in x.raw_bars]
         # 获取最高点和最低点，以及对应的时间
         high_bar = max(bars_raw, key=lambda x: x.high)

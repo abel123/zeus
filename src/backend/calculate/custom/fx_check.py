@@ -15,7 +15,8 @@ class FxCheck:
             return
 
         k1 = "分型"
-        k2 = "freq"
+        k2 = czsc.freq.value
+
         if fxs[0].mark == Mark.D:
             return Signal(
                 k1=k1,

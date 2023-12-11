@@ -179,6 +179,8 @@ class MACDArea:
             bi1_macd = [x.cache[cache_key]["macd"] for x in bi1.raw_bars]
             bi2_macd = [x.cache[cache_key]["macd"] for x in bi2.raw_bars]
 
+            if len(bi1.raw_bars) < 1 or len(bi2.raw_bars) < 1:
+                return None
             bi1_dif = bi1.raw_bars[-1].cache[cache_key]["dif"]
             bi2_dif = bi2.raw_bars[-1].cache[cache_key]["dif"]
 

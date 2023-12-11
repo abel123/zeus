@@ -43,7 +43,7 @@ class WatcherProtocol(Protocol):
         ...
 
     @abstractmethod
-    def reset(self):
+    def reset(self, symbol_raw: str, freq: Freq):
         ...
 
     @abstractmethod

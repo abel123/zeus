@@ -523,8 +523,8 @@ class Factor:
     enable_notify: bool = False
 
     def __post_init__(self):
-        if not self.signals_all:
-            raise ValueError("signals_all 不能为空")
+        if not self.signals_all and not self.signals_any:
+            raise ValueError("signals_all signals_any 不能同时为空")
         _fatcor = self.dump()
         _fatcor.pop("name")
         sha256 = hashlib.sha256(str(_fatcor).encode("utf-8")).hexdigest().upper()[:8]
@@ -598,7 +598,7 @@ class Factor:
                 message=msg,
                 urgency=Urgency.Critical,
                 sound=True,
-                thread="factor",
+                thread=self.name,
             )
         )
 

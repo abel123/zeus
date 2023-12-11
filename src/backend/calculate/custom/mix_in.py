@@ -30,7 +30,7 @@ class ContractSignals(WatcherProtocol):
         self.processors = processors
         self.matcher = matcher
         self.latest_dt = datetime.now()
-        self.reset()
+        self.reset(self.symbol.raw, self.freq)
 
     def id(self) -> str:
         return f"{__name__}_{self.__class__.__name__}:{self.symbol.raw}-{self.freq}"
@@ -61,7 +61,8 @@ class ContractSignals(WatcherProtocol):
         except Exception as e:
             logger.exception(f"except {e}")
 
-    def reset(self) -> None:
+    def reset(self, symbol_raw: str, freq: Freq) -> None:
+        logger.warning(f"reset {symbol_raw} {freq}")
         self.czsc: CZSC = CZSC(
             self.symbol,
             self.freq,
@@ -120,21 +121,23 @@ class MultipleContractSignals(WatcherProtocol):
             # logger.debug(f"contracts: {contracts[:5]}")
 
         for k, v in self.contract_to_signals.items():
-            # logger.debug(f"process events {k}")
-            if (cs.symbol.raw != bar.symbol or cs.freq != bar.freq) and len(
-                v.czsc.bars_raw
-            ) > 0:
+            if (k[0] != bar.symbol or k[1] != bar.freq) and len(v.czsc.bars_raw) > 0:
                 evs = v.on_bar_update(v.czsc.bars_raw[-1], False, False)
                 if evs is not None:
                     events.extend(evs)
+                False and logger.debug(
+                    f"process {local_time(self.latest_dt)} events {k}, {events}"
+                )
+
+        if True and len(events) > 4:
+            logger.warning(f"{local_time(bar.dt)} generated events {events}")
 
         if self.matcher is not None:
             self.matcher(events, self.latest_dt)
-        if True or bar.freq == Freq.F1:
-            logger.warning(f"{local_time(bar.dt)} generated events {events}")
         return events
 
-    def reset(self):
-        logger.warning(f"reset {self.id()}")
+    def reset(self, symbol_raw: str, freq: Freq):
+        logger.warning(f"reset {self.id()} {symbol_raw} {freq}")
         for k, v in self.contract_to_signals.items():
-            v.reset()
+            if k[0] == symbol_raw and k[1] == freq:
+                v.reset(symbol_raw, freq)

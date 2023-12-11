@@ -29,7 +29,7 @@ class Watcher(WatcherProtocol):
         self.symbol = symbol
         self.freq: Freq = freq
         if reset:
-            self.reset()
+            self.reset(self.symbol.raw, self.freq)
         for bar in bars:
             self.on_bar_update(bar, True)
 
@@ -45,7 +45,7 @@ class Watcher(WatcherProtocol):
         self.czsc.update(bar)
         self.macd_signal.macd_area_bc(self.czsc, hasNewBar)
 
-    def reset(self):
+    def reset(self, symbol_raw: str, freq: Freq):
         logger.warning(f"reset {self.symbol} - {self.freq}")
 
         self.macd_signal = MACDArea(self.macd_config)

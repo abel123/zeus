@@ -93,8 +93,10 @@ async def after_server_start(sanic, loop):
         Freq.F60,
         [MAHit(), FxCheck()],
     )
+    # cs_f5, cs_f15, cs_f30, cs_f10, cs_f60
     mcs = MultipleContractSignals(
-        [cs_f1, cs_f3, cs_f5, cs_f15, cs_f30, cs_f10, cs_f60], DefaultMatcher.match
+        [cs_f1, cs_f3, cs_f5, cs_f15, cs_f30, cs_f10, cs_f60],
+        DefaultMatcher.match,
     )
     SubscribeManager().upsert_watcher(mcs)
 

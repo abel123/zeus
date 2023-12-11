@@ -1,14 +1,15 @@
 from enum import Enum
 import math
 from typing import List
+from loguru import logger
 
 from pydantic import BaseModel
 from backend.calculate.protocol import Processor
 from backend.datafeed.tv_model import MacdConfig
 from backend.utils.convert import local_time
 from czsc.analyze import CZSC
-from czsc.enum import Direction
-from czsc.objects import ZS, Signal
+from czsc.enum import Direction, Freq
+from czsc.objects import ZS, RawBar, Signal
 from czsc.signals.tas import update_macd_cache
 from czsc.utils.sig import create_single_signal, get_sub_elements
 
@@ -31,6 +32,12 @@ class Config(BaseModel):
     th: int = 90
 
 
+class Fake_BI(BaseModel):
+    raw_bars: List[RawBar]
+    low: float
+    high: float
+
+
 class MACDArea(Processor):
     def __init__(
         self,
@@ -46,10 +53,15 @@ class MACDArea(Processor):
     def process(self, czsc: CZSC, new_bar: bool):
         evs = []
         for c in self.config.macd_config:
-            evs.append(self.macd_area_bc_single(czsc, c))
+            for fake in [False, True]:
+                ev = self.macd_area_bc_single(czsc, c, fake)
+                if isinstance(ev, Signal):
+                    evs.append(ev)
+                elif ev is not None:
+                    evs.extend(ev)
         return evs
 
-    def macd_area_bc_single(self, c: CZSC, config: MacdConfig):
+    def macd_area_bc_single(self, c: CZSC, config: MacdConfig, fake: bool):
         """MACD面积背驰
 
         参数模板："{freq}_D{di}T{th}MACD面积背驰_BS辅助V1"
@@ -72,6 +84,10 @@ class MACDArea(Processor):
         :return: 信号字典
         """
 
+        if fake and c.freq == Freq.F1:
+            return None
+
+        events = []
         if len(c.bars_raw) >= 2:
             cache_key = update_macd_cache(
                 c,
@@ -87,27 +103,56 @@ class MACDArea(Processor):
             k1,
             k2,
             k3,
-        ) = f"{freq}_D{di}T{th}MACD-{config.fast}-{config.slow}-{config.signal}-面积背驰_BS辅助".split(
+        ) = f"{freq}_D{di}T{th}MACD-{config.fast}-{config.slow}-{config.signal}-面积背驰_BS{'推笔' if fake else''}辅助".split(
             "_"
         )
         v1 = "其他"
-        if len(c.bi_list) < 7 or len(c.bars_ubi) > 7:
-            return Signal(k1=k1, k2=k2, k3=k3, v1=v1)
+        if len(c.bi_list) < 7:
+            return None
+        if fake and len(c.bars_ubi[1:]) < 4:
+            return None
+        if fake == False and len(c.bars_ubi[1:]) > 4:
+            return None
 
+        offset = 1 if fake else 0
         for n in (9, 7, 5, 3):
-            bis = get_sub_elements(c.bi_list, di=di, n=n)
-            if len(bis) != n:
+            bis = get_sub_elements(c.bi_list, di=di, n=n - offset)
+            if len(bis) != n - offset:
                 continue
 
             # 假定离开中枢的都是一笔
-            zs = ZS(bis[1:-1])
-            if not zs.is_valid or len(bis[-1].raw_bars) < 1:  # 如果中枢不成立，往下进行
+            zs = ZS(bis[1 : (-1 if fake == False else None)])
+            if fake:
+                # logger.warning(f"zs {zs} {zs.is_valid}")
+                ...
+            if not zs.is_valid:  # 如果中枢不成立，往下进行
                 continue
 
-            bi1, bi2 = bis[0], bis[-1]
+            bi1 = bis[0]
+            bi2 = (
+                bis[-1]
+                if fake == False
+                else Fake_BI(
+                    raw_bars=[y for x in c.bars_ubi[1:] for y in x.raw_bars],
+                    high=0.0,
+                    low=0.0,
+                )
+            )
+            if fake:
+                bi2.high = max(bi2.raw_bars[0].high, bi2.raw_bars[-1].high)
+                bi2.low = min(bi2.raw_bars[0].low, bi2.raw_bars[-1].low)
+                inside_high = max(bi2.raw_bars, key=lambda bar: bar.high)
+                if bi2.high != inside_high.high:
+                    return
+                inside_low = min(bi2.raw_bars, key=lambda bar: bar.low)
+                if bi2.low != inside_low.low:
+                    return
+
+                # logger.warning(f"fake bi {bi2}")
             bi1_macd = [x.cache[cache_key]["macd"] for x in bi1.raw_bars]
             bi2_macd = [x.cache[cache_key]["macd"] for x in bi2.raw_bars]
-
+            if len(bi1.raw_bars) < 1 or len(bi2.raw_bars) < 1:
+                return None
             bi1_dif = bi1.raw_bars[-1].cache[cache_key]["dif"]
             bi2_dif = bi2.raw_bars[-1].cache[cache_key]["dif"]
 
@@ -125,8 +170,8 @@ class MACDArea(Processor):
             if abs(bi2_area) > abs(bi1_area) * th / 100:  # 如果面积背驰不成立，往下进行
                 continue
 
-            min_low = min(x.low for x in bis)
-            max_high = max(x.high for x in bis)
+            min_low = min(min(x.low for x in bis), bi2.low)
+            max_high = max(max(x.high for x in bis), bi2.high)
             score = 80
             if (
                 bi1.direction == Direction.Up
@@ -140,7 +185,9 @@ class MACDArea(Processor):
                 if bi1_dif > bi2_dif > 0:
                     score = 100
 
-                return Signal(k1=k1, k2=k2, k3=k3, v1="顶", v2=f"{n}笔", score=score)
+                events.append(
+                    Signal(k1=k1, k2=k2, k3=k3, v1="顶", v2=f"{n}笔", score=score)
+                )
 
             if (
                 bi1.direction == Direction.Down
@@ -154,9 +201,11 @@ class MACDArea(Processor):
                 if bi1_dif < bi2_dif < 0:
                     score = 100
 
-                return Signal(k1=k1, k2=k2, k3=k3, v1="底", v2=f"{n}笔", score=score)
+                events.append(
+                    Signal(k1=k1, k2=k2, k3=k3, v1="底", v2=f"{n}笔", score=score)
+                )
 
-        return Signal(k1=k1, k2=k2, k3=k3, v1=v1)
+        return events
 
     def reset(self):
         ...

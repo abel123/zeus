@@ -9,7 +9,7 @@ interface Props {}
 export const MainGrid = (props: Props) => {
     return (
         <>
-            <div className="grid grid-cols-10 h-full">
+            <div className="grid grid-cols-10 bg-white h-full">
                 {/* left grids */}
                 <div className="col-span-7 grid grid-cols-9 grid-rows-8">
                     <div className="row-span-3 col-span-5 border-solid border-2 border-slate-300" key="1-1">
@@ -34,7 +34,9 @@ export const MainGrid = (props: Props) => {
                             standalone={false}
                         />
                     </div>
-                    <div className="row-span-5 col-span-5 border-solid border-2 border-slate-300" key="1-3">
+                    <div className="row-span-1 col-span-5 border-solid border-2 border-slate-300" key="1-metric"></div>
+
+                    <div className="row-span-4 col-span-5 border-solid border-2 border-slate-300" key="1-3">
                         <StockChart
                             resolution={"1" as ResolutionString}
                             macd_config={[
