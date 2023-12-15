@@ -55,6 +55,8 @@ class Broker:
                 for _, bar in enumerate(bars)
             ]
             self.czsc = CZSC(
+                symbol,
+                cl_freq_map.get(resolution, Freq.D),
                 raw_bars,
                 get_signals=self.macd_signal.macd_area_bc,
                 on_bi_break=self.macd_signal.on_bi_break,

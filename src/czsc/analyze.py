@@ -507,11 +507,16 @@ class CZSC:
     @property
     def unfinished_bi(self):
         ubi_fxs = self.ubi_fxs
-        if not self.bars_ubi or not self.bi_list or not ubi_fxs:
+        if (
+            not self.bars_ubi
+            or not self.bi_list
+            or not ubi_fxs
+            or len(self.bars_ubi) < 3
+        ):
             return None
 
         bars_raw = self.bars_ubi[
-            0:
+            1:
         ]  # [y for x in self.bars_ubi[1:] for y in x.raw_bars]
         # 获取最高点和最低点，以及对应的时间
         high_bar = max(bars_raw, key=lambda x: x.high)

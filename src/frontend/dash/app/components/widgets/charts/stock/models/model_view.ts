@@ -165,6 +165,9 @@ export class ModelView {
                 chart.selection().clear();
 
                 response.data.bi.unfinished.map((bi: BiInfo) => {
+                    if (bi.start_ts >= bi.end_ts) {
+                        return;
+                    }
                     let bi_id = chart.createMultipointShape(
                         [
                             { price: bi.start, time: bi.start_ts },

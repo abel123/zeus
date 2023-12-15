@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
-from typing import Dict, List, Protocol, Set
+from typing import Any, Dict, List, Protocol, Set
 from cachetools import TTLCache
 from ib_insync import IB, BarData, BarDataList, Client, Contract
 from eventkit import Event
@@ -34,6 +34,14 @@ class ExtendCache(TTLCache):
             f"destroy cache item {k}, {v.bars.contract} {v.bars.barSizeSetting}"
         )
         v.destroy()
+
+    def __delitem__(self, key: Any) -> None:
+        v = self.get(key, None)
+        if v != None:
+            logger.warning(f"delete iem {key}")
+            v.destroy()
+
+        super().__delitem__(key)
 
 
 class SubscribeManager(metaclass=SingletonABCMeta):
@@ -112,7 +120,8 @@ class SubscribeManager(metaclass=SingletonABCMeta):
             self.subscribers.clear()
             for k, v in self.watchers.items():
                 for w in v:
-                    w.reset()
+                    symbol, freq = k.split("-")[0], self.freq_map.get(k.split("-")[1])
+                    w.reset(symbol, freq)
 
     def _cache_key(self, contract: str, barSize: str):
         if isinstance(contract, Contract):
@@ -127,8 +136,16 @@ class SubscribeManager(metaclass=SingletonABCMeta):
             if self.watchers.get(cache_key, None) == None:
                 self.watchers[cache_key] = set()
 
-            logger.warning(f"upsert_watcher {cache_key} {watcher.id()}-{watcher}")
-            self.watchers[cache_key].add(watcher)
+            existed = False
+            for w in self.watchers[cache_key]:
+                if w.id() == watcher.id():
+                    existed = True
+                    logger.warning(
+                        f"upsert_watcher {cache_key} {watcher.id()} already existed"
+                    )
+            if existed == False:
+                logger.warning(f"upsert_watcher {cache_key} {watcher.id()}-{watcher}")
+                self.watchers[cache_key].add(watcher)
 
     def remove_watcher(self, watcher: WatcherProtocol):
         for c in watcher.contracts():
@@ -269,7 +286,7 @@ class SubscribeManager(metaclass=SingletonABCMeta):
                     contract.symbol != "TSLA"
                     or Options().config().enable_overnight == False
                 ),
-                formatDate=1,
+                formatDate=2,
                 keepUpToDate=use_cache,
             )
             logger.warning(f"{cache_key}, use_cache: {use_cache}")

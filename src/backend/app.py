@@ -214,24 +214,27 @@ async def zen_elements(request: Request):
         return json(f"bars is None: {bars is None}, item is None: {item is None}")
     # logger.debug(item.macd_signal.bc_records)
 
+    offset = 0
+    if param.resolution == "1D":
+        offset = timedelta(hours=24).total_seconds()
     beichi = []
     for config in param.macd_config:
         if config in item.macd_signal.bc_records:
             beichi.append(
                 [
                     {
-                        "macd_a_dt": int(bc.macd_a_dt.timestamp()),
+                        "macd_a_dt": int(bc.macd_a_dt.timestamp()) + offset,
                         "macd_a_val": bc.macd_a_val,
-                        "macd_b_dt": int(bc.macd_b_dt.timestamp()),
+                        "macd_b_dt": int(bc.macd_b_dt.timestamp()) + offset,
                         "macd_b_val": bc.macd_b_val,
                         "direction": "up" if bc.direction == Direction.Up else "down",
                         "start": {
-                            "left_dt": bc.bi_a.sdt.timestamp(),
-                            "right_dt": bc.bi_a.edt.timestamp(),
+                            "left_dt": bc.bi_a.sdt.timestamp() + offset,
+                            "right_dt": bc.bi_a.edt.timestamp() + offset,
                         },
                         "end": {
-                            "left_dt": bc.bi_b.sdt.timestamp(),
-                            "right_dt": bc.bi_b.edt.timestamp(),
+                            "left_dt": bc.bi_b.sdt.timestamp() + offset,
+                            "right_dt": bc.bi_b.edt.timestamp() + offset,
                         },
                         "high": bc.high,
                         "low": bc.low,
@@ -249,8 +252,8 @@ async def zen_elements(request: Request):
             "bi": {
                 "finished": [
                     {
-                        "start_ts": int(bi.sdt.timestamp()),
-                        "end_ts": int(bi.edt.timestamp()),
+                        "start_ts": int(bi.sdt.timestamp()) + offset,
+                        "end_ts": int(bi.edt.timestamp()) + offset,
                         "start": bi.high if bi.direction == Direction.Down else bi.low,
                         "end": bi.low if bi.direction == Direction.Down else bi.high,
                         "direction": str(bi.direction),
@@ -263,6 +266,7 @@ async def zen_elements(request: Request):
             },
             "beichi": beichi,
             "bar_beichi": [],
+            "offset": offset,
         },
         default=str,
     )

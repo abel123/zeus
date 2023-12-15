@@ -7,7 +7,6 @@ from ib_insync import BarData
 from loguru import logger
 import pytz
 from backend.broker.ib.options import get_tsla_option_list
-from backend.calculate.custom.tsla_option_signal import TslaOptionSignal
 from backend.calculate.protocol import Processor, Symbol, WatcherProtocol
 from backend.utils.convert import local_time
 from czsc.analyze import CZSC

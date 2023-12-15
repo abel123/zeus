@@ -10,14 +10,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"></link>
                 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"></link>
             </Head>
-            <body className="h-screen">
+            <body>
                 <RecoilRoot>
                     <>
                         <div id="nav_bar">
                             <NavBar />
                         </div>
+                        <div className="h-screen" id="content">
+                            {children}
+                        </div>
                     </>
-                    {children}
                 </RecoilRoot>
             </body>
         </html>

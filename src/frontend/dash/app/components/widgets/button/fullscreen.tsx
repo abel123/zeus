@@ -5,7 +5,7 @@ export const FullscreenButton = () => {
         if (document.fullscreenElement) {
             document.exitFullscreen();
         } else {
-            document.body.requestFullscreen();
+            document.getElementById("content")?.requestFullscreen();
         }
     };
     return (
