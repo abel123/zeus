@@ -58,47 +58,48 @@ def before_server_stop(sanic, loop):
 async def after_server_start(sanic, loop):
     asyncio.ensure_future(DataFeed.init())
 
-    cs_f1 = ContractSignals(
-        Symbol(raw="TSLA", type=SymbolType.STOCK),
-        Freq.F1,
-        [QPReverseSignals(), MACDArea(), FxCheck()],
-    )
-    cs_f3 = ContractSignals(
-        Symbol(raw="TSLA", type=SymbolType.STOCK),
-        Freq.F3,
-        [MACDArea(), FxCheck()],
-    )
-    cs_f5 = ContractSignals(
-        Symbol(raw="TSLA", type=SymbolType.STOCK),
-        Freq.F5,
-        [MACDArea(), FxCheck()],
-    )
-    cs_f10 = ContractSignals(
-        Symbol(raw="TSLA", type=SymbolType.STOCK),
-        Freq.F10,
-        [MACDArea(), FxCheck()],
-    )
-    cs_f15 = ContractSignals(
-        Symbol(raw="TSLA", type=SymbolType.STOCK),
-        Freq.F15,
-        [MACDArea(), FxCheck()],
-    )
-    cs_f30 = ContractSignals(
-        Symbol(raw="TSLA", type=SymbolType.STOCK),
-        Freq.F30,
-        [MACDArea(), MAHit(), FxCheck()],
-    )
-    cs_f60 = ContractSignals(
-        Symbol(raw="TSLA", type=SymbolType.STOCK),
-        Freq.F60,
-        [MAHit(), FxCheck()],
-    )
-    # cs_f5, cs_f15, cs_f30, cs_f10, cs_f60
-    mcs = MultipleContractSignals(
-        [cs_f1, cs_f3, cs_f5, cs_f15, cs_f30, cs_f10, cs_f60],
-        DefaultMatcher.match,
-    )
-    SubscribeManager().upsert_watcher(mcs)
+    for sym in ["TSLA", "SPY"]:
+        cs_f1 = ContractSignals(
+            Symbol(raw=sym, type=SymbolType.STOCK),
+            Freq.F1,
+            [QPReverseSignals(), MACDArea(), FxCheck()],
+        )
+        cs_f3 = ContractSignals(
+            Symbol(raw=sym, type=SymbolType.STOCK),
+            Freq.F3,
+            [MACDArea(), FxCheck()],
+        )
+        cs_f5 = ContractSignals(
+            Symbol(raw=sym, type=SymbolType.STOCK),
+            Freq.F5,
+            [MACDArea(), FxCheck()],
+        )
+        cs_f10 = ContractSignals(
+            Symbol(raw=sym, type=SymbolType.STOCK),
+            Freq.F10,
+            [MACDArea(), FxCheck()],
+        )
+        cs_f15 = ContractSignals(
+            Symbol(raw=sym, type=SymbolType.STOCK),
+            Freq.F15,
+            [MACDArea(), FxCheck()],
+        )
+        cs_f30 = ContractSignals(
+            Symbol(raw=sym, type=SymbolType.STOCK),
+            Freq.F30,
+            [MACDArea(), MAHit(), FxCheck()],
+        )
+        cs_f60 = ContractSignals(
+            Symbol(raw=sym, type=SymbolType.STOCK),
+            Freq.F60,
+            [MAHit(), FxCheck()],
+        )
+        # cs_f5, cs_f15, cs_f30, cs_f10, cs_f60
+        mcs = MultipleContractSignals(
+            [cs_f1, cs_f3, cs_f5, cs_f15, cs_f30, cs_f10, cs_f60],
+            DefaultMatcher.match,
+        )
+        SubscribeManager().upsert_watcher(mcs)
 
 
 @app.middleware("request")

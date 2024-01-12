@@ -132,7 +132,7 @@ class MultipleContractSignals(WatcherProtocol):
             logger.warning(f"{local_time(bar.dt)} generated events {events}")
 
         if self.matcher is not None:
-            self.matcher(events, self.latest_dt)
+            self.matcher(events, self.latest_dt, bar.symbol)
         return events
 
     def reset(self, symbol_raw: str, freq: Freq):

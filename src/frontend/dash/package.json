@@ -19,6 +19,7 @@
     "readline": false
   },
   "dependencies": {
+    "@measured/puck": "^0.13.1",
     "@mui/toolpad": "^0.1.38",
     "@preline/overlay": "^1.4.0",
     "@reduxjs/toolkit": "^1.9.7",

@@ -104,7 +104,10 @@ class SubscribeManager(metaclass=SingletonABCMeta):
                 ):
                     logger.warning(f"{self} connecting to IB")
                     self.subscribers.clear()
-                    await self.ib.connectAsync("127.0.0.1", 4001, clientId=999)
+                    await self.ib.connectAsync(
+                        "127.0.0.1", 14001, clientId=999, timeout=10
+                    )
+
             except Exception as e:
                 logger.exception(f"connect except {e}")
             finally:

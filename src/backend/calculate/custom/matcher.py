@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List
 
 from loguru import logger
+from backend.calculate.protocol import Symbol
 from czsc.enum import Operate
 
 from czsc.objects import Event, Factor, Signal
@@ -11,14 +12,14 @@ class Matcher:
     def __init__(self, events: List[Event]) -> None:
         self.events: List[Event] = events
 
-    def match(self, signals: List[Signal], dt: datetime):
+    def match(self, signals: List[Signal], dt: datetime, symbol: str = "default"):
         ss = dict()
         for s in signals:
             ss[s.key] = s.value
 
         factors = []
         for s in self.events:
-            matched, f = s.is_match(ss, dt)
+            matched, f = s.is_match(ss, dt, symbol)
             if matched:
                 factors.append(f)
                 logger.warning(f"factors {factors}")

@@ -542,7 +542,7 @@ class Factor:
         signals = {x.signal if isinstance(x, Signal) else x for x in signals}
         return list(signals)
 
-    def is_match(self, s: dict, dt: datetime) -> bool:
+    def is_match(self, s: dict, dt: datetime, symbol: str) -> bool:
         """判断 factor 是否满足"""
         score_all, score_not = [], []
         if self.signals_not:
@@ -557,17 +557,18 @@ class Factor:
             score_all.append(s[signal.key].split('_')[3])
 
         if not self.signals_any:
-            self.notify(dt, self.signals_all, score_all, self.signals_not, score_not, None)
+            self.notify(symbol, dt, self.signals_all, score_all, self.signals_not, score_not, None)
             return True
 
         for signal in self.signals_any:
             if signal.is_match(s):
-                self.notify(dt, self.signals_all, score_all, self.signals_not, score_not,signal)
+                self.notify(symbol, dt, self.signals_all, score_all, self.signals_not, score_not,signal)
                 return True
         return False
 
     def notify(
         self,
+        symbol: str,
         dt: datetime,
         signal_all: List[Signal],
         score_all: List[int],
@@ -594,7 +595,7 @@ class Factor:
 
         asyncio.ensure_future(
             Notify.send(
-                f"{local_time(dt).strftime("%m-%d %H:%M")} {self.name.split("#", 2)[0]}",
+                f"{symbol} - {local_time(dt).strftime("%m-%d %H:%M")} {self.name.split("#", 2)[0]}",
                 message=msg,
                 urgency=Urgency.Critical,
                 sound=True,
@@ -694,7 +695,7 @@ class Event:
 
         return get_signals_config(self.unique_signals, signals_module)
 
-    def is_match(self, s: dict, dt: datetime):
+    def is_match(self, s: dict, dt: datetime, symbol = "default"):
         """判断 event 是否满足
 
         代码的执行逻辑如下：
@@ -731,7 +732,7 @@ class Event:
         # 判断因子是否满足，顺序遍历，找到第一个满足的因子就退出
         # 因子放入事件中时，建议因子列表按关注度从高到低排序
         for factor in self.factors:
-            if factor.is_match(s, dt):
+            if factor.is_match(s, dt, symbol):
                 return True, factor
 
         return False, None

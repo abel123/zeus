@@ -20,20 +20,36 @@ export default function Home() {
                 }}
             />
 
-            <>
-                {isScriptReady && (
-                    <StockChart
-                        resolution={"1D" as ResolutionString}
-                        macd_config={[
-                            { fast: 4, slow: 9, signal: 9, source: "volume" },
-                            { fast: 4, slow: 9, signal: 9 },
-                            { fast: 12, slow: 26, signal: 9 },
-                        ]}
-                        hidden_extra_toolbar={false}
-                        standalone={false}
-                    />
-                )}
-            </>
+            <div className="grid grid-cols-6 bg-white h-full">
+                <div className="col-span-4 border-solid border-2 border-slate-300" key="1-1">
+                    {isScriptReady && (
+                        <StockChart
+                            resolution={"1D" as ResolutionString}
+                            macd_config={[
+                                { fast: 4, slow: 9, signal: 9, source: "volume" },
+                                { fast: 4, slow: 9, signal: 9 },
+                                { fast: 12, slow: 26, signal: 9 },
+                            ]}
+                            hidden_extra_toolbar={false}
+                            standalone={false}
+                        />
+                    )}
+                </div>
+                <div className="col-span-2 border-solid border-2 border-slate-300" key="1-2">
+                    {isScriptReady && (
+                        <StockChart
+                            resolution={"60" as ResolutionString}
+                            macd_config={[
+                                { fast: 4, slow: 9, signal: 9, source: "volume" },
+                                { fast: 4, slow: 9, signal: 9 },
+                                { fast: 12, slow: 26, signal: 9 },
+                            ]}
+                            hidden_extra_toolbar={false}
+                            standalone={false}
+                        />
+                    )}
+                </div>
+            </div>
         </>
     );
 }

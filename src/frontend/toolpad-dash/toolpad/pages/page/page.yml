@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mui/mui-toolpad/v0.1.44/docs/schemas/v1/definitions.json#properties/Page
+
+apiVersion: v1
+kind: page
+spec:
+  title: Default page
+  alias:
+    - Xzi6sDz
+  content:
+    - component: Text
+      name: text
+      props:
+        variant: h1
+        value:
+          $$jsExpression: |
+            page.parameters.symbol
+    - component: List
+      name: list
+      props:
+        renderItem:
+          $$template:
+            - component: Text
+              name: text1
+              layout:
+                horizontalAlign: center
+              props:
+                mode: text
+                loading: false
+        disablePadding: false
+    - component: Container
+      name: container
+      children:
+        - component: codeComponent.stock
+          name: stock
+          props:
+            msg: Hello W
+    - component: Chart
+      name: chart
+  parameters:
+    - name: symbol
+      value: SPY
+  display: standalone
