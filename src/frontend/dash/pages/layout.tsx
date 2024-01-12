@@ -1,7 +1,10 @@
+"use client";
+
 import "@/styles/globals.css";
 import { NavBar } from "../app/navbar";
 import Head from "next/head";
 import { RecoilRoot } from "recoil";
+import { RecoilURLSyncJSONNext } from "recoil-sync-next";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
@@ -12,14 +15,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Head>
             <body>
                 <RecoilRoot>
-                    <>
+                    <RecoilURLSyncJSONNext location={{ part: "queryParams" }}>
                         <div id="nav_bar">
                             <NavBar />
                         </div>
                         <div className="h-screen" id="content">
                             {children}
                         </div>
-                    </>
+                    </RecoilURLSyncJSONNext>
                 </RecoilRoot>
             </body>
         </html>
