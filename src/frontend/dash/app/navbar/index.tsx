@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FullscreenButton } from "../components/widgets/button/fullscreen";
 import { useRecoilState } from "recoil";
 import { symbolState } from "../store/dashboard";
+import { OptionSelect } from "./option_select";
 
 export const NavBar = () => {
     const [symbol, setSymbol] = useRecoilState(symbolState);
@@ -79,6 +80,7 @@ export const NavBar = () => {
                         if (event.target.value != "") setSymbol(event.target.value);
                     }}
                 />
+                <OptionSelect></OptionSelect>
             </div>
             <div className="navbar-center">
                 <a className="normal-case text-xl">Terminal</a>

@@ -30,6 +30,13 @@ export const TVChartContainer = (
     const [symbol, setSymbol] = useRecoilState(symbolState);
 
     useEffect(() => {
+        let extras = {};
+        if (props.interval == ("1" as ResolutionString)) {
+            extras = {
+                "paneProperties.background": "#FDFDFD",
+                "paneProperties.backgroundType": "solid",
+            };
+        }
         const widgetOptions: ChartingLibraryWidgetOptions = {
             symbol: props.standalone ? props.symbol : symbol,
             // BEWARE: no trailing slash is expected in feed URL
@@ -67,12 +74,15 @@ export const TVChartContainer = (
             //theme: "Dark",
             timezone: "Asia/Chongqing",
             overrides: {
-                "mainSeriesProperties.candleStyle.borderDownColor": "#089981",
-                "mainSeriesProperties.candleStyle.borderUpColor": "#F23645",
-                "mainSeriesProperties.candleStyle.downColor": "#089981",
-                "mainSeriesProperties.candleStyle.upColor": "#F23645",
-                "mainSeriesProperties.candleStyle.wickDownColor": "#089981",
-                "mainSeriesProperties.candleStyle.wickUpColor": "#F23645",
+                ...{
+                    "mainSeriesProperties.candleStyle.borderDownColor": "#089981",
+                    "mainSeriesProperties.candleStyle.borderUpColor": "#F23645",
+                    "mainSeriesProperties.candleStyle.downColor": "#089981",
+                    "mainSeriesProperties.candleStyle.upColor": "#F23645",
+                    "mainSeriesProperties.candleStyle.wickDownColor": "#089981",
+                    "mainSeriesProperties.candleStyle.wickUpColor": "#F23645",
+                },
+                ...extras,
             },
             studies_overrides: {
                 "MACD.palettes.palette_0.colors.0.color": "rgba(242, 54, 69, 1)",

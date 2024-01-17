@@ -8,7 +8,7 @@ from loguru import logger
 from backend.broker.ib.broker import Broker
 from backend.broker.futu.broker import Broker as FutuBroker
 
-from backend.broker.ib.options import get_tsla_option_list
+from backend.broker.ib.options import get_spy_option_list, get_tsla_option_list
 from backend.broker.ib.signals import Watcher
 from backend.curd.sqllite.model import SymbolExecutor
 
@@ -38,7 +38,7 @@ class DataFeed:
             user_input=user_input, screener=screener, type=type
         )
         extras: List[SearchSymbolResultItem] = []
-        if user_input == "%TSLA%" or "%TSLA " in user_input:
+        if "%TSLA " in user_input:
             contracts = await get_tsla_option_list()
             logger.debug(f"contracts {contracts}")
             extras = [
@@ -46,6 +46,20 @@ class DataFeed:
                     symbol=c.localSymbol,
                     full_name=c.localSymbol,
                     description=f"tsla {c.lastTradeDateOrContractMonth} - {"PUT" if c.right == "P" else "CALL"} {c.strike} option",
+                    exchange=c.exchange,
+                    ticker="option:" + c.localSymbol,
+                    type="option",
+                )
+                for c in contracts
+            ]
+        elif "%SPY " in user_input:
+            contracts = await get_spy_option_list()
+            logger.debug(f"contracts {contracts}")
+            extras = [
+                SearchSymbolResultItem(
+                    symbol=c.localSymbol,
+                    full_name=c.localSymbol,
+                    description=f"spy {c.lastTradeDateOrContractMonth} - {"PUT" if c.right == "P" else "CALL"} {c.strike} option",
                     exchange=c.exchange,
                     ticker="option:" + c.localSymbol,
                     type="option",

@@ -9,6 +9,7 @@ from sanic_ext import Extend
 
 import socketio
 from mayim.extension import SanicMayimExtension
+from backend.api.option_price import OptionTracker
 from backend.broker.futu.broker import Broker as FutuBroker
 
 from backend.broker.ib.subscribe_manager import SubscribeManager
@@ -54,6 +55,9 @@ def before_server_stop(sanic, loop):
     time.sleep(1)
 
 
+op = OptionTracker(["TSLA", "SPY"])
+
+
 @app.after_server_start
 async def after_server_start(sanic, loop):
     asyncio.ensure_future(DataFeed.init())
@@ -67,22 +71,22 @@ async def after_server_start(sanic, loop):
         cs_f3 = ContractSignals(
             Symbol(raw=sym, type=SymbolType.STOCK),
             Freq.F3,
-            [MACDArea(), FxCheck()],
+            [MACDArea(), FxCheck(), op],
         )
         cs_f5 = ContractSignals(
             Symbol(raw=sym, type=SymbolType.STOCK),
             Freq.F5,
-            [MACDArea(), FxCheck()],
+            [MACDArea(), FxCheck(), op],
         )
         cs_f10 = ContractSignals(
             Symbol(raw=sym, type=SymbolType.STOCK),
             Freq.F10,
-            [MACDArea(), FxCheck()],
+            [MACDArea(), FxCheck(), op],
         )
         cs_f15 = ContractSignals(
             Symbol(raw=sym, type=SymbolType.STOCK),
             Freq.F15,
-            [MACDArea(), FxCheck()],
+            [MACDArea(), FxCheck(), op],
         )
         cs_f30 = ContractSignals(
             Symbol(raw=sym, type=SymbolType.STOCK),
@@ -92,7 +96,7 @@ async def after_server_start(sanic, loop):
         cs_f60 = ContractSignals(
             Symbol(raw=sym, type=SymbolType.STOCK),
             Freq.F60,
-            [MAHit(), FxCheck()],
+            [MAHit(), FxCheck(), op],
         )
         # cs_f5, cs_f15, cs_f30, cs_f10, cs_f60
         mcs = MultipleContractSignals(
@@ -170,6 +174,16 @@ async def get_bars(request: Request):
         symbol_info=symbol_info, resolution=resolution, period_params=period_params
     )
     return json([bar.model_dump(mode="json", exclude_none=True) for bar in bars])
+
+
+@app.route("/ma/option_price", methods=["POST"])
+async def ma_option_price(request: Request):
+    logger.error(f"msg {request.json}")
+    if request.json["option"] == "":
+        return json("{}", status=401)
+
+    result = await op.get_option_price(request.json["symbol"], request.json["option"])
+    return json([r.model_dump(mode="json", exclude_none=True) for r in result])
 
 
 @app.route("/zen/elements", methods=["POST"])

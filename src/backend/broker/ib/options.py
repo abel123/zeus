@@ -59,3 +59,47 @@ async def get_tsla_option_list() -> List[Contract]:
     except Exception as e:
         logger.error(f"fetch option list error {e}")
         return []
+
+
+@cached(TTLCache(maxsize=4, ttl=40))
+async def get_spy_option_list() -> List[Contract]:
+    try:
+        ib = SubscribeManager().ib
+        await SubscribeManager()._connect()
+        tsla = Stock("SPY", "SMART", "USD")
+        await ib.qualifyContractsAsync(tsla)
+
+        his = await ib.reqHistoricalDataAsync(
+            tsla, datetime.now(), "1 D", "1 hour", "TRADES", True, 2
+        )
+        spxValue = his[-1].close
+
+        chains = await ib.reqSecDefOptParamsAsync(
+            tsla.symbol, "", tsla.secType, tsla.conId
+        )
+        util.df(chains)
+
+        chain = next(
+            c for c in chains if c.tradingClass == "SPY" and c.exchange == "SMART"
+        )
+
+        strikes = [
+            strike
+            for strike in chain.strikes
+            if strike % 1 == 0 and spxValue - 4 < strike < spxValue + 4
+        ]
+        expirations = sorted(exp for exp in chain.expirations)[:1]
+        rights = ["P", "C"]
+
+        contracts = [
+            Option("SPY", expiration, strike, right, "SMART", tradingClass="SPY")
+            for expiration in expirations
+            for strike in strikes
+            for right in rights
+        ]
+
+        contracts = await ib.qualifyContractsAsync(*contracts)
+        return contracts
+    except Exception as e:
+        logger.error(f"fetch option list error {e}")
+        return []
