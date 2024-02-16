@@ -163,4 +163,5 @@ cython_debug/
 ./TODO.md
 ./src/error.log
 ./src/warning.log
+src/zen-rs/.idea/
 .DS_Store

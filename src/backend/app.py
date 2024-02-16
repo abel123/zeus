@@ -91,7 +91,7 @@ async def after_server_start(sanic, loop):
         cs_f30 = ContractSignals(
             Symbol(raw=sym, type=SymbolType.STOCK),
             Freq.F30,
-            [MACDArea(), MAHit(), FxCheck()],
+            [MACDArea(), MAHit(), MAHit(15), FxCheck()],
         )
         cs_f60 = ContractSignals(
             Symbol(raw=sym, type=SymbolType.STOCK),
@@ -178,7 +178,7 @@ async def get_bars(request: Request):
 
 @app.route("/ma/option_price", methods=["POST"])
 async def ma_option_price(request: Request):
-    logger.error(f"msg {request.json}")
+    logger.info(f"msg {request.json}")
     if request.json["option"] == "":
         return json("{}", status=401)
 

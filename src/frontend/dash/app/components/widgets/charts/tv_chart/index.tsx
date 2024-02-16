@@ -33,7 +33,7 @@ export const TVChartContainer = (
         let extras = {};
         if (props.interval == ("1" as ResolutionString)) {
             extras = {
-                "paneProperties.background": "#FDFDFD",
+                "paneProperties.background": "#FBFCFB",
                 "paneProperties.backgroundType": "solid",
             };
         }

@@ -202,11 +202,12 @@ class MACDArea:
             max_high = max(x.high for x in bis)
             type=BCType.AREA
 
+            threshold = 8.0/10
             if (
                 bi1.direction == Direction.Up
                 and bi1.low == min_low
                 and bi2.high == max_high
-                and (dif_zero <= 0.00001 or math.fabs(dif_zero) < math.fabs(bi1_dif)/4)
+                and (dif_zero <= 0.00001 or math.fabs(dif_zero) < math.fabs(bi1_dif)*threshold)
                 and (bi1_dif > 0 and bi2_dif >0 )
             ):
                 macd_a = max(
@@ -246,7 +247,7 @@ class MACDArea:
                 bi1.direction == Direction.Down
                 and bi1.high == max_high
                 and bi2.low == min_low
-                and (dif_zero >= -0.00001 or math.fabs(dif_zero) < math.fabs(bi1_dif)/4)
+                and (dif_zero >= -0.00001 or math.fabs(dif_zero) < math.fabs(bi1_dif)*threshold)
                 and (bi1_dif < 0 and bi2_dif < 0)
             ):
                 macd_a = min(

@@ -88,7 +88,7 @@ async def get_spy_option_list() -> List[Contract]:
             for strike in chain.strikes
             if strike % 1 == 0 and spxValue - 4 < strike < spxValue + 4
         ]
-        expirations = sorted(exp for exp in chain.expirations)[:1]
+        expirations = sorted(exp for exp in chain.expirations)[:2]
         rights = ["P", "C"]
 
         contracts = [

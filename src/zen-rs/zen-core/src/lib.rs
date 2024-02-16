@@ -1,3 +1,8 @@
+pub mod objects;
+mod storage;
+mod analyze;
+mod settings;
+
 pub fn add(left: usize, right: usize) -> usize {
     left + right
 }

@@ -1,9 +1,10 @@
 import asyncio
 from math import fabs
+from desktop_notifier import Urgency
 
 from loguru import logger
 from backend.calculate.protocol import Processor
-from backend.utils.convert import local_time
+from backend.utils.convert import local_time, local_time_str
 from backend.utils.notify import Notify
 from czsc.analyze import CZSC
 from talipp.indicators import EMA, SMA
@@ -31,8 +32,8 @@ class MAHit(Processor):
         k2 = "symbol"
         k3 = "freq"
         if len(self.sma) > 0:
-            if fabs(last_bar.close - self.sma[-1]) / self.sma[-1] < 0.001:
-                logger.warning(
+            if fabs(last_bar.close - self.sma[-1]) / self.sma[-1] < 0.5 / 483:
+                """logger.warning(
                     {
                         "dt": last_bar.dt,
                         "k1": k1,
@@ -42,7 +43,7 @@ class MAHit(Processor):
                         "k3": last_bar.freq.value,
                         "value": self.sma[-1] if len(self.sma) > 0 else None,
                     }
-                )
+                )"""
                 signal = Signal(
                     k1=k1,
                     v1=self.sma.period,
@@ -53,9 +54,10 @@ class MAHit(Processor):
                 )
                 asyncio.ensure_future(
                     Notify.send(
-                        title=signal.key,
+                        title=f"{local_time_str(last_bar.dt)} {signal.key}",
                         message=f"{local_time(last_bar.dt)} {signal.value}",
                         sound=True,
+                        urgency=Urgency.Normal,
                     )
                 )
                 return Signal(

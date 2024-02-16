@@ -173,12 +173,15 @@ class MACDArea(Processor):
             min_low = min(min(x.low for x in bis), bi2.low)
             max_high = max(max(x.high for x in bis), bi2.high)
             score = 80
+            threshold = 8.0 / 10
+
             if (
                 bi1.direction == Direction.Up
                 and bi1.low == min_low
                 and bi2.high == max_high
                 and (
-                    dif_zero <= 0.00001 or math.fabs(dif_zero) < math.fabs(bi1_dif) / 4
+                    dif_zero <= 0.00001
+                    or math.fabs(dif_zero) < math.fabs(bi1_dif) * threshold
                 )
                 and (bi1_dif > 0 and bi2_dif > 0)
             ):
@@ -194,7 +197,8 @@ class MACDArea(Processor):
                 and bi1.high == max_high
                 and bi2.low == min_low
                 and (
-                    dif_zero >= -0.00001 or math.fabs(dif_zero) < math.fabs(bi1_dif) / 4
+                    dif_zero >= -0.00001
+                    or math.fabs(dif_zero) < math.fabs(bi1_dif) * threshold
                 )
                 and (bi1_dif < 0 and bi2_dif < 0)
             ):

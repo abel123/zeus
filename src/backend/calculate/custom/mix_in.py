@@ -128,7 +128,7 @@ class MultipleContractSignals(WatcherProtocol):
                     f"process {local_time(self.latest_dt)} events {k}, {events}"
                 )
 
-        if True and len(events) > 4:
+        if True and len(events) > 5:
             logger.warning(f"{local_time(bar.dt)} generated events {events}")
 
         if self.matcher is not None:

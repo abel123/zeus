@@ -28,7 +28,7 @@ class Item:
         self.ticker = ticker
 
     def __del__(self):
-        logger.warning(f"cancel mkt data {self.ticker.contract}")
+        logger.error(f"cancel mkt data {self.ticker.contract}")
         SubscribeManager().ib.cancelMktData(self.ticker.contract)
 
 
@@ -40,8 +40,9 @@ async def qualifyContract(option: str):
     return details[0]
 
 
-@cached(cache=LRUCache(maxsize=4))
+@cached(cache=LRUCache(maxsize=40))
 async def get_option(option: str) -> Item:
+    logger.error(f"option detail {await qualifyContract(option)}")
     ticker = SubscribeManager().ib.reqMktData(await qualifyContract(option))
     return Item(ticker)
 
@@ -80,7 +81,9 @@ class OptionTracker(metaclass=SingletonABCMeta):
     async def get_option_price(self, symbol: str, option: str):
         item = await get_option(option)
         result = []
-        # logger.debug(f"======== {item.ticker.last} {item.ticker.lastGreeks}")
+        logger.debug(
+            f"======== {item.ticker.last} {item.ticker.lastGreeks} {item.ticker.modelGreeks} {item.ticker.askGreeks}"
+        )
         for p in self.period:
             for ma in self.ma_interval:
                 if self.trackers.get((symbol, p, ma)) == None:

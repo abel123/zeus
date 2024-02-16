@@ -1,0 +1,13 @@
+[package]
+name = "zen-core"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = { version = "0.4.31", features = [] }
+tracing = { version = "0.1", features = [] }
+tracing-subscriber = "0.3"
+serde = { version = "1.0.196", features = ["derive"] }
+config = { version = "0.14.0", features = [] }
