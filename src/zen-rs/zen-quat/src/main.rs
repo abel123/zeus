@@ -1,0 +1,87 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::thread;
+use std::time::Duration;
+
+use actix_cors::Cors;
+use actix_web::middleware::Logger;
+use actix_web::{get, rt, web, App, HttpRequest, HttpServer};
+use diesel_logger::LoggingConnection;
+use futures_util::StreamExt;
+use tokio::sync::oneshot::channel;
+use tokio::task;
+use tokio::task::{spawn_local, LocalSet};
+use tokio::time::{sleep, Instant};
+use tracing::{debug, info};
+use tracing_subscriber::fmt::layer;
+use tracing_subscriber::fmt::time::ChronoLocal;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{registry, EnvFilter};
+
+use tws_rs::client::market_data::historical::{historical_data, BarSize, TWSDuration, WhatToShow};
+use tws_rs::contracts::Contract;
+use tws_rs::{Client, Error};
+
+use crate::db::establish_connection;
+use crate::zen_manager::{AppZenMgr, Store, ZenManager};
+
+mod api;
+mod calculate;
+mod db;
+mod schema;
+mod zen_manager;
+
+fn main() -> std::io::Result<()> {
+    env_logger::init();
+
+    tracing::subscriber::set_global_default(
+        tracing_subscriber::fmt()
+            .with_line_number(true)
+            .with_timer(ChronoLocal::rfc_3339())
+            .with_env_filter(EnvFilter::from_default_env())
+            .finish(),
+    )
+    .expect("logger init");
+
+    rt::System::new().block_on(
+        HttpServer::new(|| {
+            let cors = Cors::default()
+                .allow_any_origin()
+                .allow_any_header()
+                .allow_any_method()
+                .max_age(3600);
+            App::new()
+                .wrap(Logger::new("%a  %r %s %b  %T"))
+                .wrap(cors)
+                .data_factory(|| async {
+                    let mut client = Client::new("127.0.0.1:14001", 4322);
+                    let client_ref = client.connect().await?;
+                    sleep(Duration::from_secs(2)).await;
+                    info!("connected");
+                    spawn_local(async move {
+                        client.blocking_process().await?;
+                        Ok::<(), Error>(())
+                    });
+                    Ok::<_, Error>((
+                        Rc::new(RefCell::new(ZenManager::new(client_ref))),
+                        RefCell::new(Store::new()),
+                    ))
+                })
+                .data_factory(|| async {
+                    let conn = establish_connection();
+                    let conn = LoggingConnection::new(conn);
+
+                    Ok::<_, Error>(RefCell::new(conn))
+                })
+                .service(api::history)
+                .service(api::search_symbol)
+                .service(api::resolve_symbol)
+                .service(api::zen_element)
+                .service(api::config)
+        })
+        .workers(1)
+        .bind(("127.0.0.1", 8080))?
+        .run(),
+    )
+}

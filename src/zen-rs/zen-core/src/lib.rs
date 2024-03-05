@@ -1,19 +1,8 @@
+pub use analyze::CZSC;
+pub use objects::chan::Bar;
+pub use settings::Settings;
+
+pub mod analyze;
 pub mod objects;
+pub mod settings;
 mod storage;
-mod analyze;
-mod settings;
-
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}

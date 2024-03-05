@@ -3,14 +3,14 @@ use std::env;
 use config::{Config, ConfigError, Environment, File};
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Copy, Clone)]
 pub(crate) enum BiType {
     Modern,
     Legacy,
     FourK,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
 pub struct Settings {
     pub debug: bool,
@@ -38,10 +38,6 @@ impl Settings {
             .add_source(Environment::with_prefix("zen"))
             // You may also programmatically change settings
             .build()?;
-
-        // Now that we're done, let's access our configuration
-        println!("debug: {:?}", s.get_bool("debug"));
-        println!("database: {:?}", s.get::<String>("min_bi_len"));
 
         // You can deserialize (and thus freeze) the entire configuration as
         s.try_deserialize()

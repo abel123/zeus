@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use chrono::{DateTime, Utc};
+use time::OffsetDateTime;
 
 use super::enums::{Direction, Freq, Mark};
 
@@ -11,25 +11,27 @@ pub type GenericCache = HashMap<String, Box<dyn std::any::Any>>;
 pub type Symbol = String;
 
 //原始K线元素
-pub(crate) struct Bar {
-    pub(crate) symbol: Symbol,
-    pub(crate) id: usize,
-    pub(crate) dt: DateTime<Utc>,
-    pub(crate) freq: Freq,
-    pub(crate) open: f32,
-    pub(crate) close: f32,
-    pub(crate) high: f32,
-    pub(crate) low: f32,
-    pub(crate) vol: f32,
-    pub(crate) amount: f32,
-    cache: GenericCache, // cache 用户缓存，一个最常见的场景是缓存技术指标计算结果
+#[derive(Debug)]
+pub struct Bar {
+    pub symbol: Symbol,
+    pub id: usize,
+    pub dt: OffsetDateTime,
+    pub freq: Freq,
+    pub open: f32,
+    pub close: f32,
+    pub high: f32,
+    pub low: f32,
+    pub vol: f32,
+    pub amount: f32,
+    pub cache: GenericCache, // cache 用户缓存，一个最常见的场景是缓存技术指标计算结果
 }
 
 // 去除包含关系后的K线元素
-pub(crate) struct NewBar {
+#[derive(Debug)]
+pub struct NewBar {
     pub(crate) symbol: Symbol,
     pub(crate) id: usize,
-    pub(crate) dt: DateTime<Utc>,
+    pub(crate) dt: OffsetDateTime,
     pub(crate) freq: Freq,
     pub(crate) open: f32,
     pub(crate) close: f32,
@@ -47,7 +49,7 @@ impl Default for NewBar {
         Self {
             symbol: "".to_string(),
             id: 0,
-            dt: Default::default(),
+            dt: OffsetDateTime::now_utc(),
             freq: Freq::Tick,
             open: 0.0,
             close: 0.0,
@@ -67,9 +69,10 @@ impl NewBar {
     }
 }
 
+#[derive(Debug)]
 pub struct FX {
     pub(crate) symbol: Symbol,
-    pub(crate) dt: DateTime<Utc>,
+    pub dt: OffsetDateTime,
     pub(crate) mark: Mark,
     pub(crate) high: f32,
     pub(crate) low: f32,
@@ -78,17 +81,18 @@ pub struct FX {
     pub(crate) cache: GenericCache,
 }
 
+#[derive(Debug)]
 pub struct BI {
-    pub(crate) symbol: Symbol,
+    pub symbol: Symbol,
     // 笔开始的分型
-    pub(crate) fx_a: Rc<FX>,
+    pub fx_a: Rc<FX>,
     // 笔结束的分型
-    pub(crate) fx_b: Rc<FX>,
+    pub fx_b: Rc<FX>,
     // 笔内部的分型列表
-    pub(crate) fxs: Vec<Rc<FX>>,
-    pub(crate) direction: Direction,
-    pub(crate) bars: Vec<Rc<NewBar>>,
-    pub(crate) cache: GenericCache,
+    pub fxs: Vec<Rc<FX>>,
+    pub direction: Direction,
+    pub bars: Vec<Rc<NewBar>>,
+    pub cache: GenericCache,
 }
 
 impl BI {

@@ -1,11 +1,11 @@
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum Direction {
     Up,
     Down,
 }
 
 impl Direction {
-    fn as_str(&self) -> &'static str {
+    pub fn as_str(&self) -> &'static str {
         match self {
             Self::Up => "向上",
             Self::Down => "向下",
@@ -28,7 +28,7 @@ impl Mark {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum Freq {
     Tick,
     F1,
