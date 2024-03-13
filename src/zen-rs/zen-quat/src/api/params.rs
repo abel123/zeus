@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::calculate::macd_area::BeichiInfo;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug)]
@@ -247,6 +248,6 @@ pub(super) struct BiInfo {
 #[derive(Serialize, Debug)]
 pub(super) struct ZenResponse {
     pub bi: BiInfo,
-    pub beichi: Vec<()>,
+    pub beichi: Vec<Vec<BeichiInfo>>,
     pub bar_beichi: Vec<()>,
 }

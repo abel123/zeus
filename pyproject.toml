@@ -48,6 +48,8 @@ rubicon-objc = "^0.4.7"
 desktop-notifier = "^3.5.6"
 ta-lib = "^0.4.28"
 pytz = "^2023.3.post1"
+asyncache = "^0.3.1"
+shelved-cache = "^0.3.1"
 
 
 [build-system]

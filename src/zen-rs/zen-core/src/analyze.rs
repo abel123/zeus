@@ -4,6 +4,8 @@ use std::fmt::Display;
 use std::ops::Deref;
 use std::rc::Rc;
 
+use talipp::indicator::macd::MACD;
+use talipp::indicator::Indicator;
 use time::OffsetDateTime;
 use tracing::field::debug;
 use tracing::{debug, error};
@@ -20,8 +22,9 @@ pub struct CZSC {
     pub bars_ubi: Vec<Rc<NewBar>>,
     pub bi_list: Vec<BI>,
     symbol: Symbol,
-    freq: Freq,
+    pub freq: Freq,
     settings: Settings,
+    macd_calc: MACD,
 }
 
 impl Display for CZSC {
@@ -43,6 +46,7 @@ impl CZSC {
             symbol,
             freq,
             settings,
+            macd_calc: MACD::new(4, 9, 9),
         }
     }
 
@@ -52,13 +56,17 @@ impl CZSC {
     pub fn end(&self) -> Option<OffsetDateTime> {
         return self.bars_raw.last().map(|e| e.borrow().dt);
     }
-    pub fn update(&mut self, bar_: Bar) {
+    pub fn update(&mut self, mut bar_: Bar) {
         let last_bar =
             if self.bars_raw.len() == 0 || bar_.dt != self.bars_raw.last().unwrap().borrow().dt {
+                self.macd_calc.next(bar_.close);
+                bar_.macd_4_9_9 = self.macd_calc.value();
                 self.bars_raw.push(Rc::new(RefCell::new(bar_)));
                 vec![self.bars_raw.last().unwrap().clone()]
             } else {
                 let len = self.bars_raw.len();
+                self.macd_calc.update(bar_.close);
+                bar_.macd_4_9_9 = self.macd_calc.value();
                 *self.bars_raw[len - 1].borrow_mut() = bar_;
                 let last_bars = self.bars_ubi.pop().expect("must non-empty");
                 last_bars.raw_bars.iter().map(|x| x.clone()).collect()
@@ -68,7 +76,6 @@ impl CZSC {
         for bar in last_bar {
             if bars_ubi.len() < 2 {
                 bars_ubi.push(Rc::new(NewBar {
-                    symbol: bar.borrow().symbol.clone(),
                     id: bar.borrow().id,
                     dt: bar.borrow().dt,
                     freq: bar.borrow().freq,
@@ -85,9 +92,6 @@ impl CZSC {
                 let mut iter = bars_ubi.iter().rev().take(2);
                 let (k2, k1) = (iter.next(), iter.next());
                 let (has_include, k3) = remove_include(k1.unwrap(), k2.unwrap(), bar.clone());
-                if bar.borrow().low == 225.54 {
-                    debug!("bar {:?} {} {:?}", bar, has_include, k3);
-                }
                 if has_include {
                     let len = bars_ubi.len();
                     bars_ubi[len - 1] = Rc::new(k3);
@@ -195,7 +199,6 @@ fn remove_include(k1: &NewBar, k2: &NewBar, k3: Rc<RefCell<Bar>>) -> (bool, NewB
     } else {
         let k3 = k3_clone.borrow();
         let k4 = NewBar {
-            symbol: k3.symbol.clone(),
             id: k3.id,
             freq: k3.freq,
             dt: k3.dt,
@@ -208,7 +211,6 @@ fn remove_include(k1: &NewBar, k2: &NewBar, k3: Rc<RefCell<Bar>>) -> (bool, NewB
             cache: Default::default(),
             raw_bars: vec![k3_clone.clone()],
         };
-        unreachable!();
         return (false, k4);
     };
 
@@ -252,10 +254,8 @@ fn remove_include(k1: &NewBar, k2: &NewBar, k3: Rc<RefCell<Bar>>) -> (bool, NewB
                 break;
             }
         }
-        let symbol = k3.symbol.clone();
         elements.push(k3_clone.clone());
         let k4 = NewBar {
-            symbol,
             id: k2.id,
             freq: k2.freq,
             dt,
@@ -272,7 +272,6 @@ fn remove_include(k1: &NewBar, k2: &NewBar, k3: Rc<RefCell<Bar>>) -> (bool, NewB
     } else {
         let k3 = k3_clone.borrow();
         let k4 = NewBar {
-            symbol: k3.symbol.clone(),
             id: k3.id,
             freq: k3.freq,
             dt: k3.dt,
@@ -293,7 +292,6 @@ fn check_fx(k1: Rc<NewBar>, k2: Rc<NewBar>, k3: Rc<NewBar>) -> Option<FX> {
     let mut fx = None;
     if (k1.high < k2.high && k2.high > k3.high) && (k1.low < k2.low && k2.low > k3.low) {
         fx = Some(FX {
-            symbol: k1.symbol.clone(),
             dt: k2.dt,
             mark: Mark::G,
             high: k2.high,
@@ -304,7 +302,6 @@ fn check_fx(k1: Rc<NewBar>, k2: Rc<NewBar>, k3: Rc<NewBar>) -> Option<FX> {
         })
     } else if (k1.low > k2.low && k2.low < k3.low) && (k1.high > k2.high && k2.high < k3.high) {
         fx = Some(FX {
-            symbol: k1.symbol.clone(),
             dt: k2.dt,
             mark: Mark::D,
             high: k2.high,
@@ -403,15 +400,14 @@ fn check_bi(bars: &mut Vec<Rc<NewBar>>, benchmark: Option<f32>, settings: &Setti
         BiType::FourK => bars_a.len() >= 6,
     };
 
-    debug!(
+    /*debug!(
         "fx_a -fx_b {} - {} : {} {} {}",
         fx_a.dt, fx_b.dt, ab_include, length_enough, power_enough
-    );
+    );*/
     if (!ab_include) && (length_enough || power_enough) {
         bars.retain(|x| x.dt >= fx_b.elements[0].dt);
         fxs.retain(|x| x.dt >= fx_a.elements[0].dt && x.dt <= fx_b.elements[2].dt);
         let bi = Some(BI {
-            symbol: fx_a.symbol.clone(),
             fx_a,
             fx_b,
             fxs,

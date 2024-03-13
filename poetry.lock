@@ -225,6 +225,20 @@ files = [
 ]
 
 [[package]]
+name = "asyncache"
+version = "0.3.1"
+description = "Helpers to use cachetools with async code."
+optional = false
+python-versions = ">=3.8,<4.0"
+files = [
+    {file = "asyncache-0.3.1-py3-none-any.whl", hash = "sha256:ef20a1024d265090dd1e0785c961cf98b9c32cc7d9478973dcf25ac1b80011f5"},
+    {file = "asyncache-0.3.1.tar.gz", hash = "sha256:9a1e60a75668e794657489bdea6540ee7e3259c483517b934670db7600bf5035"},
+]
+
+[package.dependencies]
+cachetools = ">=5.2.0,<6.0.0"
+
+[[package]]
 name = "attrs"
 version = "23.2.0"
 description = "Classes Without Boilerplate"
@@ -3858,6 +3872,20 @@ objc = ["pyobjc-framework-Cocoa"]
 win32 = ["pywin32"]
 
 [[package]]
+name = "shelved-cache"
+version = "0.3.1"
+description = "Persistent cache for Python cachetools."
+optional = false
+python-versions = ">=3.7.0,<4.0.0"
+files = [
+    {file = "shelved_cache-0.3.1-py3-none-any.whl", hash = "sha256:3597da599eae1b9df3237c401654e90377fab29f9873e671096550779733ec61"},
+    {file = "shelved_cache-0.3.1.tar.gz", hash = "sha256:0dc1b74fb158117643fc621bf8c12c1ac96e2637530dcfb11f7a242e023a5831"},
+]
+
+[package.dependencies]
+cachetools = ">=4.2.2,<6.0.0"
+
+[[package]]
 name = "simple-websocket"
 version = "1.0.0"
 description = "Simple WebSocket server and client for Python"
@@ -4822,4 +4850,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.12,<3.13"
-content-hash = "1594ce0508d5ee2de067066cecbfb2ca45d3d4fe7e41fdc56dd603268ae0aeb3"
+content-hash = "2d2a5882895c25a613cea2889e9718fe7d74ef29f95c4c7a1f8851614c173962"

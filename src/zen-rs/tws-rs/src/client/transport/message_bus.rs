@@ -230,7 +230,7 @@ async fn read_packet(reader: &mut OwnedReadHalf) -> Result<ResponseMessage, Erro
     let raw_string = String::from_utf8(data)?;
     let packet = ResponseMessage::from(&raw_string);
     if raw_string.len() > 300 {
-        debug!("<- {}", raw_string.chars().take(100).collect::<String>());
+        //debug!("<- {}", raw_string.chars().take(100).collect::<String>());
     } else {
         debug!("<- {:?}", packet);
     }

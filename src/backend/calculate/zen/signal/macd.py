@@ -165,7 +165,7 @@ class MACDArea:
         if len(c.bi_list) < 7 or len(c.bars_ubi) > 7:
             return create_single_signal(k1=k1, k2=k2, k3=k3, v1=v1)
 
-        for n in (9, 7, 5, 3):
+        for n in (9, 7, 5):#, 3):
             bis = get_sub_elements(c.bi_list, di=di, n=n)
             if len(bis) != n:
                 continue

@@ -1,5 +1,5 @@
 debug: false
 min_bi_len: 4
 bi_type: Modern
-bi_change_threshold: 100
+bi_change_threshold: 1
 max_bi_num: 2000

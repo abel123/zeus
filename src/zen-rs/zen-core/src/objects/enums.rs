@@ -1,4 +1,6 @@
-#[derive(PartialEq, Debug)]
+use serde::{Serialize, Serializer};
+
+#[derive(PartialEq, Debug, Clone)]
 pub enum Direction {
     Up,
     Down,
@@ -9,6 +11,17 @@ impl Direction {
         match self {
             Self::Up => "向上",
             Self::Down => "向下",
+        }
+    }
+}
+impl Serialize for Direction {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            Self::Up => serializer.serialize_str("up"),
+            Self::Down => serializer.serialize_str("down"),
         }
     }
 }

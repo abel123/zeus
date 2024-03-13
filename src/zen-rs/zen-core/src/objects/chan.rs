@@ -13,7 +13,6 @@ pub type Symbol = String;
 //原始K线元素
 #[derive(Debug)]
 pub struct Bar {
-    pub symbol: Symbol,
     pub id: usize,
     pub dt: OffsetDateTime,
     pub freq: Freq,
@@ -24,30 +23,29 @@ pub struct Bar {
     pub vol: f32,
     pub amount: f32,
     pub cache: GenericCache, // cache 用户缓存，一个最常见的场景是缓存技术指标计算结果
+    pub macd_4_9_9: (f32, f32, f32),
 }
 
 // 去除包含关系后的K线元素
 #[derive(Debug)]
 pub struct NewBar {
-    pub(crate) symbol: Symbol,
     pub(crate) id: usize,
     pub(crate) dt: OffsetDateTime,
     pub(crate) freq: Freq,
     pub(crate) open: f32,
     pub(crate) close: f32,
     pub high: f32,
-    pub(crate) low: f32,
+    pub low: f32,
     pub(crate) vol: f32,
     pub(crate) amount: f32,
     // cache 用户缓存，一个最常见的场景是缓存技术指标计算结果
     pub(crate) cache: GenericCache,
-    pub(crate) raw_bars: Vec<Rc<RefCell<Bar>>>, // 存入具有包含关系的原始K线
+    pub raw_bars: Vec<Rc<RefCell<Bar>>>, // 存入具有包含关系的原始K线
 }
 
 impl Default for NewBar {
     fn default() -> Self {
         Self {
-            symbol: "".to_string(),
             id: 0,
             dt: OffsetDateTime::now_utc(),
             freq: Freq::Tick,
@@ -71,19 +69,17 @@ impl NewBar {
 
 #[derive(Debug)]
 pub struct FX {
-    pub(crate) symbol: Symbol,
     pub dt: OffsetDateTime,
     pub(crate) mark: Mark,
     pub(crate) high: f32,
     pub(crate) low: f32,
     pub(crate) fx: f32,
-    pub(crate) elements: Vec<Rc<NewBar>>,
+    pub elements: Vec<Rc<NewBar>>,
     pub(crate) cache: GenericCache,
 }
 
 #[derive(Debug)]
 pub struct BI {
-    pub symbol: Symbol,
     // 笔开始的分型
     pub fx_a: Rc<FX>,
     // 笔结束的分型
@@ -104,5 +100,9 @@ impl BI {
     }
     pub fn low(&self) -> f32 {
         f32::min(self.fx_a.low, self.fx_b.low)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Rc<NewBar>> {
+        self.bars.get(1..self.bars.len() - 1).unwrap().iter()
     }
 }

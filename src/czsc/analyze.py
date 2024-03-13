@@ -529,9 +529,11 @@ class CZSC:
 
         return {
             "start_ts": int(ubi_fxs[0].dt.timestamp()),
-            "end_ts": int(low_bar.dt.timestamp())
-            if direction == Direction.Down
-            else int(high_bar.dt.timestamp()),
+            "end_ts": (
+                int(low_bar.dt.timestamp())
+                if direction == Direction.Down
+                else int(high_bar.dt.timestamp())
+            ),
             "start": ubi_fxs[0].high if direction == Direction.Down else ubi_fxs[0].low,
             "end": low_bar.low if direction == Direction.Down else high_bar.high,
             "direction": str(direction),

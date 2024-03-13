@@ -2,23 +2,25 @@ use std::cell::RefCell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::sync::Arc;
 
 use futures_util::StreamExt;
-use time::format_description::well_known::iso8601::FormattedComponents::DateTime;
-use time::macros::offset;
 use time::{Duration, OffsetDateTime};
 use tokio::select;
-use tokio::sync::oneshot::Sender;
-use tokio::time::Instant;
+use tokio::sync::oneshot::{channel, Sender};
+use tokio::sync::RwLock;
+use tokio::task::spawn_local;
+use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, info};
 
+use crate::calculate::macd_area::MacdArea;
+use crate::calculate::r#trait::Processor;
 use tws_rs::client::market_data::historical;
-use tws_rs::client::market_data::historical::{historical_data, BarSize, TWSDuration, WhatToShow};
+use tws_rs::client::market_data::historical::{
+    cancel_historical_data, historical_data, BarSize, TWSDuration, WhatToShow,
+};
 use tws_rs::contracts::Contract;
-use tws_rs::{ClientRef, Error};
-use zen_core::objects::chan::Symbol;
+use tws_rs::{Client, ClientRef, Error};
 use zen_core::objects::enums::Freq;
 use zen_core::{Bar, Settings, CZSC};
 
@@ -31,11 +33,13 @@ pub(crate) struct Zen {
     setting: Settings,
     token: Option<CancellationToken>,
     pub(crate) request_id: i32,
+    pub(crate) bc_processor: MacdArea,
+    rwlock: RwLock<()>,
 }
 
 impl Drop for Zen {
     fn drop(&mut self) {
-        self.token.clone().map(|t| t.cancel());
+        self.token.take().map(|t| t.cancel());
     }
 }
 impl Zen {
@@ -49,11 +53,13 @@ impl Zen {
             setting,
             token: None,
             request_id: 0,
+            bc_processor: MacdArea::new(1),
+            rwlock: Default::default(),
         }
     }
 
     pub fn reset(&mut self) {
-        self.token.clone().map(|t| t.cancel());
+        self.token.take().map(|t| t.cancel());
 
         self.czsc = CZSC::new(
             self.contract.symbol.clone(),
@@ -63,19 +69,24 @@ impl Zen {
         self.subscribed = false;
         self.realtime = false;
         self.token = None;
+        self.bc_processor.beichi_tracker.clear();
+    }
+
+    pub fn update(&mut self, bar: Bar) {
+        self.czsc.update(bar);
+        let _ = self.bc_processor.process(&self.czsc);
     }
     pub fn need_subscribe(&self, from: i64, to: i64) -> bool {
         debug!(
-            "{:?} {:?} {:?} from {:?} to {:?}",
+            "need_subscribe {:?} {:?} {} {} {:?}-{:?} required {:?}-{:?}",
             self.contract.symbol,
+            self.freq,
+            self.subscribed,
+            self.realtime,
             self.czsc.start(),
             self.czsc.end(),
-            OffsetDateTime::from_unix_timestamp(from)
-                .unwrap()
-                .to_offset(offset!(+8)),
+            OffsetDateTime::from_unix_timestamp(from),
             OffsetDateTime::from_unix_timestamp(to)
-                .unwrap()
-                .to_offset(offset!(+8))
         );
         if !self.subscribed {
             return true;
@@ -99,10 +110,6 @@ impl Zen {
         return self.czsc.start().unwrap().unix_timestamp() > from;
     }
 }
-pub(crate) struct ZenManager {
-    pub client: ClientRef,
-}
-
 pub(crate) struct Store {
     store: HashMap<(Contract, Freq), Rc<RefCell<Zen>>>,
     setting: Settings,
@@ -116,8 +123,7 @@ impl Store {
         }
     }
 
-    pub fn get_czsc(&mut self, sym: Contract, freq: Freq) -> Rc<RefCell<Zen>> {
-        debug!("setting {:?}", self.setting);
+    pub fn get_czsc(&mut self, sym: &Contract, freq: Freq) -> Rc<RefCell<Zen>> {
         match self.store.entry((sym.clone(), freq)) {
             Entry::Occupied(o) => o.get().clone(),
             Entry::Vacant(v) => v
@@ -130,12 +136,37 @@ impl Store {
         }
     }
 }
+pub(crate) struct ZenManager {
+    pub client: RwLock<Rc<RefCell<Option<ClientRef>>>>,
+    pub store: RefCell<Store>,
+}
+
 pub(crate) type AppZenMgr = Rc<RefCell<ZenManager>>;
 impl ZenManager {
-    pub fn new(client: ClientRef) -> Self {
-        Self { client }
+    pub fn new() -> Self {
+        Self {
+            client: RwLock::new(Rc::new(RefCell::new(None))),
+            store: RefCell::new(Store::new()),
+        }
     }
 
+    async fn connect(&self) -> Result<(), Error> {
+        if self.client.read().await.borrow().is_some() {
+            return Ok(());
+        }
+
+        let cref = self.client.write().await;
+        let mut client = Client::new("127.0.0.1:14001", 4322);
+        info!("connecting to TWS");
+        let client_ref = client.connect().await?;
+        info!("connected");
+        spawn_local(async move {
+            client.blocking_process().await?;
+            Ok::<(), Error>(())
+        });
+        *cref.borrow_mut() = Some(client_ref);
+        Ok(())
+    }
     pub fn freq_map() -> HashMap<String, Freq> {
         HashMap::from([
             ("1D".to_string(), Freq::D),
@@ -155,15 +186,65 @@ impl ZenManager {
             ("1".to_string(), Freq::F1),
         ])
     }
+    pub async fn cancel_historical_data(&self, request_id: i32) -> Result<(), Error> {
+        let _ = self.connect().await;
+        let client = { self.client.read().await.clone() };
+        let client = client.borrow();
+        let client = client.as_ref().unwrap();
+        cancel_historical_data(client, request_id).await?;
+        Ok(())
+    }
+    pub fn get_czsc(&self, contract: &Contract, freq: Freq) -> Rc<RefCell<Zen>> {
+        self.store.borrow_mut().get_czsc(contract, freq)
+    }
+    pub async fn try_subscribe(
+        mgr: Rc<RefCell<Self>>,
+        contract: &Contract,
+        freq: Freq,
+        from: i64,
+        to: i64,
+    ) -> Result<(), Error> {
+        let zen = mgr.borrow().get_czsc(contract, freq);
+        let c = contract.clone();
+        let subscribe = {
+            let _ = zen.borrow().rwlock.read().await;
+            zen.borrow().need_subscribe(from, to)
+        };
+        if subscribe {
+            let _ = zen.borrow().rwlock.write().await;
+            if zen.borrow().need_subscribe(from, to) {
+                let (send, recv) = channel::<()>();
+                spawn_local(async move {
+                    mgr.borrow()
+                        .subscribe_with(&c, freq, from, to, send)
+                        .await
+                        .expect("TODO: panic message");
+                });
+                return recv
+                    .await
+                    .map_err(|e| Error::Simple("subscribe error".to_string()));
+            }
+        }
+        Ok(())
+    }
     pub async fn subscribe_with(
         &self,
-        zen: Rc<RefCell<Zen>>,
+        contract: &Contract,
+        freq: Freq,
         from: i64,
         to: i64,
         sender: Sender<()>,
     ) -> Result<(), Error> {
-        let contract = zen.borrow().contract.clone();
-        let freq = zen.borrow().freq.clone();
+        let _ = self.connect().await;
+        let client = { self.client.read().await.clone() };
+        let client = client.borrow();
+        let client = client.as_ref().unwrap();
+
+        let zen = self.store.borrow_mut().get_czsc(contract, freq);
+        self.cancel_historical_data(zen.borrow().request_id).await?;
+
+        zen.borrow_mut().reset();
+
         let mut keep_up = OffsetDateTime::now_utc() - OffsetDateTime::from_unix_timestamp(to)?
             < Duration::days(365);
         if freq == Freq::D || freq == Freq::M || freq == Freq::S || freq == Freq::Y {
@@ -171,7 +252,7 @@ impl ZenManager {
                 < Duration::days(365 * 4);
         }
         let (bars, mut stream) = historical_data(
-            &self.client,
+            client,
             &contract,
             None,
             timedelta_to_duration(Duration::seconds(
@@ -192,8 +273,7 @@ impl ZenManager {
         zen.borrow_mut().reset();
 
         for e in &bars.bars {
-            zen.borrow_mut().czsc.update(Bar {
-                symbol: symbol.clone(),
+            zen.borrow_mut().update(Bar {
                 id: 0,
                 dt: e.date,
                 freq,
@@ -204,6 +284,7 @@ impl ZenManager {
                 amount: 0.0,
                 close: e.close as f32,
                 cache: Default::default(),
+                macd_4_9_9: (0.0, 0.0, 0.0),
             });
         }
 
@@ -220,9 +301,7 @@ impl ZenManager {
             select! {
                 Some(Ok(e)) = stream.next() =>{
                             let e: historical::Bar = e;
-                        info!("msg {:?}", e);
-                        zen.borrow_mut().czsc.update(Bar {
-                            symbol: symbol.clone(),
+                        zen.borrow_mut().update(Bar {
                             id: 0,
                             dt: e.date,
                             freq,
@@ -233,8 +312,8 @@ impl ZenManager {
                             amount: 0.0,
                             close: e.close as f32,
                             cache: Default::default(),
+                            macd_4_9_9: (0.0,0.0,0.0)
                         });
-                        //info!("czsc: {:?}", zen.borrow().czsc.bi_list.iter().rev().take(0));
                         }
                 _ = cloned_token.cancelled() => {
                     break;
@@ -306,7 +385,7 @@ fn timedelta_to_duration(duration: Duration) -> TWSDuration {
         );
     } else if duration.as_seconds_f32() >= Duration::days(1).as_seconds_f32() {
         return TWSDuration::days(
-            (duration.as_seconds_f32() / Duration::days(1).as_seconds_f32()).ceil() as i32,
+            (duration.as_seconds_f32() / Duration::days(1).as_seconds_f32()).ceil() as i32 + 1,
         );
     } else {
         return TWSDuration::seconds(duration.as_seconds_f32().ceil() as i32);

@@ -2,6 +2,5 @@
 
 members = [
     "zen-core",
-    "zen-quat",
-    "rust-ibapi"
-, "tws-rs"]
+    "zen-quat"
+    , "tws-rs", "talipp"]

@@ -117,7 +117,7 @@ class SubscribeManager(metaclass=SingletonABCMeta):
         logger.error(
             f"ib error reqId: {reqId}, errCode:{errorCode}, errString: {errorString}, contract: {contract}"
         )
-        if errorCode == 1102:
+        if errorCode == 1100:
             # "Connectivity between IB and Trader Workstation has been
             # restored": Resubscribe to account summary.
             self.subscribers.clear()
@@ -125,6 +125,7 @@ class SubscribeManager(metaclass=SingletonABCMeta):
                 for w in v:
                     symbol, freq = k.split("-")[0], self.freq_map.get(k.split("-")[1])
                     w.reset(symbol, freq)
+            self.ib.disconnect()
 
     def _cache_key(self, contract: str, barSize: str):
         if isinstance(contract, Contract):

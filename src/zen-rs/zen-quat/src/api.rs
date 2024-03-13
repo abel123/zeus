@@ -35,48 +35,31 @@ mod params;
 #[get("/datafeed/udf/history")]
 pub(super) async fn history(
     web::Query(params): web::Query<HistoryRequest>,
-    z: web::Data<(AppZenMgr, RefCell<Store>)>,
+    z: web::Data<AppZenMgr>,
 ) -> Result<impl Responder> {
-    debug!("history {:?}", params);
-    let (z, s) = z.get_ref();
-
     let mut symbol_ = params.symbol;
     if symbol_.contains(':') {
         symbol_ = symbol_.split(":").collect::<Vec<&str>>()[1].to_string();
     }
-    let zen = s.borrow_mut().get_czsc(
-        Contract::stock(symbol_.as_str()),
-        ZenManager::freq_map()
-            .get(&params.resolution)
-            .unwrap()
-            .clone(),
-    );
-    if zen.borrow().need_subscribe(params.from, params.to) {
-        let rs = cancel_historical_data(&z.borrow().client, zen.borrow().request_id).await;
-        let z = z.clone();
-        zen.borrow_mut().reset();
-
-        let zenz = zen.clone();
-        let (send, recv) = channel::<()>();
-        spawn_local(async move {
-            z.borrow()
-                .subscribe_with(zenz, params.from, params.to, send)
-                .await
-                .expect("TODO: panic message");
-        });
-        let rs = recv.await;
-        if rs.is_err() {
-            return Ok(Json(HistoryResponse {
-                s: "error".to_string(),
-                errmsg: Some("error in get_bars".to_string()),
-                t: None,
-                c: None,
-                h: None,
-                l: None,
-                v: None,
-                o: None,
-            }));
-        }
+    let contract = Contract::stock(symbol_.as_str());
+    let freq = ZenManager::freq_map()
+        .get(&params.resolution)
+        .unwrap()
+        .clone();
+    let rs =
+        ZenManager::try_subscribe(z.get_ref().clone(), &contract, freq, params.from, params.to)
+            .await;
+    if rs.is_err() {
+        return Ok(Json(HistoryResponse {
+            s: "error".to_string(),
+            errmsg: Some("error in get_bars".to_string()),
+            t: None,
+            c: None,
+            h: None,
+            l: None,
+            v: None,
+            o: None,
+        }));
     }
     let from = OffsetDateTime::from_unix_timestamp(params.from).unwrap();
     let to = OffsetDateTime::from_unix_timestamp(params.to).unwrap();
@@ -84,6 +67,7 @@ pub(super) async fn history(
 
     let (mut o, mut c, mut h, mut l) = (vec![], vec![], vec![], vec![]);
     let (mut t, mut v) = (vec![], vec![]);
+    let zen = z.borrow().get_czsc(&contract, freq);
     if params.countback > 0 {
         for (idx, bar) in zen.borrow().czsc.bars_raw.iter().enumerate() {
             if bar.borrow().dt <= to {
@@ -295,23 +279,24 @@ pub(crate) async fn config() -> Result<impl Responder> {
 #[post("/zen/elements")]
 pub(crate) async fn zen_element(
     web::Json(params): web::Json<ZenRequest>,
-    z: web::Data<(AppZenMgr, RefCell<Store>)>,
+    z: web::Data<AppZenMgr>,
 ) -> Result<impl Responder> {
-    debug!("zen_element {:?}", params);
+    //debug!("zen_element {:?}", params);
     let mut symbol_ = params.symbol;
     if symbol_.contains(':') {
         symbol_ = symbol_.split(":").collect::<Vec<&str>>()[1].to_string();
     }
-    let (z, s) = z.get_ref();
-    let zen = s.borrow_mut().get_czsc(
-        Contract::stock(symbol_.as_str()),
-        ZenManager::freq_map()
-            .get(&params.resolution)
-            .unwrap()
-            .clone(),
-    );
-    if !zen.borrow().subscribed {
-        return Err(error::ErrorPreconditionRequired("call history first"));
+    let contract = Contract::stock(symbol_.as_str());
+    let freq = ZenManager::freq_map()
+        .get(&params.resolution)
+        .unwrap()
+        .clone();
+    let rs =
+        ZenManager::try_subscribe(z.get_ref().clone(), &contract, freq, params.from, params.to)
+            .await;
+    let zen = z.borrow().get_czsc(&contract, freq);
+    if rs.is_err() {
+        return Err(error::ErrorInternalServerError(rs.unwrap_err()));
     }
 
     let mut resp = ZenResponse {
@@ -339,5 +324,7 @@ pub(crate) async fn zen_element(
             start_ts: bi.fx_a.dt.unix_timestamp(),
         })
     }
+    resp.beichi
+        .push(zen.borrow().bc_processor.beichi_tracker.clone());
     Ok(Json(resp))
 }

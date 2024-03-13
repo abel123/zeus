@@ -111,7 +111,7 @@ class MACDArea(Processor):
             return None
         if fake and len(c.bars_ubi[1:]) < 4:
             return None
-        if fake == False and len(c.bars_ubi[1:]) > 4:
+        if fake == False and len(c.bars_ubi[1:]) > 2:
             return None
 
         offset = 1 if fake else 0
@@ -143,10 +143,10 @@ class MACDArea(Processor):
                 bi2.low = min(bi2.raw_bars[0].low, bi2.raw_bars[-1].low)
                 inside_high = max(bi2.raw_bars, key=lambda bar: bar.high)
                 if bi2.high != inside_high.high:
-                    return
+                    continue
                 inside_low = min(bi2.raw_bars, key=lambda bar: bar.low)
                 if bi2.low != inside_low.low:
-                    return
+                    continue
 
                 # logger.warning(f"fake bi {bi2}")
             bi1_macd = [x.cache[cache_key]["macd"] for x in bi1.raw_bars]
@@ -211,5 +211,4 @@ class MACDArea(Processor):
 
         return events
 
-    def reset(self):
-        ...
+    def reset(self): ...

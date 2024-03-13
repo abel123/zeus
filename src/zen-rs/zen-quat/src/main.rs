@@ -1,30 +1,27 @@
+#![feature(slice_take)]
+
+use chrono::Local;
+
 use std::cell::RefCell;
+use std::fs::File;
+use std::io::Write;
 use std::rc::Rc;
-use std::thread;
-use std::time::Duration;
 
 use actix_cors::Cors;
 use actix_web::middleware::Logger;
 use actix_web::{get, rt, web, App, HttpRequest, HttpServer};
 use diesel_logger::LoggingConnection;
 use futures_util::StreamExt;
-use tokio::sync::oneshot::channel;
-use tokio::task;
-use tokio::task::{spawn_local, LocalSet};
-use tokio::time::{sleep, Instant};
-use tracing::{debug, info};
-use tracing_subscriber::fmt::layer;
+use log::LevelFilter;
 use tracing_subscriber::fmt::time::ChronoLocal;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{registry, EnvFilter};
 
-use tws_rs::client::market_data::historical::{historical_data, BarSize, TWSDuration, WhatToShow};
-use tws_rs::contracts::Contract;
-use tws_rs::{Client, Error};
+use tws_rs::Error;
 
 use crate::db::establish_connection;
-use crate::zen_manager::{AppZenMgr, Store, ZenManager};
+use crate::zen_manager::ZenManager;
 
 mod api;
 mod calculate;
@@ -33,7 +30,21 @@ mod schema;
 mod zen_manager;
 
 fn main() -> std::io::Result<()> {
-    env_logger::init();
+    let target = Box::new(File::create("./log/log.txt").expect("Can't create file"));
+
+    env_logger::Builder::new()
+        .target(env_logger::Target::Pipe(target))
+        .filter(None, LevelFilter::Debug)
+        .format(|buf, record| {
+            writeln!(
+                buf,
+                "[{}:{}] {}",
+                Local::now().format("%Y-%m-%d %H:%M:%S%.3f"),
+                record.level(),
+                record.args()
+            )
+        })
+        .init();
 
     tracing::subscriber::set_global_default(
         tracing_subscriber::fmt()
@@ -54,20 +65,7 @@ fn main() -> std::io::Result<()> {
             App::new()
                 .wrap(Logger::new("%a  %r %s %b  %T"))
                 .wrap(cors)
-                .data_factory(|| async {
-                    let mut client = Client::new("127.0.0.1:14001", 4322);
-                    let client_ref = client.connect().await?;
-                    sleep(Duration::from_secs(2)).await;
-                    info!("connected");
-                    spawn_local(async move {
-                        client.blocking_process().await?;
-                        Ok::<(), Error>(())
-                    });
-                    Ok::<_, Error>((
-                        Rc::new(RefCell::new(ZenManager::new(client_ref))),
-                        RefCell::new(Store::new()),
-                    ))
-                })
+                .data_factory(|| async { Ok::<_, Error>(Rc::new(RefCell::new(ZenManager::new()))) })
                 .data_factory(|| async {
                     let conn = establish_connection();
                     let conn = LoggingConnection::new(conn);
