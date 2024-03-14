@@ -1,10 +1,10 @@
-import {LibrarySymbolInfo, ResolutionString, SubscribeBarsCallback} from '../../../charting_library/datafeed-api';
+import { LibrarySymbolInfo, ResolutionString, SubscribeBarsCallback } from '../../../charting_library/datafeed-api';
 
 import {
 	getErrorMessage,
 	logMessage,
 } from './helpers';
-import {IDataPulseProvider, IHistoryProvider, GetBarsResult} from './provider-interfaces';
+import { IDataPulseProvider, IHistoryProvider, GetBarsResult } from './provider-interfaces';
 
 interface DataSubscriber {
 	symbolInfo: LibrarySymbolInfo;

@@ -349,7 +349,11 @@ fn check_fxs(bars: &Vec<Rc<NewBar>>) -> Vec<Rc<FX>> {
     return fxs;
 }
 
-fn check_bi(bars: &mut Vec<Rc<NewBar>>, benchmark: Option<f32>, settings: &Settings) -> Option<BI> {
+pub fn check_bi(
+    bars: &mut Vec<Rc<NewBar>>,
+    benchmark: Option<f32>,
+    settings: &Settings,
+) -> Option<BI> {
     let mut fxs = check_fxs(&bars);
     if fxs.len() < 2 {
         return None;

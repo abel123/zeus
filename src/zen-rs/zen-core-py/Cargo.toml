@@ -1,0 +1,13 @@
+[package]
+name = "zen-core-py"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "zen_core_py"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = "0.20.0"
+zen-core = { path = "../zen-core" }

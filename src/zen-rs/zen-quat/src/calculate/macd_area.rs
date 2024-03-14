@@ -240,23 +240,25 @@ impl MacdArea {
                     .unwrap()
             };
 
-            debug!(
-                "{:?} {}-{} => {}-{} : low {} {}, high {} {}, diff {} {} {}, area {} {}",
-                czsc.freq,
-                bi_first.fx_a.dt,
-                bi_first.fx_b.dt,
-                bi_last.fx_a.dt,
-                bi_last.fx_b.dt,
-                bi_first.low(),
-                min_low,
-                bi_last_high,
-                max_high,
-                dif_zero,
-                bi_first_diff,
-                bi_last_diff,
-                first_macd_area,
-                last_macd_area
-            );
+            if false {
+                debug!(
+                    "{:?} {}-{} => {}-{} : low {} {}, high {} {}, diff {} {} {}, area {} {}",
+                    czsc.freq,
+                    bi_first.fx_a.dt,
+                    bi_first.fx_b.dt,
+                    bi_last.fx_a.dt,
+                    bi_last.fx_b.dt,
+                    bi_first.low(),
+                    min_low,
+                    bi_last_high,
+                    max_high,
+                    dif_zero,
+                    bi_first_diff,
+                    bi_last_diff,
+                    first_macd_area,
+                    last_macd_area
+                );
+            }
             if last_macd_area.abs() > first_macd_area.abs() * self.threshold as f32 / 100.0 {
                 continue;
             }
@@ -334,7 +336,7 @@ impl MacdArea {
                 result.push(Signal {
                     key: (
                         format!("{:?}", czsc.freq),
-                        format!("D{}-MACD面积背驰", dindex),
+                        format!("D{}-MACD面积背驰", dindex + 1),
                         if use_fake {
                             "推笔".to_string()
                         } else {
@@ -417,7 +419,7 @@ impl MacdArea {
                 result.push(Signal {
                     key: (
                         format!("{:?}", czsc.freq),
-                        format!("D{}-MACD面积背驰", dindex),
+                        format!("D{}-MACD面积背驰", dindex + 1),
                         if use_fake {
                             "推笔".to_string()
                         } else {

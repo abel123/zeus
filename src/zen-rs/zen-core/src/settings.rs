@@ -7,7 +7,7 @@ use serde::Deserialize;
 use tracing::debug;
 
 #[derive(Debug, Deserialize, Copy, Clone)]
-pub(crate) enum BiType {
+pub enum BiType {
     Modern,
     Legacy,
     FourK,

@@ -1,3 +1,5 @@
+use log::LevelFilter::Off;
+use pyo3::{pyclass, pymethods};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -6,7 +8,7 @@ use time::OffsetDateTime;
 
 use super::enums::{Direction, Freq, Mark};
 
-pub type GenericCache = HashMap<String, Box<dyn std::any::Any>>;
+pub type GenericCache = HashMap<String, String>; //Box<dyn std::any::Any>>;
 
 pub type Symbol = String;
 
@@ -27,7 +29,8 @@ pub struct Bar {
 }
 
 // 去除包含关系后的K线元素
-#[derive(Debug)]
+#[pyclass(unsendable)]
+#[derive(Debug, Clone)]
 pub struct NewBar {
     pub(crate) id: usize,
     pub(crate) dt: OffsetDateTime,
@@ -60,6 +63,24 @@ impl Default for NewBar {
         }
     }
 }
+#[pymethods]
+impl NewBar {
+    #[new]
+    pub fn cons(open: f32, close: f32, high: f32, low: f32, dt: i64) -> Self {
+        NewBar {
+            open,
+            close,
+            high,
+            low,
+            dt: OffsetDateTime::from_unix_timestamp(dt).unwrap(),
+            ..NewBar::default()
+        }
+    }
+
+    fn __str__(&self) -> String {
+        format!("{:?}", self)
+    }
+}
 
 impl NewBar {
     pub fn new() -> Self {
@@ -79,6 +100,7 @@ pub struct FX {
 }
 
 #[derive(Debug)]
+#[pyclass(unsendable)]
 pub struct BI {
     // 笔开始的分型
     pub fx_a: Rc<FX>,
@@ -104,5 +126,12 @@ impl BI {
 
     pub fn iter(&self) -> impl Iterator<Item = &Rc<NewBar>> {
         self.bars.get(1..self.bars.len() - 1).unwrap().iter()
+    }
+}
+
+#[pymethods]
+impl BI {
+    fn __str__(&self) -> String {
+        format!("{:?}", self)
     }
 }

@@ -146,7 +146,7 @@ impl Store {
     pub fn process(&self, sym: &Contract, dt: OffsetDateTime) {
         let mut signals = vec![];
         self.store.iter().for_each(|x| {
-            if x.0 .0 == *sym {
+            if x.0 .0.symbol == sym.symbol {
                 signals.append(x.1.borrow().signals.clone().as_mut())
             }
         });

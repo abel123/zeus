@@ -10,7 +10,6 @@ pub(super) struct HistoryRequest {
     pub from: i64,
     pub to: i64,
     pub countback: u32,
-    pub firstDataRequest: bool,
 }
 
 #[derive(Serialize)]
