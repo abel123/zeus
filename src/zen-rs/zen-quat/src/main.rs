@@ -13,6 +13,7 @@ use actix_web::{get, rt, web, App, HttpRequest, HttpServer};
 use diesel_logger::LoggingConnection;
 use futures_util::StreamExt;
 use log::LevelFilter;
+use notify_rust::{get_bundle_identifier_or_default, set_application};
 use tracing_subscriber::fmt::time::ChronoLocal;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -31,6 +32,9 @@ mod zen_manager;
 
 fn main() -> std::io::Result<()> {
     let target = Box::new(File::create("./log/log.txt").expect("Can't create file"));
+
+    let safari_id = get_bundle_identifier_or_default("Safari");
+    set_application(&safari_id).expect("panic");
 
     env_logger::Builder::new()
         .target(env_logger::Target::Pipe(target))

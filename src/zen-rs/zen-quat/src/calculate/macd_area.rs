@@ -49,7 +49,7 @@ impl Processor for MacdArea {
                 .retain(|bc| bc.end.left_dt != self.last_bi_start_dt.unix_timestamp());
         }
         for use_fake in vec![false, true] {
-            result.append(&mut self.bc_single(&czsc, 1, use_fake));
+            result.append(&mut self.bc_single(&czsc, 0, use_fake));
         }
 
         czsc.bi_list
@@ -65,7 +65,7 @@ impl MacdArea {
     pub fn new(dindex: usize) -> Self {
         Self {
             dindex,
-            threshold: 80,
+            threshold: 90,
             beichi_tracker: vec![],
             last_bi_start_dt: OffsetDateTime::now_utc(),
         }
@@ -76,7 +76,7 @@ impl MacdArea {
         }
         const LEFT_RIGHT: i32 = 2;
         const LEFT: i32 = 1;
-        if !use_fake && czsc.bars_ubi.len() as i32 - LEFT_RIGHT > 1 {
+        if !use_fake && czsc.bars_ubi.len() as i32 - LEFT_RIGHT > 4 {
             return vec![];
         }
         if use_fake && czsc.bars_ubi.len() as i32 - LEFT < 4 {
@@ -119,7 +119,10 @@ impl MacdArea {
 
             let bi_first_diff = bi_first
                 .bars
-                .last()
+                .iter()
+                .rev()
+                .skip(1)
+                .next()
                 .unwrap()
                 .raw_bars
                 .last()
@@ -128,7 +131,10 @@ impl MacdArea {
 
             let mut bi_last_diff = bi_last
                 .bars
-                .last()
+                .iter()
+                .rev()
+                .skip(1)
+                .next()
                 .unwrap()
                 .raw_bars
                 .last()
@@ -234,6 +240,23 @@ impl MacdArea {
                     .unwrap()
             };
 
+            debug!(
+                "{:?} {}-{} => {}-{} : low {} {}, high {} {}, diff {} {} {}, area {} {}",
+                czsc.freq,
+                bi_first.fx_a.dt,
+                bi_first.fx_b.dt,
+                bi_last.fx_a.dt,
+                bi_last.fx_b.dt,
+                bi_first.low(),
+                min_low,
+                bi_last_high,
+                max_high,
+                dif_zero,
+                bi_first_diff,
+                bi_last_diff,
+                first_macd_area,
+                last_macd_area
+            );
             if last_macd_area.abs() > first_macd_area.abs() * self.threshold as f32 / 100.0 {
                 continue;
             }
@@ -309,16 +332,16 @@ impl MacdArea {
                     });
                 }
                 result.push(Signal {
-                    kv1: (format!("{:?}", czsc.freq), "顶".to_string()),
-                    kv2: (format!("D{}-MACD面积背驰", dindex), format!("{}笔", n)),
-                    kv3: (
+                    key: (
+                        format!("{:?}", czsc.freq),
+                        format!("D{}-MACD面积背驰", dindex),
                         if use_fake {
                             "推笔".to_string()
                         } else {
                             "BS".to_string()
                         },
-                        "other".to_string(),
                     ),
+                    value: ("顶".to_string(), format!("{}笔", n), "other".to_string()),
                     score,
                 })
             }
@@ -392,16 +415,16 @@ impl MacdArea {
                     });
                 }
                 result.push(Signal {
-                    kv1: (format!("{:?}", czsc.freq), "底".to_string()),
-                    kv2: (format!("D{}-MACD面积背驰", dindex), format!("{}笔", n)),
-                    kv3: (
+                    key: (
+                        format!("{:?}", czsc.freq),
+                        format!("D{}-MACD面积背驰", dindex),
                         if use_fake {
                             "推笔".to_string()
                         } else {
                             "BS".to_string()
                         },
-                        "other".to_string(),
                     ),
+                    value: ("底".to_string(), format!("{}笔", n), "other".to_string()),
                     score,
                 })
             }

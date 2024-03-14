@@ -1,9 +1,12 @@
 use std::cell::RefCell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::fs;
+use std::ops::Deref;
 use std::rc::Rc;
 
 use futures_util::StreamExt;
+use notify_rust::Notification;
 use time::{Duration, OffsetDateTime};
 use tokio::select;
 use tokio::sync::oneshot::{channel, Sender};
@@ -22,6 +25,7 @@ use tws_rs::client::market_data::historical::{
 use tws_rs::contracts::Contract;
 use tws_rs::{Client, ClientRef, Error};
 use zen_core::objects::enums::Freq;
+use zen_core::objects::trade::{Matcher, Signal};
 use zen_core::{Bar, Settings, CZSC};
 
 pub(crate) struct Zen {
@@ -35,6 +39,7 @@ pub(crate) struct Zen {
     pub(crate) request_id: i32,
     pub(crate) bc_processor: MacdArea,
     rwlock: RwLock<()>,
+    signals: Vec<Signal>,
 }
 
 impl Drop for Zen {
@@ -55,6 +60,7 @@ impl Zen {
             request_id: 0,
             bc_processor: MacdArea::new(1),
             rwlock: Default::default(),
+            signals: vec![],
         }
     }
 
@@ -74,20 +80,22 @@ impl Zen {
 
     pub fn update(&mut self, bar: Bar) {
         self.czsc.update(bar);
-        let _ = self.bc_processor.process(&self.czsc);
+        self.signals = self.bc_processor.process(&self.czsc);
     }
     pub fn need_subscribe(&self, from: i64, to: i64) -> bool {
-        debug!(
-            "need_subscribe {:?} {:?} {} {} {:?}-{:?} required {:?}-{:?}",
-            self.contract.symbol,
-            self.freq,
-            self.subscribed,
-            self.realtime,
-            self.czsc.start(),
-            self.czsc.end(),
-            OffsetDateTime::from_unix_timestamp(from),
-            OffsetDateTime::from_unix_timestamp(to)
-        );
+        if false {
+            debug!(
+                "need_subscribe {:?} {:?} {} {} {:?}-{:?} required {:?}-{:?}",
+                self.contract.symbol,
+                self.freq,
+                self.subscribed,
+                self.realtime,
+                self.czsc.start(),
+                self.czsc.end(),
+                OffsetDateTime::from_unix_timestamp(from),
+                OffsetDateTime::from_unix_timestamp(to)
+            );
+        }
         if !self.subscribed {
             return true;
         }
@@ -135,10 +143,38 @@ impl Store {
                 .clone(),
         }
     }
+    pub fn process(&self, sym: &Contract, dt: OffsetDateTime) {
+        let mut signals = vec![];
+        self.store.iter().for_each(|x| {
+            if x.0 .0 == *sym {
+                signals.append(x.1.borrow().signals.clone().as_mut())
+            }
+        });
+        if signals.len() > 0 {
+            debug!("{}, signals {:?}", dt, signals);
+        }
+        self.setting.matcher.as_ref().and_then(|m| {
+            let event = m.is_match(signals);
+            if event.is_some() {
+                debug!("event: {:?}", event);
+                if let Some((ev, factor)) = event {
+                    if ev.enable_notify && factor.enable_notify {
+                        Notification::new()
+                            .summary(format!("✅{} | {}", ev.name, factor.name).as_str())
+                            .body(format!("{:?}", factor.signals_all).as_str())
+                            .icon("iMovie")
+                            .show()
+                            .unwrap();
+                    }
+                }
+            }
+            Some(())
+        });
+    }
 }
 pub(crate) struct ZenManager {
     pub client: RwLock<Rc<RefCell<Option<ClientRef>>>>,
-    pub store: RefCell<Store>,
+    pub store: Rc<RefCell<Store>>,
 }
 
 pub(crate) type AppZenMgr = Rc<RefCell<ZenManager>>;
@@ -146,7 +182,7 @@ impl ZenManager {
     pub fn new() -> Self {
         Self {
             client: RwLock::new(Rc::new(RefCell::new(None))),
-            store: RefCell::new(Store::new()),
+            store: Rc::new(RefCell::new(Store::new())),
         }
     }
 
@@ -286,6 +322,7 @@ impl ZenManager {
                 cache: Default::default(),
                 macd_4_9_9: (0.0, 0.0, 0.0),
             });
+            self.store.borrow().process(contract, e.date);
         }
 
         zen.borrow_mut().subscribed = true;
@@ -314,6 +351,8 @@ impl ZenManager {
                             cache: Default::default(),
                             macd_4_9_9: (0.0,0.0,0.0)
                         });
+                        self.store.borrow().process(contract, e.date);
+
                         }
                 _ = cloned_token.cancelled() => {
                     break;

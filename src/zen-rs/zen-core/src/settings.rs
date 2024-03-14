@@ -1,7 +1,10 @@
-use std::env;
+use std::rc::Rc;
+use std::{env, fs};
 
+use crate::objects::trade::Matcher;
 use config::{Config, ConfigError, Environment, File};
 use serde::Deserialize;
+use tracing::debug;
 
 #[derive(Debug, Deserialize, Copy, Clone)]
 pub(crate) enum BiType {
@@ -17,6 +20,10 @@ pub struct Settings {
     pub bi_type: BiType,
     pub bi_change_threshold: f32,
     pub max_bi_num: usize,
+    pub event_matcher_file: String,
+    #[serde(skip_deserializing)]
+    #[serde(skip_serializing)]
+    pub matcher: Option<Rc<Matcher>>,
 }
 
 impl Settings {
@@ -40,6 +47,13 @@ impl Settings {
             .build()?;
 
         // You can deserialize (and thus freeze) the entire configuration as
-        s.try_deserialize()
+        let mut s: Settings = s.try_deserialize()?;
+
+        let content =
+            fs::read_to_string(s.event_matcher_file.as_str()).expect("TODO: panic message");
+        let events = Matcher::from(content.as_str()).expect("panic");
+        s.matcher = Some(Rc::new(events));
+        debug!("settings:\n {:?}", s);
+        Ok(s)
     }
 }

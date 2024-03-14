@@ -14,3 +14,5 @@ config = { version = "0.14.0", features = [] }
 time = "0.3.34"
 log = "0.4.20"
 talipp = { path = "../talipp" }
+serde_yaml = "0.9.32"
+tracing-test = "0.2.4"
