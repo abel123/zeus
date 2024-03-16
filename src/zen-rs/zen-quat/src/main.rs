@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 use actix_cors::Cors;
 use actix_web::middleware::Logger;
-use actix_web::{get, rt, web, App, HttpRequest, HttpServer};
+use actix_web::{rt, App, HttpServer};
 use diesel_logger::LoggingConnection;
 use futures_util::StreamExt;
 use log::LevelFilter;
@@ -17,7 +17,7 @@ use notify_rust::{get_bundle_identifier_or_default, set_application};
 use tracing_subscriber::fmt::time::ChronoLocal;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::{registry, EnvFilter};
+use tracing_subscriber::EnvFilter;
 
 use tws_rs::Error;
 

@@ -16,17 +16,18 @@ use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, info};
 
-use crate::calculate::macd_area::MacdArea;
-use crate::calculate::r#trait::Processor;
+use tws_rs::{Client, ClientRef, Error};
 use tws_rs::client::market_data::historical;
 use tws_rs::client::market_data::historical::{
-    cancel_historical_data, historical_data, BarSize, TWSDuration, WhatToShow,
+    BarSize, cancel_historical_data, historical_data, TWSDuration, WhatToShow,
 };
 use tws_rs::contracts::Contract;
-use tws_rs::{Client, ClientRef, Error};
+use zen_core::{Bar, CZSC, Settings};
 use zen_core::objects::enums::Freq;
 use zen_core::objects::trade::{Matcher, Signal};
-use zen_core::{Bar, Settings, CZSC};
+
+use crate::calculate::macd_area::MacdArea;
+use crate::calculate::r#trait::Processor;
 
 pub(crate) struct Zen {
     pub czsc: CZSC,
@@ -151,7 +152,7 @@ impl Store {
             }
         });
         if signals.len() > 0 {
-            debug!("{}, signals {:?}", dt, signals);
+            //debug!("{}, signals {:?}", dt, signals);
         }
         self.setting.matcher.as_ref().and_then(|m| {
             let event = m.is_match(signals);

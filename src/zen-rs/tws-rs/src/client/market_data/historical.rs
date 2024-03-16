@@ -5,18 +5,18 @@ use drop_stream::DropStream;
 use time::{Date, OffsetDateTime};
 use time_tz::Tz;
 use tokio::select;
-use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::{Stream, StreamExt};
+use tokio_stream::wrappers::UnboundedReceiverStream;
 use tracing::{error, warn};
 
+use crate::{Error, server_versions};
+use crate::client::ClientRef;
 use crate::client::market_data::historical::decoders::decode_historical_data_update;
 use crate::client::transport::message_bus::Signal;
-use crate::client::ClientRef;
 use crate::contracts::Contract;
 use crate::messages::{
     IncomingMessages, OutgoingMessages, RequestMessage, ResponseMessage, ToField,
 };
-use crate::{server_versions, Error};
 
 mod decoders;
 mod encoders;
@@ -358,14 +358,13 @@ pub async fn historical_data<'a>(
     )?;
 
     let mut stream = client.send(request_id, request).await?;
+    let _ = stream.request_id.take();
+
+    let sender = stream.sender.clone();
     let dropper = move || {
-        stream
-            .sender
-            .clone()
-            .send(Signal::Request(request_id.clone()))
-            .unwrap_or(());
+        sender.send(Signal::Request(request_id)).unwrap_or(());
     };
-    let mut stream = UnboundedReceiverStream::new(stream.receiver);
+    let mut stream = UnboundedReceiverStream::new(stream.receiver.take().unwrap());
     if let Some(mut message) = stream.next().await {
         let time_zone = if let Some(tz) = client.time_zone {
             tz
@@ -410,7 +409,7 @@ pub async fn cancel_historical_data(client: &ClientRef, request_id: i32) -> Resu
     message.push_field(&"1");
     message.push_field(&request_id);
 
-    let _ = client.send(request_id, message).await?;
+    let mut x = client.send(request_id, message).await?;
 
     Ok(())
 }

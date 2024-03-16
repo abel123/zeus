@@ -7,21 +7,21 @@ use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::Duration;
 
+use tokio::{select, task};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::net::TcpStream;
-use tokio::sync::mpsc::{unbounded_channel, Receiver, Sender, UnboundedReceiver, UnboundedSender};
-use tokio::task;
+use tokio::sync::mpsc::{Receiver, Sender, unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::task::JoinHandle;
-use tracing::debug;
 use tracing::{error, info};
+use tracing::debug;
 
-use crate::messages::{RequestMessage, ResponseMessage};
 use crate::Error;
+use crate::messages::{RequestMessage, ResponseMessage};
 
 #[derive(Debug)]
 pub struct ResponseStream {
-    pub(crate) receiver: UnboundedReceiver<ResponseMessage>,
+    pub(crate) receiver: Option<UnboundedReceiver<ResponseMessage>>,
     pub(crate) sender: UnboundedSender<Signal>,
     pub(crate) request_id: Option<i32>,
     order_id: Option<i32>,
@@ -37,21 +37,20 @@ impl ResponseStream {
         timeout: Option<Duration>,
     ) -> Self {
         Self {
-            receiver,
+            receiver: Some(receiver),
             sender,
             request_id,
             order_id,
             timeout,
         }
     }
-
-    pub fn dispose(&self) -> impl Fn() + '_ {
-        || {
-            self.request_id
-                .map(|x| self.sender.clone().send(Signal::Request(x)));
-            self.order_id
-                .map(|x| self.sender.clone().send(Signal::Order(x)));
-        }
+}
+impl Drop for ResponseStream {
+    fn drop(&mut self) {
+        self.request_id
+            .map(|x| self.sender.clone().send(Signal::Request(x)));
+        self.order_id
+            .map(|x| self.sender.clone().send(Signal::Order(x)));
     }
 }
 
@@ -204,7 +203,6 @@ impl MessageBus for TcpMessageBus {
                     }
                     Err(err) => {
                         error!("error reading packet: {:?}", err);
-                        actix::Arbiter::current().stop();
 
                         return Ok(());
                     }
@@ -214,10 +212,24 @@ impl MessageBus for TcpMessageBus {
 
         self.handles.push(handle);
         loop {
-            if let Some((sender, id, msg)) = receiver.recv().await {
-                self.send_generic_message(sender, id, &msg).await?;
+            select! {
+                Some(signal) = self.signals_recv.recv() =>{
+                match signal {
+                       Signal::Request(x) => {
+                            debug!("removing {}", x);
+                            self.requests.borrow_mut().remove(&x);
+                        }
+                    _ =>{}
+                    }
+                }
+                Some((sender, id, msg)) = receiver.recv() =>{
+                    self.send_generic_message(sender, id, &msg).await?;
+                } else => {
+                    break;
+                }
             }
         }
+        Ok(())
     }
 }
 
@@ -232,7 +244,7 @@ async fn read_packet(reader: &mut OwnedReadHalf) -> Result<ResponseMessage, Erro
     if raw_string.len() > 300 {
         //debug!("<- {}", raw_string.chars().take(100).collect::<String>());
     } else {
-        debug!("<- {:?}", packet);
+        //debug!("<- {:?}", packet);
     }
 
     Ok(packet)

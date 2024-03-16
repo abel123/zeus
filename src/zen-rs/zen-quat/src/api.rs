@@ -4,21 +4,21 @@ use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::string::ToString;
 
+use actix_web::{error, Error, get, post, Responder, Result, web};
 use actix_web::web::Json;
-use actix_web::{error, get, post, web, Error, Responder, Result};
+use diesel::ExpressionMethods;
 use diesel::internal::derives::multiconnection::SelectStatementAccessor;
 use diesel::prelude::*;
-use diesel::ExpressionMethods;
 use diesel_logger::LoggingConnection;
 use time::OffsetDateTime;
 use tokio::sync::oneshot::channel;
 use tokio::task::spawn_local;
 use tracing::debug;
-use tws_rs::client::market_data::historical::cancel_historical_data;
 
+use tws_rs::client::market_data::historical::cancel_historical_data;
 use tws_rs::contracts::Contract;
-use zen_core::objects::enums::Freq::F1;
 use zen_core::objects::enums::{Direction, Freq};
+use zen_core::objects::enums::Freq::F1;
 
 use crate::api::params::{
     BiInfo, Config, Exchange, HistoryRequest, HistoryResponse, LibrarySymbolInfo, SearchRequest,
@@ -26,8 +26,8 @@ use crate::api::params::{
 };
 use crate::db::establish_connection;
 use crate::db::models::Symbol;
-use crate::schema::symbols::dsl::symbols;
 use crate::schema::symbols::{exchange, screener, symbol, type_};
+use crate::schema::symbols::dsl::symbols;
 use crate::zen_manager::{AppZenMgr, Store, ZenManager};
 
 mod params;
@@ -52,7 +52,7 @@ pub(super) async fn history(
     if rs.is_err() {
         return Ok(Json(HistoryResponse {
             s: "error".to_string(),
-            errmsg: Some("error in get_bars".to_string()),
+            errmsg: Some(format!("error in get_bars: {}", rs.unwrap_err())),
             t: None,
             c: None,
             h: None,

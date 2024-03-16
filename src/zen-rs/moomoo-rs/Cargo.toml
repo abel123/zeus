@@ -1,0 +1,12 @@
+[package]
+name = "moomoo-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+prost = "0.12"
+# Only necessary if using Protobuf well-known types:
+prost-types = "0.12"
+
+[build-dependencies]
+prost-build = "0.12.3"
