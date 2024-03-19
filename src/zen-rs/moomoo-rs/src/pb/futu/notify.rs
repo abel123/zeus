@@ -1,3 +1,4 @@
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GtwEvent {
@@ -8,6 +9,7 @@ pub struct GtwEvent {
     #[prost(string, required, tag = "2")]
     pub desc: ::prost::alloc::string::String,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProgramStatus {
@@ -15,6 +17,7 @@ pub struct ProgramStatus {
     #[prost(message, required, tag = "1")]
     pub program_status: super::common::ProgramStatus,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConnectStatus {
@@ -25,6 +28,7 @@ pub struct ConnectStatus {
     #[prost(bool, required, tag = "2")]
     pub trd_logined: bool,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QotRight {
@@ -86,6 +90,7 @@ pub struct QotRight {
     #[prost(int32, optional, tag = "22")]
     pub sz_qot_right: ::core::option::Option<i32>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ApiLevel {
@@ -93,6 +98,7 @@ pub struct ApiLevel {
     #[prost(string, required, tag = "3")]
     pub api_level: ::prost::alloc::string::String,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ApiQuota {
@@ -103,6 +109,7 @@ pub struct ApiQuota {
     #[prost(int32, required, tag = "2")]
     pub history_kl_quota: i32,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UsedQuota {
@@ -113,6 +120,7 @@ pub struct UsedQuota {
     #[prost(int32, optional, tag = "2")]
     pub used_k_line_quota: ::core::option::Option<i32>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct S2c {
@@ -141,6 +149,7 @@ pub struct S2c {
     #[prost(message, optional, tag = "8")]
     pub used_quota: ::core::option::Option<UsedQuota>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {
@@ -154,6 +163,7 @@ pub struct Response {
     #[prost(message, optional, tag = "4")]
     pub s2c: ::core::option::Option<S2c>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum NotifyType {
@@ -206,6 +216,7 @@ impl NotifyType {
         }
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum GtwEventType {

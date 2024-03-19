@@ -22,6 +22,7 @@ use tws_rs::client::market_data::historical::{
     BarSize, cancel_historical_data, historical_data, TWSDuration, WhatToShow,
 };
 use tws_rs::contracts::Contract;
+use tws_rs::messages::ResponseMessage;
 use zen_core::{Bar, CZSC, Settings};
 use zen_core::objects::enums::Freq;
 use zen_core::objects::trade::{Matcher, Signal};
@@ -39,7 +40,6 @@ pub(crate) struct Zen {
     token: Option<CancellationToken>,
     pub(crate) request_id: i32,
     pub(crate) bc_processor: MacdArea,
-    rwlock: RwLock<()>,
     signals: Vec<Signal>,
 }
 
@@ -60,7 +60,6 @@ impl Zen {
             token: None,
             request_id: 0,
             bc_processor: MacdArea::new(1),
-            rwlock: Default::default(),
             signals: vec![],
         }
     }
@@ -122,6 +121,7 @@ impl Zen {
 pub(crate) struct Store {
     store: HashMap<(Contract, Freq), Rc<RefCell<Zen>>>,
     setting: Settings,
+    pub lock: HashMap<(Contract, Freq), Rc<RwLock<()>>>,
 }
 
 impl Store {
@@ -129,20 +129,48 @@ impl Store {
         Self {
             store: Default::default(),
             setting: Settings::new().expect("config init error"),
+            lock: Default::default(),
         }
     }
 
+    fn onerror(&mut self, rsp: ResponseMessage) {
+        debug!("onerror {:?}", rsp);
+        match rsp.fields[3].as_str() {
+            "1001" => self.store.iter().for_each(|(k, v)| {
+                v.borrow_mut().reset();
+            }),
+            _ => {}
+        }
+    }
     pub fn get_czsc(&mut self, sym: &Contract, freq: Freq) -> Rc<RefCell<Zen>> {
         match self.store.entry((sym.clone(), freq)) {
             Entry::Occupied(o) => o.get().clone(),
-            Entry::Vacant(v) => v
-                .insert(Rc::new(RefCell::new(Zen::new(
+            Entry::Vacant(v) => {
+                self.lock
+                    .insert((sym.clone(), freq), Rc::new(RwLock::new(())));
+                v.insert(Rc::new(RefCell::new(Zen::new(
                     sym.clone(),
                     freq,
                     self.setting.clone(),
                 ))))
-                .clone(),
+                .clone()
+            }
         }
+    }
+
+    pub fn get_or_insert_czsc_lock(&mut self, sym: &Contract, freq: Freq) -> Rc<RwLock<()>> {
+        match self.lock.entry((sym.clone(), freq)) {
+            Entry::Occupied(o) => self.get_czsc_lock(sym, freq),
+            Entry::Vacant(v) => {
+                self.lock
+                    .insert((sym.clone(), freq), Rc::new(RwLock::new(())));
+                self.get_czsc_lock(sym, freq)
+            }
+        }
+    }
+
+    pub fn get_czsc_lock(&self, sym: &Contract, freq: Freq) -> Rc<RwLock<()>> {
+        self.lock.get(&(sym.clone(), freq)).unwrap().clone()
     }
     pub fn process(&self, sym: &Contract, dt: OffsetDateTime) {
         let mut signals = vec![];
@@ -157,13 +185,20 @@ impl Store {
         self.setting.matcher.as_ref().and_then(|m| {
             let event = m.is_match(signals);
             if event.is_some() {
-                debug!("event: {:?}", event);
+                //debug!("event: {:?}", event);
                 if let Some((ev, factor)) = event {
                     if ev.enable_notify && factor.enable_notify {
                         Notification::new()
                             .summary(format!("✅{} | {}", ev.name, factor.name).as_str())
-                            .body(format!("{:?}", factor.signals_all).as_str())
-                            .icon("iMovie")
+                            .body(
+                                factor
+                                    .signals_all
+                                    .iter()
+                                    .map(|x| format!("{:?}", x))
+                                    .collect::<Vec<_>>()
+                                    .join("\n")
+                                    .as_str(),
+                            )
                             .show()
                             .unwrap();
                     }
@@ -197,8 +232,13 @@ impl ZenManager {
         info!("connecting to TWS");
         let client_ref = client.connect().await?;
         info!("connected");
+        let store = self.store.clone();
         spawn_local(async move {
-            client.blocking_process().await?;
+            client
+                .blocking_process(move |m| {
+                    store.borrow_mut().onerror(m);
+                })
+                .await?;
             Ok::<(), Error>(())
         });
         *cref.borrow_mut() = Some(client_ref);
@@ -241,15 +281,38 @@ impl ZenManager {
         from: i64,
         to: i64,
     ) -> Result<(), Error> {
-        let zen = mgr.borrow().get_czsc(contract, freq);
         let c = contract.clone();
         let subscribe = {
-            let _ = zen.borrow().rwlock.read().await;
-            zen.borrow().need_subscribe(from, to)
+            {
+                let _ = mgr
+                    .borrow()
+                    .store
+                    .borrow_mut()
+                    .get_or_insert_czsc_lock(contract, freq);
+            }
+            let lock = mgr.borrow().store.borrow().get_czsc_lock(contract, freq);
+            let _ = lock.read().await;
+            let zen = mgr.borrow().get_czsc(contract, freq);
+            let x = zen.borrow().need_subscribe(from, to);
+            x
         };
         if subscribe {
-            let _ = zen.borrow().rwlock.write().await;
+            let lock = mgr.borrow().store.borrow().get_czsc_lock(contract, freq);
+            let _ = lock.write().await;
+            let zen = mgr.borrow().get_czsc(contract, freq);
+
             if zen.borrow().need_subscribe(from, to) {
+                debug!(
+                    "need_subscribe {:?} {:?} {} {} {:?}-{:?} required {:?}-{:?}",
+                    zen.borrow().contract.symbol,
+                    zen.borrow().freq,
+                    zen.borrow().subscribed,
+                    zen.borrow().realtime,
+                    zen.borrow().czsc.start(),
+                    zen.borrow().czsc.end(),
+                    OffsetDateTime::from_unix_timestamp(from),
+                    OffsetDateTime::from_unix_timestamp(to)
+                );
                 let (send, recv) = channel::<()>();
                 spawn_local(async move {
                     mgr.borrow()
@@ -280,7 +343,7 @@ impl ZenManager {
         let zen = self.store.borrow_mut().get_czsc(contract, freq);
         self.cancel_historical_data(zen.borrow().request_id).await?;
 
-        zen.borrow_mut().reset();
+        zen.borrow_mut().token.take().map(|t| t.cancel());
 
         let mut keep_up = OffsetDateTime::now_utc() - OffsetDateTime::from_unix_timestamp(to)?
             < Duration::days(365);

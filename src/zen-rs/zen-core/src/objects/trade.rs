@@ -1,12 +1,14 @@
-use crate::objects::chan::{GenericCache, BI};
+use std::collections::HashMap;
+use std::fmt::{Debug, Formatter, Write};
+
 use serde::ser::{SerializeTuple, SerializeTupleStruct};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_yaml::Error;
-use std::collections::HashMap;
 use time::OffsetDateTime;
-use tracing::event;
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+use crate::objects::chan::{GenericCache, BI};
+
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Signal {
     #[serde(serialize_with = "Signal::ser_key_val")]
     #[serde(deserialize_with = "Signal::deser_key_val")]
@@ -24,6 +26,12 @@ impl Default for Signal {
             value: ("".to_string(), "other".to_string(), "other".to_string()),
             score: 0,
         }
+    }
+}
+
+impl Debug for Signal {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{}：{}", self.key(), self.value()))
     }
 }
 
@@ -347,9 +355,10 @@ impl Matcher {
 
 #[cfg(test)]
 mod tests {
-    use crate::objects::trade::{Event, Factor, Operate, Signal};
     use tracing::debug;
     use tracing_test::traced_test;
+
+    use crate::objects::trade::{Event, Factor, Operate, Signal};
 
     #[traced_test]
     #[test]

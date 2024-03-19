@@ -1,3 +1,4 @@
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct S2c {
@@ -14,6 +15,7 @@ pub struct S2c {
     #[prost(message, repeated, tag = "3")]
     pub broker_bid_list: ::prost::alloc::vec::Vec<super::qot_common::Broker>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {

@@ -1,3 +1,4 @@
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct S2c {
@@ -35,6 +36,7 @@ pub struct S2c {
     #[prost(double, optional, tag = "10")]
     pub cur_value: ::core::option::Option<f64>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {
@@ -48,6 +50,7 @@ pub struct Response {
     #[prost(message, optional, tag = "4")]
     pub s2c: ::core::option::Option<S2c>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum MarketStatus {

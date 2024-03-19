@@ -1,4 +1,5 @@
 /// 交易时间
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TradeTime {
@@ -10,6 +11,7 @@ pub struct TradeTime {
     pub end: ::core::option::Option<f64>,
 }
 /// 期货合约资料的列表
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FutureInfo {
@@ -68,6 +70,7 @@ pub struct FutureInfo {
     #[prost(message, optional, tag = "18")]
     pub origin: ::core::option::Option<super::qot_common::Security>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct C2s {
@@ -75,6 +78,7 @@ pub struct C2s {
     #[prost(message, repeated, tag = "1")]
     pub security_list: ::prost::alloc::vec::Vec<super::qot_common::Security>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct S2c {
@@ -82,12 +86,14 @@ pub struct S2c {
     #[prost(message, repeated, tag = "1")]
     pub future_info_list: ::prost::alloc::vec::Vec<FutureInfo>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Request {
     #[prost(message, required, tag = "1")]
     pub c2s: C2s,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {

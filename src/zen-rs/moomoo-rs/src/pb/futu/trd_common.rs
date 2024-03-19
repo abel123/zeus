@@ -1,4 +1,5 @@
 /// 账户现金信息，目前仅用于期货账户
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AccCashInfo {
@@ -13,6 +14,7 @@ pub struct AccCashInfo {
     pub available_balance: ::core::option::Option<f64>,
 }
 /// 交易协议公共参数头
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TrdHeader {
@@ -27,6 +29,7 @@ pub struct TrdHeader {
     pub trd_market: i32,
 }
 /// 交易业务账户结构
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TrdAcc {
@@ -56,6 +59,7 @@ pub struct TrdAcc {
     pub uni_card_num: ::core::option::Option<::prost::alloc::string::String>,
 }
 /// 账户资金结构
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Funds {
@@ -148,6 +152,7 @@ pub struct Funds {
     pub dt_status: ::core::option::Option<i32>,
 }
 /// 账户持仓结构
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Position {
@@ -221,6 +226,7 @@ pub struct Position {
     pub trd_market: ::core::option::Option<i32>,
 }
 /// 订单结构
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Order {
@@ -304,6 +310,7 @@ pub struct Order {
     pub trd_market: ::core::option::Option<i32>,
 }
 /// 成交结构
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OrderFill {
@@ -357,6 +364,7 @@ pub struct OrderFill {
     pub status: ::core::option::Option<i32>,
 }
 /// 最大可交易数量
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MaxTrdQtys {
@@ -385,6 +393,7 @@ pub struct MaxTrdQtys {
     pub short_required_im: ::core::option::Option<f64>,
 }
 /// 过滤条件，条件组合是"与"不是"或"，用于获取订单、成交、持仓等时二次过滤
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TrdFilterConditions {
@@ -402,6 +411,7 @@ pub struct TrdFilterConditions {
     pub end_time: ::core::option::Option<::prost::alloc::string::String>,
 }
 /// 交易环境
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum TrdEnv {
@@ -431,6 +441,7 @@ impl TrdEnv {
     }
 }
 /// 交易品类
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum TrdCategory {
@@ -464,6 +475,7 @@ impl TrdCategory {
     }
 }
 /// 交易市场，是大的市场，不是具体品种
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum TrdMarket {
@@ -526,6 +538,7 @@ impl TrdMarket {
     }
 }
 /// 可交易证券所属市场，目前主要是区分A股的沪市和深市，香港和美国暂不需要细分
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum TrdSecMarket {
@@ -575,6 +588,7 @@ impl TrdSecMarket {
     }
 }
 /// 交易方向
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum TrdSide {
@@ -618,6 +632,7 @@ impl TrdSide {
     }
 }
 /// 订单类型
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum OrderType {
@@ -711,6 +726,7 @@ impl OrderType {
     }
 }
 /// 跟踪类型
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum TrailType {
@@ -744,6 +760,7 @@ impl TrailType {
     }
 }
 /// 订单状态
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum OrderStatus {
@@ -833,6 +850,7 @@ impl OrderStatus {
     }
 }
 /// 一笔成交的状态
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum OrderFillStatus {
@@ -866,6 +884,7 @@ impl OrderFillStatus {
     }
 }
 /// 持仓方向类型
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum PositionSide {
@@ -899,6 +918,7 @@ impl PositionSide {
     }
 }
 /// 修改订单的操作类型
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum ModifyOrderOp {
@@ -946,6 +966,7 @@ impl ModifyOrderOp {
     }
 }
 /// 交易账户类型
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum TrdAccType {
@@ -979,6 +1000,7 @@ impl TrdAccType {
     }
 }
 /// 货币种类
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum Currency {
@@ -1028,6 +1050,7 @@ impl Currency {
     }
 }
 /// 账户风险控制等级
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum CltRiskLevel {
@@ -1073,6 +1096,7 @@ impl CltRiskLevel {
     }
 }
 /// 订单有效期
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum TimeInForce {
@@ -1102,6 +1126,7 @@ impl TimeInForce {
     }
 }
 /// 券商
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum SecurityFirm {
@@ -1143,6 +1168,7 @@ impl SecurityFirm {
     }
 }
 /// 模拟交易账户类型
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum SimAccType {
@@ -1180,6 +1206,7 @@ impl SimAccType {
     }
 }
 /// 风险状态，共分 9 个等级，LEVEL1是最安全，LEVEL9是最危险
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum CltRiskStatus {
@@ -1241,6 +1268,7 @@ impl CltRiskStatus {
     }
 }
 /// 日内交易限制情况
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum DtStatus {

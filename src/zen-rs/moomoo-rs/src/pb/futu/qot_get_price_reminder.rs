@@ -1,4 +1,5 @@
 /// 提醒信息列表
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PriceReminderItem {
@@ -21,6 +22,7 @@ pub struct PriceReminderItem {
     #[prost(bool, required, tag = "6")]
     pub is_enable: bool,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PriceReminder {
@@ -34,6 +36,7 @@ pub struct PriceReminder {
     #[prost(message, repeated, tag = "2")]
     pub item_list: ::prost::alloc::vec::Vec<PriceReminderItem>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct C2s {
@@ -44,6 +47,7 @@ pub struct C2s {
     #[prost(int32, optional, tag = "2")]
     pub market: ::core::option::Option<i32>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct S2c {
@@ -51,12 +55,14 @@ pub struct S2c {
     #[prost(message, repeated, tag = "1")]
     pub price_reminder_list: ::prost::alloc::vec::Vec<PriceReminder>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Request {
     #[prost(message, required, tag = "1")]
     pub c2s: C2s,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {

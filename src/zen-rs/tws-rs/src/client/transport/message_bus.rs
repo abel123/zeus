@@ -17,7 +17,7 @@ use tracing::{error, info};
 use tracing::debug;
 
 use crate::Error;
-use crate::messages::{RequestMessage, ResponseMessage};
+use crate::messages::{IncomingMessages, RequestMessage, ResponseMessage};
 
 #[derive(Debug)]
 pub struct ResponseStream {
@@ -74,11 +74,14 @@ pub trait MessageBus {
 
     async fn write(&mut self, packet: &str) -> Result<(), Error>;
 
-    async fn process_messages(
+    async fn process_messages<F>(
         &mut self,
         receiver: Receiver<Item>,
         server_version: i32,
-    ) -> Result<(), Error>;
+        onerror: F,
+    ) -> Result<(), Error>
+    where
+        F: Fn(ResponseMessage) + 'static;
 
     fn request_messages(&self) -> Vec<RequestMessage> {
         vec![]
@@ -179,11 +182,15 @@ impl MessageBus for TcpMessageBus {
         Ok(())
     }
 
-    async fn process_messages(
+    async fn process_messages<F>(
         &mut self,
         mut receiver: Receiver<Item>,
         server_version: i32,
-    ) -> Result<(), Error> {
+        onerror: F,
+    ) -> Result<(), Error>
+    where
+        F: Fn(ResponseMessage) + 'static,
+    {
         let reader = self.reader.clone();
         let requests = self.requests.clone();
         let handle = task::spawn_local(async move {
@@ -191,6 +198,9 @@ impl MessageBus for TcpMessageBus {
                 match read_packet(&mut reader.borrow_mut()).await {
                     Ok(message) => {
                         match message.message_type() {
+                            IncomingMessages::Error => {
+                                onerror(message);
+                            }
                             _ => {
                                 let request_id = message.request_id().unwrap_or(-1); // pass in request id?
                                 if requests.borrow().contains(&request_id) {

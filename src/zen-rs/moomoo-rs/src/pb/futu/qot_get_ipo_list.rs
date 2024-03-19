@@ -1,4 +1,5 @@
 /// Ipo基本数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BasicIpoData {
@@ -16,6 +17,7 @@ pub struct BasicIpoData {
     pub list_timestamp: ::core::option::Option<f64>,
 }
 /// A股Ipo列表额外数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CnIpoExData {
@@ -72,6 +74,7 @@ pub struct CnIpoExData {
     pub winning_num_data: ::prost::alloc::vec::Vec<WinningNumData>,
 }
 /// 中签号数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WinningNumData {
@@ -83,6 +86,7 @@ pub struct WinningNumData {
     pub winning_info: ::prost::alloc::string::String,
 }
 /// 港股Ipo列表额外数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HkIpoExData {
@@ -112,6 +116,7 @@ pub struct HkIpoExData {
     pub apply_end_timestamp: ::core::option::Option<f64>,
 }
 /// 美股Ipo列表额外数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UsIpoExData {
@@ -126,6 +131,7 @@ pub struct UsIpoExData {
     pub issue_size: i64,
 }
 /// 新股Ipo数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IpoData {
@@ -142,6 +148,7 @@ pub struct IpoData {
     #[prost(message, optional, tag = "4")]
     pub us_ex_data: ::core::option::Option<UsIpoExData>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct C2s {
@@ -149,6 +156,7 @@ pub struct C2s {
     #[prost(int32, required, tag = "1")]
     pub market: i32,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct S2c {
@@ -156,12 +164,14 @@ pub struct S2c {
     #[prost(message, repeated, tag = "1")]
     pub ipo_list: ::prost::alloc::vec::Vec<IpoData>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Request {
     #[prost(message, required, tag = "1")]
     pub c2s: C2s,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {

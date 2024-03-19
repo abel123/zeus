@@ -1,3 +1,4 @@
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct C2s {
@@ -11,6 +12,7 @@ pub struct C2s {
     #[prost(int32, repeated, packed = "false", tag = "3")]
     pub segment_list: ::prost::alloc::vec::Vec<i32>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DelayStatisticsItem {
@@ -32,6 +34,7 @@ pub struct DelayStatisticsItem {
     #[prost(float, required, tag = "5")]
     pub cumulative_ratio: f32,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DelayStatistics {
@@ -48,6 +51,7 @@ pub struct DelayStatistics {
     #[prost(int32, required, tag = "4")]
     pub count: i32,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ReqReplyStatisticsItem {
@@ -70,6 +74,7 @@ pub struct ReqReplyStatisticsItem {
     #[prost(bool, required, tag = "6")]
     pub is_local_reply: bool,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PlaceOrderStatisticsItem {
@@ -89,6 +94,7 @@ pub struct PlaceOrderStatisticsItem {
     #[prost(float, required, tag = "5")]
     pub update_cost: f32,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct S2c {
@@ -102,12 +108,14 @@ pub struct S2c {
     #[prost(message, repeated, tag = "3")]
     pub place_order_statistics_list: ::prost::alloc::vec::Vec<PlaceOrderStatisticsItem>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Request {
     #[prost(message, required, tag = "1")]
     pub c2s: C2s,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {
@@ -123,6 +131,7 @@ pub struct Response {
     #[prost(message, optional, tag = "4")]
     pub s2c: ::core::option::Option<S2c>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum DelayStatisticsType {
@@ -162,6 +171,7 @@ impl DelayStatisticsType {
 /// 某段时间的统计数据
 /// SR表示服务器收到数据，目前只有港股支持SR字段，SS表示服务器发出数据
 /// CR表示OpenD收到数据，CS表示OpenD发出数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum QotPushStage {
@@ -207,6 +217,7 @@ impl QotPushStage {
     }
 }
 /// 行情推送类型
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum QotPushType {

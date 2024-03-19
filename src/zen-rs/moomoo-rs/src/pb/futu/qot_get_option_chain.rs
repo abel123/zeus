@@ -1,4 +1,5 @@
 /// 以下为数据字段筛选，可选字段，不填表示不过滤
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DataFilter {
@@ -57,6 +58,7 @@ pub struct DataFilter {
     #[prost(double, optional, tag = "18")]
     pub vol_max: ::core::option::Option<f64>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct C2s {
@@ -82,6 +84,7 @@ pub struct C2s {
     #[prost(message, optional, tag = "7")]
     pub data_filter: ::core::option::Option<DataFilter>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OptionItem {
@@ -92,6 +95,7 @@ pub struct OptionItem {
     #[prost(message, optional, tag = "2")]
     pub put: ::core::option::Option<super::qot_common::SecurityStaticInfo>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OptionChain {
@@ -105,6 +109,7 @@ pub struct OptionChain {
     #[prost(double, optional, tag = "3")]
     pub strike_timestamp: ::core::option::Option<f64>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct S2c {
@@ -112,12 +117,14 @@ pub struct S2c {
     #[prost(message, repeated, tag = "1")]
     pub option_chain: ::prost::alloc::vec::Vec<OptionChain>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Request {
     #[prost(message, required, tag = "1")]
     pub c2s: C2s,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {
@@ -131,6 +138,7 @@ pub struct Response {
     #[prost(message, optional, tag = "4")]
     pub s2c: ::core::option::Option<S2c>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum OptionCondType {

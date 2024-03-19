@@ -1,4 +1,5 @@
 /// 简单属性筛选
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BaseFilter {
@@ -19,6 +20,7 @@ pub struct BaseFilter {
     pub sort_dir: ::core::option::Option<i32>,
 }
 /// 累积属性筛选
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AccumulateFilter {
@@ -42,6 +44,7 @@ pub struct AccumulateFilter {
     pub days: i32,
 }
 /// 财务属性筛选
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FinancialFilter {
@@ -65,6 +68,7 @@ pub struct FinancialFilter {
     pub quarter: i32,
 }
 /// 形态技术指标属性筛选
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PatternFilter {
@@ -82,6 +86,7 @@ pub struct PatternFilter {
     pub consecutive_period: ::core::option::Option<i32>,
 }
 /// 自定义技术指标属性筛选
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CustomIndicatorFilter {
@@ -114,6 +119,7 @@ pub struct CustomIndicatorFilter {
     pub consecutive_period: ::core::option::Option<i32>,
 }
 /// 简单属性数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BaseData {
@@ -124,6 +130,7 @@ pub struct BaseData {
     pub value: f64,
 }
 /// 累积属性数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AccumulateData {
@@ -137,6 +144,7 @@ pub struct AccumulateData {
     pub days: i32,
 }
 /// 财务属性数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FinancialData {
@@ -150,6 +158,7 @@ pub struct FinancialData {
     pub quarter: i32,
 }
 /// 自定义技术指标属性数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CustomIndicatorData {
@@ -166,6 +175,7 @@ pub struct CustomIndicatorData {
     pub field_para_list: ::prost::alloc::vec::Vec<i32>,
 }
 /// 返回的股票数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StockData {
@@ -188,6 +198,7 @@ pub struct StockData {
     #[prost(message, repeated, tag = "6")]
     pub custom_indicator_data_list: ::prost::alloc::vec::Vec<CustomIndicatorData>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct C2s {
@@ -221,6 +232,7 @@ pub struct C2s {
     #[prost(message, repeated, tag = "9")]
     pub custom_indicator_filter_list: ::prost::alloc::vec::Vec<CustomIndicatorFilter>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct S2c {
@@ -234,12 +246,14 @@ pub struct S2c {
     #[prost(message, repeated, tag = "3")]
     pub data_list: ::prost::alloc::vec::Vec<StockData>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Request {
     #[prost(message, required, tag = "1")]
     pub c2s: C2s,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {
@@ -254,6 +268,7 @@ pub struct Response {
     pub s2c: ::core::option::Option<S2c>,
 }
 /// 简单属性
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum StockField {
@@ -381,6 +396,7 @@ impl StockField {
     }
 }
 /// 累积属性
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum AccumulateField {
@@ -426,6 +442,7 @@ impl AccumulateField {
     }
 }
 /// 财务属性
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum FinancialField {
@@ -683,6 +700,7 @@ impl FinancialField {
     }
 }
 /// 自定义技术指标属性
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum CustomIndicatorField {
@@ -820,6 +838,7 @@ impl CustomIndicatorField {
     }
 }
 /// 形态技术指标属性
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum PatternField {
@@ -925,6 +944,7 @@ impl PatternField {
     }
 }
 /// 财务时间周期
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum FinancialQuarter {
@@ -970,6 +990,7 @@ impl FinancialQuarter {
     }
 }
 /// 相对位置比较
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum RelativePosition {
@@ -1011,6 +1032,7 @@ impl RelativePosition {
     }
 }
 /// 排序方向
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum SortDir {

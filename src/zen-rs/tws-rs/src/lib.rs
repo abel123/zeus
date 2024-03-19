@@ -6,5 +6,5 @@ pub use errors::Error;
 pub mod client;
 pub mod contracts;
 pub mod errors;
-mod messages;
+pub mod messages;
 mod server_versions;

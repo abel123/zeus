@@ -1,4 +1,5 @@
 /// 包的唯一标识，用于回放攻击的识别和保护
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PacketId {
@@ -9,6 +10,7 @@ pub struct PacketId {
     #[prost(uint32, required, tag = "2")]
     pub serial_no: u32,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProgramStatus {
@@ -20,6 +22,7 @@ pub struct ProgramStatus {
     pub str_ext_desc: ::core::option::Option<::prost::alloc::string::String>,
 }
 /// 返回结果
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum RetType {
@@ -65,6 +68,7 @@ impl RetType {
     }
 }
 /// 包加密算法
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum PacketEncAlgo {
@@ -102,6 +106,7 @@ impl PacketEncAlgo {
     }
 }
 /// 协议格式，请求协议在请求头中指定，推送协议在Init时指定
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum ProtoFmt {
@@ -131,6 +136,7 @@ impl ProtoFmt {
     }
 }
 /// 用户注册归属地
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum UserAttribution {
@@ -179,6 +185,7 @@ impl UserAttribution {
         }
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum ProgramStatusType {

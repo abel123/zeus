@@ -1,3 +1,4 @@
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct C2s {
@@ -6,6 +7,7 @@ pub struct C2s {
     pub security_list: ::prost::alloc::vec::Vec<super::qot_common::Security>,
 }
 /// 正股类型额外数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EquitySnapshotExData {
@@ -59,6 +61,7 @@ pub struct EquitySnapshotExData {
     pub dividend_lfy_ratio: ::core::option::Option<f64>,
 }
 /// 窝轮类型额外数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WarrantSnapshotExData {
@@ -139,6 +142,7 @@ pub struct WarrantSnapshotExData {
     pub issuer_code: ::core::option::Option<::prost::alloc::string::String>,
 }
 /// 期权类型额外数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OptionSnapshotExData {
@@ -210,6 +214,7 @@ pub struct OptionSnapshotExData {
     pub contract_multiplier: ::core::option::Option<f64>,
 }
 /// 指数类型额外数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IndexSnapshotExData {
@@ -224,6 +229,7 @@ pub struct IndexSnapshotExData {
     pub equal_count: i32,
 }
 /// 板块类型额外数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PlateSnapshotExData {
@@ -238,6 +244,7 @@ pub struct PlateSnapshotExData {
     pub equal_count: i32,
 }
 /// 期货类型额外数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FutureSnapshotExData {
@@ -261,6 +268,7 @@ pub struct FutureSnapshotExData {
     pub is_main_contract: bool,
 }
 /// 基金类型额外数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TrustSnapshotExData {
@@ -284,6 +292,7 @@ pub struct TrustSnapshotExData {
     pub asset_class: i32,
 }
 /// 基本快照数据
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SnapshotBasicData {
@@ -411,6 +420,7 @@ pub struct SnapshotBasicData {
     #[prost(double, optional, tag = "40")]
     pub close_price5_minute: ::core::option::Option<f64>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Snapshot {
@@ -439,6 +449,7 @@ pub struct Snapshot {
     #[prost(message, optional, tag = "8")]
     pub trust_ex_data: ::core::option::Option<TrustSnapshotExData>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct S2c {
@@ -446,12 +457,14 @@ pub struct S2c {
     #[prost(message, repeated, tag = "1")]
     pub snapshot_list: ::prost::alloc::vec::Vec<Snapshot>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Request {
     #[prost(message, required, tag = "1")]
     pub c2s: C2s,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {

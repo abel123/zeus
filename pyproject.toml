@@ -50,6 +50,7 @@ ta-lib = "^0.4.28"
 pytz = "^2023.3.post1"
 asyncache = "^0.3.1"
 shelved-cache = "^0.3.1"
+httpx = "^0.27.0"
 
 
 [build-system]

@@ -1,4 +1,5 @@
 /// 两个字段确定一支股票
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Security {
@@ -9,6 +10,7 @@ pub struct Security {
     #[prost(string, required, tag = "2")]
     pub code: ::prost::alloc::string::String,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct KLine {
@@ -52,6 +54,7 @@ pub struct KLine {
     #[prost(double, optional, tag = "13")]
     pub timestamp: ::core::option::Option<f64>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OptionBasicQotExData {
@@ -112,6 +115,7 @@ pub struct OptionBasicQotExData {
 }
 /// 美股支持盘前盘后数据
 /// 科创板仅支持盘后数据：成交量，成交额
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PreAfterMarketData {
@@ -140,6 +144,7 @@ pub struct PreAfterMarketData {
     #[prost(double, optional, tag = "8")]
     pub amplitude: ::core::option::Option<f64>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FutureBasicQotExData {
@@ -156,6 +161,7 @@ pub struct FutureBasicQotExData {
     #[prost(int32, optional, tag = "4")]
     pub expiry_date_distance: ::core::option::Option<i32>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WarrantBasicQotExData {
@@ -169,6 +175,7 @@ pub struct WarrantBasicQotExData {
     #[prost(double, required, tag = "3")]
     pub premium: f64,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BasicQot {
@@ -245,6 +252,7 @@ pub struct BasicQot {
     #[prost(message, optional, tag = "23")]
     pub warrant_ex_data: ::core::option::Option<WarrantBasicQotExData>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TimeShare {
@@ -276,6 +284,7 @@ pub struct TimeShare {
     #[prost(double, optional, tag = "9")]
     pub timestamp: ::core::option::Option<f64>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SecurityStaticBasic {
@@ -307,6 +316,7 @@ pub struct SecurityStaticBasic {
     #[prost(int32, optional, tag = "9")]
     pub exch_type: ::core::option::Option<i32>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WarrantStaticExData {
@@ -317,6 +327,7 @@ pub struct WarrantStaticExData {
     #[prost(message, required, tag = "2")]
     pub owner: Security,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OptionStaticExData {
@@ -345,6 +356,7 @@ pub struct OptionStaticExData {
     #[prost(int32, optional, tag = "8")]
     pub index_option_type: ::core::option::Option<i32>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FutureStaticExData {
@@ -358,6 +370,7 @@ pub struct FutureStaticExData {
     #[prost(bool, required, tag = "3")]
     pub is_main_contract: bool,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SecurityStaticInfo {
@@ -374,6 +387,7 @@ pub struct SecurityStaticInfo {
     #[prost(message, optional, tag = "4")]
     pub future_ex_data: ::core::option::Option<FutureStaticExData>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Broker {
@@ -395,6 +409,7 @@ pub struct Broker {
     #[prost(int64, optional, tag = "5")]
     pub volume: ::core::option::Option<i64>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Ticker {
@@ -432,6 +447,7 @@ pub struct Ticker {
     #[prost(double, optional, tag = "11")]
     pub timestamp: ::core::option::Option<f64>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OrderBookDetail {
@@ -442,6 +458,7 @@ pub struct OrderBookDetail {
     #[prost(int64, required, tag = "2")]
     pub volume: i64,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OrderBook {
@@ -459,6 +476,7 @@ pub struct OrderBook {
     pub detail_list: ::prost::alloc::vec::Vec<OrderBookDetail>,
 }
 /// 持股变动
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ShareHoldingChange {
@@ -484,6 +502,7 @@ pub struct ShareHoldingChange {
     #[prost(double, optional, tag = "7")]
     pub timestamp: ::core::option::Option<f64>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SubInfo {
@@ -494,6 +513,7 @@ pub struct SubInfo {
     #[prost(message, repeated, tag = "2")]
     pub security_list: ::prost::alloc::vec::Vec<Security>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConnSubInfo {
@@ -507,6 +527,7 @@ pub struct ConnSubInfo {
     #[prost(bool, required, tag = "3")]
     pub is_own_conn_data: bool,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PlateInfo {
@@ -520,6 +541,7 @@ pub struct PlateInfo {
     #[prost(int32, optional, tag = "3")]
     pub plate_type: ::core::option::Option<i32>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Rehab {
@@ -585,6 +607,7 @@ pub struct Rehab {
     #[prost(double, optional, tag = "23")]
     pub timestamp: ::core::option::Option<f64>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum QotMarket {
@@ -637,6 +660,7 @@ impl QotMarket {
         }
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum SecurityType {
@@ -701,6 +725,7 @@ impl SecurityType {
         }
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum PlateSetType {
@@ -741,6 +766,7 @@ impl PlateSetType {
         }
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum WarrantType {
@@ -785,6 +811,7 @@ impl WarrantType {
         }
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum OptionType {
@@ -817,6 +844,7 @@ impl OptionType {
         }
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum IndexOptionType {
@@ -849,6 +877,7 @@ impl IndexOptionType {
         }
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum OptionAreaType {
@@ -885,6 +914,7 @@ impl OptionAreaType {
         }
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum QotMarketState {
@@ -1022,6 +1052,7 @@ impl QotMarketState {
     }
 }
 /// 交易日查询市场
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum TradeDateMarket {
@@ -1075,6 +1106,7 @@ impl TradeDateMarket {
     }
 }
 /// 交易日类型
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum TradeDateType {
@@ -1107,6 +1139,7 @@ impl TradeDateType {
         }
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum RehabType {
@@ -1140,6 +1173,7 @@ impl RehabType {
     }
 }
 /// 枚举值兼容旧协议定义
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum KlType {
@@ -1208,6 +1242,7 @@ impl KlType {
         }
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum KlFields {
@@ -1274,6 +1309,7 @@ impl KlFields {
 }
 /// 订阅类型
 /// 枚举值兼容旧协议定义
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum SubType {
@@ -1361,6 +1397,7 @@ impl SubType {
         }
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum TickerDirection {
@@ -1397,6 +1434,7 @@ impl TickerDirection {
         }
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum TickerType {
@@ -1545,6 +1583,7 @@ impl TickerType {
         }
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum DarkStatus {
@@ -1577,6 +1616,7 @@ impl DarkStatus {
         }
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum SecurityStatus {
@@ -1701,6 +1741,7 @@ impl SecurityStatus {
         }
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum HolderCategory {
@@ -1738,6 +1779,7 @@ impl HolderCategory {
     }
 }
 /// 推送数据的分类，目前只有逐笔在使用
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum PushDataType {
@@ -1774,6 +1816,7 @@ impl PushDataType {
     }
 }
 /// 窝轮排序
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum SortField {
@@ -2004,6 +2047,7 @@ impl SortField {
     }
 }
 /// 窝轮发行人
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum Issuer {
@@ -2129,6 +2173,7 @@ impl Issuer {
     }
 }
 /// 窝轮上市日
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum IpoPeriod {
@@ -2174,6 +2219,7 @@ impl IpoPeriod {
     }
 }
 /// 窝轮价外/内,界内证表示界内界外
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum PriceType {
@@ -2206,6 +2252,7 @@ impl PriceType {
     }
 }
 /// 窝轮状态
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum WarrantStatus {
@@ -2246,6 +2293,7 @@ impl WarrantStatus {
         }
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum CompanyAct {
@@ -2303,6 +2351,7 @@ impl CompanyAct {
     }
 }
 /// 行情权限
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum QotRight {
@@ -2348,6 +2397,7 @@ impl QotRight {
     }
 }
 /// 提醒类型
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum PriceReminderType {
@@ -2449,6 +2499,7 @@ impl PriceReminderType {
     }
 }
 /// 提醒频率
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum PriceReminderFreq {
@@ -2486,6 +2537,7 @@ impl PriceReminderFreq {
     }
 }
 /// 资产类别
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum AssetClass {
@@ -2535,6 +2587,7 @@ impl AssetClass {
     }
 }
 /// 交割周期
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum ExpirationCycle {
@@ -2568,6 +2621,7 @@ impl ExpirationCycle {
     }
 }
 /// 所属交易所
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum ExchType {
@@ -2665,6 +2719,7 @@ impl ExchType {
     }
 }
 /// 周期类型
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum PeriodType {

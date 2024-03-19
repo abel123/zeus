@@ -7,14 +7,14 @@ use byteorder::{BigEndian, WriteBytesExt};
 use derivative::Derivative;
 use time::macros::format_description;
 use time::OffsetDateTime;
-use time_tz::{OffsetResult, PrimitiveDateTimeExt, timezones, Tz};
-use tokio::sync::mpsc::{channel, Receiver, Sender, unbounded_channel, UnboundedSender};
+use time_tz::{timezones, OffsetResult, PrimitiveDateTimeExt, Tz};
+use tokio::sync::mpsc::{channel, unbounded_channel, Receiver, Sender, UnboundedSender};
 use tracing::{error, info};
 
-use crate::{Error, server_versions};
-use crate::client::transport::{Item, MessageBus, TcpMessageBus};
 use crate::client::transport::message_bus::{ResponseStream, Signal};
-use crate::messages::{IncomingMessages, OutgoingMessages, RequestMessage};
+use crate::client::transport::{Item, MessageBus, TcpMessageBus};
+use crate::messages::{IncomingMessages, OutgoingMessages, RequestMessage, ResponseMessage};
+use crate::{server_versions, Error};
 
 pub mod market_data;
 mod transport;
@@ -129,11 +129,14 @@ impl Client {
         })
     }
 
-    pub async fn blocking_process(&mut self) -> Result<(), Error> {
+    pub async fn blocking_process<F>(&mut self, onerror: F) -> Result<(), Error>
+    where
+        F: Fn(ResponseMessage) + 'static,
+    {
         self.message_bus
             .as_mut()
             .unwrap()
-            .process_messages(self.receiver.take().unwrap(), self.server_version)
+            .process_messages(self.receiver.take().unwrap(), self.server_version, onerror)
             .await?;
         Ok(())
     }
@@ -279,15 +282,15 @@ mod test {
     use std::time::Duration;
 
     use tokio::task::LocalSet;
-    use tokio::time::Instant;
     use tokio::time::sleep;
+    use tokio::time::Instant;
     use tracing::info;
     use tracing_test::traced_test;
 
-    use crate::client::Client;
     use crate::client::market_data::historical::{
-        BarSize, historical_data, TWSDuration, WhatToShow,
+        historical_data, BarSize, TWSDuration, WhatToShow,
     };
+    use crate::client::Client;
     use crate::contracts::Contract;
     use crate::Error;
 
