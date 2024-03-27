@@ -1,0 +1,64 @@
+- name: 背驰
+  factors:
+    - signals_all:
+        - key: F1_D1-MACD面积背驰_BS
+          value: 顶_5笔_other
+          score: 70
+      name: 'F1-顶背'
+      enable_notify: true
+    - signals_all:
+        - key: F3_D1-MACD面积背驰_BS
+          value: 顶_5笔_other
+          score: 70
+      name: 'F3-顶背'
+      enable_notify: true
+    - signals_all:
+        - key: F5_D1-MACD面积背驰_BS
+          value: 顶_5笔_other
+          score: 70
+      name: 'F5-顶背'
+      enable_notify: true
+    - signals_all:
+        - key: F15_D1-MACD面积背驰_BS
+          value: 顶_5笔_other
+          score: 70
+      name: 'F15-顶背'
+      enable_notify: true
+    - signals_all:
+        - key: F60_D1-MACD面积背驰_BS
+          value: 顶_5笔_other
+          score: 70
+      name: 'F60-顶背'
+      enable_notify: true
+    - signals_all:
+        - key: F1_D1-MACD面积背驰_BS
+          value: 底_5笔_other
+          score: 70
+      name: 'F1-底背'
+      enable_notify: true
+    - signals_all:
+        - key: F3_D1-MACD面积背驰_BS
+          value: 底_5笔_other
+          score: 70
+      name: 'F3-底背'
+      enable_notify: true
+    - signals_all:
+        - key: F5_D1-MACD面积背驰_BS
+          value: 底_5笔_other
+          score: 70
+      name: 'F5-底背'
+      enable_notify: true
+    - signals_all:
+        - key: F15_D1-MACD面积背驰_BS
+          value: 底_5笔_other
+          score: 70
+      name: 'F15-底背'
+      enable_notify: true
+    - signals_all:
+        - key: F60_D1-MACD面积背驰_BS
+          value: 底_5笔_other
+          score: 70
+      name: 'F60-底背'
+      enable_notify: true
+  operate: HL
+  enable_notify: true

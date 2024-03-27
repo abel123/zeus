@@ -1,0 +1,54 @@
+- name: 小背驰-大背驰
+  factors:
+    - signals_all:
+        - key: F1_D1-MACD面积背驰_BS
+          value: 顶_5笔_other
+          score: 70
+      signals_any:
+        - key: F3_D1-MACD面积背驰_BS
+          value: 顶_5笔_other
+          score: 70
+        - key: F5_D1-MACD面积背驰_BS
+          value: 顶_5笔_other
+          score: 70
+        - key: F15_D1-MACD面积背驰_BS
+          value: 顶_5笔_other
+          score: 70
+      name: 'F1-顶背+大级别'
+      enable_notify: true
+
+    - signals_all:
+        - key: F3_D1-MACD面积背驰_BS
+          value: 顶_5笔_other
+          score: 70
+      signals_any:
+        - key: F5_D1-MACD面积背驰_BS
+          value: 顶_5笔_other
+          score: 70
+        - key: F15_D1-MACD面积背驰_BS
+          value: 顶_5笔_other
+          score: 70
+        - key: F60_D1-MACD面积背驰_BS
+          value: 顶_5笔_other
+          score: 70
+      name: 'F3-顶背+大级别'
+      enable_notify: true
+
+    - signals_all:
+        - key: F5_D1-MACD面积背驰_BS
+          value: 顶_5笔_other
+          score: 70
+      signals_any:
+        - key: F15_D1-MACD面积背驰_BS
+          value: 顶_5笔_other
+          score: 70
+        - key: F60_D1-MACD面积背驰_BS
+          value: 顶_5笔_other
+          score: 70
+        - key: D_D1-MACD面积背驰_BS
+          value: 顶_5笔_other
+          score: 70
+      name: 'F5-顶背+大级别'
+      enable_notify: true
+  operate: HL
+  enable_notify: true

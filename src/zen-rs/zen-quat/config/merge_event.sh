@@ -1,0 +1,1 @@
+cat events/* > event_matcher.yaml

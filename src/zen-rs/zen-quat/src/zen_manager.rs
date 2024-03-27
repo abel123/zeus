@@ -2,19 +2,21 @@ use std::cell::RefCell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fs;
+use std::num::NonZeroUsize;
 use std::ops::Deref;
 use std::rc::Rc;
 
 use futures_util::StreamExt;
+use lru::LruCache;
 use notify_rust::Notification;
-use time::{Duration, OffsetDateTime};
+use time::{Duration, format_description, OffsetDateTime};
 use tokio::select;
 use tokio::sync::oneshot::{channel, Sender};
 use tokio::sync::RwLock;
 use tokio::task::spawn_local;
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 use tws_rs::{Client, ClientRef, Error};
 use tws_rs::client::market_data::historical;
@@ -122,6 +124,7 @@ pub(crate) struct Store {
     store: HashMap<(Contract, Freq), Rc<RefCell<Zen>>>,
     setting: Settings,
     pub lock: HashMap<(Contract, Freq), Rc<RwLock<()>>>,
+    notify_dedup: LruCache<String, bool>,
 }
 
 impl Store {
@@ -130,13 +133,14 @@ impl Store {
             store: Default::default(),
             setting: Settings::new().expect("config init error"),
             lock: Default::default(),
+            notify_dedup: LruCache::new(NonZeroUsize::new(100).unwrap()),
         }
     }
 
     fn onerror(&mut self, rsp: ResponseMessage) {
         debug!("onerror {:?}", rsp);
         match rsp.fields[3].as_str() {
-            "1001" => self.store.iter().for_each(|(k, v)| {
+            "1100" => self.store.iter().for_each(|(k, v)| {
                 v.borrow_mut().reset();
             }),
             _ => {}
@@ -172,7 +176,7 @@ impl Store {
     pub fn get_czsc_lock(&self, sym: &Contract, freq: Freq) -> Rc<RwLock<()>> {
         self.lock.get(&(sym.clone(), freq)).unwrap().clone()
     }
-    pub fn process(&self, sym: &Contract, dt: OffsetDateTime) {
+    pub fn process(&mut self, sym: &Contract, dt: OffsetDateTime) {
         let mut signals = vec![];
         self.store.iter().for_each(|x| {
             if x.0 .0.symbol == sym.symbol {
@@ -185,22 +189,71 @@ impl Store {
         self.setting.matcher.as_ref().and_then(|m| {
             let event = m.is_match(signals);
             if event.is_some() {
-                //debug!("event: {:?}", event);
+                debug!("event: {:?}", event);
                 if let Some((ev, factor)) = event {
                     if ev.enable_notify && factor.enable_notify {
-                        Notification::new()
-                            .summary(format!("✅{} | {}", ev.name, factor.name).as_str())
-                            .body(
-                                factor
-                                    .signals_all
-                                    .iter()
-                                    .map(|x| format!("{:?}", x))
-                                    .collect::<Vec<_>>()
-                                    .join("\n")
-                                    .as_str(),
+                        if self
+                            .notify_dedup
+                            .get(
+                                format!(
+                                    "{:?}{:?}{:?}",
+                                    ev,
+                                    factor,
+                                    dt.format(
+                                        &format_description::parse(
+                                            "[year]-[month]-[day] [hour]:[minute]",
+                                        )
+                                        .unwrap()
+                                    )
+                                    .unwrap()
+                                )
+                                .as_str(),
                             )
-                            .show()
-                            .unwrap();
+                            .is_none()
+                        {
+                            Notification::new()
+                                .summary(
+                                    format!(
+                                        "✅ {} - {}",
+                                        //ev.name,
+                                        factor.name,
+                                        dt.format(
+                                            &format_description::parse(
+                                                "[month]-[day] [hour]:[minute]:[second]",
+                                            )
+                                            .unwrap()
+                                        )
+                                        .unwrap()
+                                    )
+                                    .as_str(),
+                                )
+                                .body(
+                                    factor
+                                        .signals_all
+                                        .iter()
+                                        .map(|x| format!("{:?}", x))
+                                        .collect::<Vec<_>>()
+                                        .join("\n")
+                                        .as_str(),
+                                )
+                                .show()
+                                .unwrap();
+                            self.notify_dedup.push(
+                                format!(
+                                    "{:?}{:?}{:?}",
+                                    ev,
+                                    factor,
+                                    dt.format(
+                                        &format_description::parse(
+                                            "[month]-[day] [hour]:[minute]:[second]",
+                                        )
+                                        .unwrap()
+                                    )
+                                    .unwrap()
+                                ),
+                                true,
+                            );
+                        }
                     }
                 }
             }
@@ -335,7 +388,11 @@ impl ZenManager {
         to: i64,
         sender: Sender<()>,
     ) -> Result<(), Error> {
-        let _ = self.connect().await;
+        let e = self.connect().await;
+        if e.is_err() {
+            error!("connect error {:?}", e);
+            return e;
+        }
         let client = { self.client.read().await.clone() };
         let client = client.borrow();
         let client = client.as_ref().unwrap();
@@ -386,7 +443,7 @@ impl ZenManager {
                 cache: Default::default(),
                 macd_4_9_9: (0.0, 0.0, 0.0),
             });
-            self.store.borrow().process(contract, e.date);
+            self.store.borrow_mut().process(contract, e.date);
         }
 
         zen.borrow_mut().subscribed = true;
@@ -415,7 +472,7 @@ impl ZenManager {
                             cache: Default::default(),
                             macd_4_9_9: (0.0,0.0,0.0)
                         });
-                        self.store.borrow().process(contract, e.date);
+                        self.store.borrow_mut().process(contract, e.date);
 
                         }
                 _ = cloned_token.cancelled() => {
