@@ -1,7 +1,3 @@
-#![feature(slice_take)]
-
-use chrono::Local;
-
 use std::cell::RefCell;
 use std::fs::File;
 use std::io::Write;
@@ -10,6 +6,7 @@ use std::rc::Rc;
 use actix_cors::Cors;
 use actix_web::middleware::Logger;
 use actix_web::{rt, App, HttpServer};
+use chrono::Local;
 use diesel_logger::LoggingConnection;
 use futures_util::StreamExt;
 use log::LevelFilter;
@@ -33,7 +30,7 @@ mod zen_manager;
 fn main() -> std::io::Result<()> {
     let target = Box::new(File::create("./log/log.txt").expect("Can't create file"));
 
-    let safari_id = get_bundle_identifier_or_default("Safari");
+    let safari_id = get_bundle_identifier_or_default("iTerm 2");
     set_application(&safari_id).expect("panic");
 
     env_logger::Builder::new()
@@ -81,6 +78,7 @@ fn main() -> std::io::Result<()> {
                 .service(api::resolve_symbol)
                 .service(api::zen_element)
                 .service(api::config)
+                .service(api::option_price)
         })
         .workers(1)
         .bind(("127.0.0.1", 8080))?

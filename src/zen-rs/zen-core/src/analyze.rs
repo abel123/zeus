@@ -56,20 +56,23 @@ impl CZSC {
     pub fn end(&self) -> Option<OffsetDateTime> {
         return self.bars_raw.last().map(|e| e.borrow().dt);
     }
-    pub fn update(&mut self, mut bar_: Bar) {
-        let last_bar =
+    pub fn update(&mut self, mut bar_: Bar) -> bool {
+        let (last_bar, new_bar) =
             if self.bars_raw.len() == 0 || bar_.dt != self.bars_raw.last().unwrap().borrow().dt {
                 self.macd_calc.next(bar_.close);
                 bar_.macd_4_9_9 = self.macd_calc.value();
                 self.bars_raw.push(Rc::new(RefCell::new(bar_)));
-                vec![self.bars_raw.last().unwrap().clone()]
+                (vec![self.bars_raw.last().unwrap().clone()], true)
             } else {
                 let len = self.bars_raw.len();
                 self.macd_calc.update(bar_.close);
                 bar_.macd_4_9_9 = self.macd_calc.value();
                 *self.bars_raw[len - 1].borrow_mut() = bar_;
                 let last_bars = self.bars_ubi.pop().expect("must non-empty");
-                last_bars.raw_bars.iter().map(|x| x.clone()).collect()
+                (
+                    last_bars.raw_bars.iter().map(|x| x.clone()).collect(),
+                    false,
+                )
             };
 
         let bars_ubi = &mut self.bars_ubi;
@@ -118,6 +121,8 @@ impl CZSC {
             }
             let _ = self.bars_raw.drain(0..s_index);
         }
+
+        return new_bar;
     }
 
     fn update_bi(&mut self) {

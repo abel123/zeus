@@ -281,17 +281,18 @@ fn encode_packet(message: &str) -> String {
 mod test {
     use std::time::Duration;
 
-    use tokio::task::LocalSet;
+    use tokio::task::{spawn_local, LocalSet};
     use tokio::time::sleep;
     use tokio::time::Instant;
-    use tracing::info;
+    use tracing::{info, warn};
     use tracing_test::traced_test;
 
     use crate::client::market_data::historical::{
         historical_data, BarSize, TWSDuration, WhatToShow,
     };
+    use crate::client::market_data::realtime::{req_mkt_data, ReqMktDataParam};
     use crate::client::Client;
-    use crate::contracts::Contract;
+    use crate::contracts::{contract_details, sec_def_opt, Contract, ReqSecDefOptParams};
     use crate::Error;
 
     #[traced_test]
@@ -300,12 +301,14 @@ mod test {
         let mut client = Client::new("127.0.0.1:14001", 4322);
         let client_ref = client.connect().await?;
 
-        tokio::spawn(async move {
-            sleep(Duration::from_secs(5)).await;
+        let local = LocalSet::new();
+        local.spawn_local(async move {
+            sleep(Duration::from_secs(2)).await;
             let now = Instant::now();
+            let binding = Contract::stock("TSLA");
             let bars = historical_data(
                 &client_ref,
-                &Contract::stock("TSLA"),
+                &binding,
                 None,
                 TWSDuration::days(3),
                 BarSize::Min3,
@@ -315,16 +318,44 @@ mod test {
             )
             .await
             .unwrap();
-            info!("cost {:?}, bars: {:?}", now.elapsed(), bars);
-        });
-        let local = LocalSet::new();
-        let res = local
-            .run_until(async move {
-                client.blocking_process().await?;
-                sleep(Duration::from_secs(5)).await;
-                Result::<(), Error>::Ok(())
-            })
+            info!("cost {:?}, bars: {:?}", now.elapsed(), bars.0);
+
+            let contracts = contract_details(&client_ref, &binding).await.unwrap();
+            info!("contracts {:?}", contracts);
+
+            for _ in 0..5 {
+                let params = sec_def_opt(
+                    &client_ref,
+                    &ReqSecDefOptParams {
+                        underlying_symbol: contracts[0].contract.symbol.clone(),
+                        fut_fop_exchange: "".to_string(),
+                        underlying_sec_type: contracts[0].contract.security_type.to_string(),
+                        underlying_con_id: contracts[0].contract.contract_id,
+                    },
+                )
+                .await;
+                info!("params {:?}", params.unwrap()[0]);
+            }
+
+            let ticker = req_mkt_data(
+                &client_ref,
+                &ReqMktDataParam {
+                    contract: binding.clone(),
+                    generic_tick_list: Default::default(),
+                    snapshot: false,
+                    regulatory_snapshot: false,
+                    mkt_data_options: vec![],
+                },
+            )
             .await;
+            warn!("here");
+        });
+        let res = local.spawn_local(async move {
+            client.blocking_process(|x| {}).await?;
+            sleep(Duration::from_secs(5)).await;
+            Result::<(), Error>::Ok(())
+        });
+        local.await;
         info!("{:?}", res);
         Ok(())
     }

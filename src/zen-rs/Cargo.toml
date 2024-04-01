@@ -3,4 +3,4 @@ workspace.resolver = "2"
 members = [
     "zen-core",
     "zen-quat"
-    , "tws-rs", "talipp", "zen-core-py", "moomoo-rs"]
+    , "tws-rs", "talipp", "moomoo-rs"]

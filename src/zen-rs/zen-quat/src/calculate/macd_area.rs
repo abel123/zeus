@@ -1,10 +1,14 @@
 use crate::calculate::r#trait::Processor;
+use cached::proc_macro::cached;
+use lru::LruCache;
+use notify_rust::Notification;
 use serde::Serialize;
 use std::cell::RefCell;
+use std::num::NonZeroUsize;
 use std::rc::Rc;
 use time::OffsetDateTime;
 use tracing::debug;
-use zen_core::objects::chan::BI;
+use zen_core::objects::chan::{NewBar, BI};
 use zen_core::objects::enums::Direction;
 use zen_core::objects::trade::{Signal, ZS};
 use zen_core::{Bar, CZSC};
@@ -36,7 +40,7 @@ pub(crate) struct MacdArea {
 }
 
 impl Processor for MacdArea {
-    fn process(&mut self, czsc: &CZSC) -> Vec<Signal> {
+    fn process(&mut self, czsc: &CZSC, is_new: bool) -> Vec<Signal> {
         let mut result = vec![];
         if czsc
             .bi_list
@@ -85,12 +89,13 @@ impl MacdArea {
         let mut result = vec![];
 
         let extra_offset = if use_fake { 1 } else { 0 };
-        for n in vec![5, 7, 9] {
+        for n in vec![3, 5, 7, 9] {
             let n = n - extra_offset;
             let len = czsc.bi_list.len();
-            if len < dindex + n {
+            if len < dindex + n || n == 2 {
                 continue;
             }
+
             let slice = czsc.bi_list.get((len - dindex - n)..(len - dindex));
             let zs = slice.map(|x| ZS::new(x.get(1..(x.len() - 1)).unwrap()));
             if zs.is_none() {
@@ -176,68 +181,46 @@ impl MacdArea {
                     .unwrap_or(0.0f32);
             }
 
-            let extracor = |x: &Rc<RefCell<Bar>>| -> f32 {
+            let summer = |x: &Rc<NewBar>| -> f32 {
                 if bi_first.direction == Direction::Up {
-                    x.borrow().macd_4_9_9.2.max(0.0)
+                    x.raw_bars
+                        .iter()
+                        .map(|e| e.borrow().macd_4_9_9.2.max(0.0))
+                        .sum()
                 } else {
-                    x.borrow().macd_4_9_9.2.min(0.0)
+                    x.raw_bars
+                        .iter()
+                        .map(|e| e.borrow().macd_4_9_9.2.min(0.0))
+                        .sum()
                 }
             };
-            let first_macd_area: f32 = bi_first
-                .iter()
-                .map(|x| x.raw_bars.iter().map(|e| extracor(e)).sum::<f32>())
-                .sum();
+            let first_macd_area: f32 = bi_first.iter().map(summer).sum();
             let last_macd_area: f32 = if !use_fake {
-                bi_last
-                    .iter()
-                    .map(|x| x.raw_bars.iter().map(|e| extracor(e)).sum::<f32>())
-                    .sum()
+                bi_last.iter().map(summer).sum()
             } else {
-                czsc.bars_ubi
-                    .iter()
-                    .skip(1)
-                    .map(|x| x.raw_bars.iter().map(|e| extracor(e)).sum::<f32>())
-                    .sum()
+                czsc.bars_ubi.iter().skip(1).map(summer).sum()
             };
 
             let dif_zero = if bi_first.direction == Direction::Up {
-                zs.bis
-                    .iter()
-                    .map(|b| {
-                        b.fx_b
-                            .elements
-                            .iter()
-                            .map(|e| {
-                                e.raw_bars
-                                    .iter()
-                                    .map(|b| b.borrow().macd_4_9_9.0)
-                                    .min_by(|a, b| a.partial_cmp(b).unwrap())
-                                    .unwrap()
-                            })
-                            .min_by(|a, b| a.partial_cmp(b).unwrap())
-                            .unwrap()
-                    })
-                    .min_by(|a, b| a.partial_cmp(b).unwrap())
-                    .unwrap()
+                let mut diff = f32::MAX;
+                for b in zs.bis {
+                    for e in &b.fx_b.elements {
+                        for bar in &e.raw_bars {
+                            diff = diff.min(bar.borrow().macd_4_9_9.0);
+                        }
+                    }
+                }
+                diff
             } else {
-                zs.bis
-                    .iter()
-                    .map(|b| {
-                        b.fx_b
-                            .elements
-                            .iter()
-                            .map(|e| {
-                                e.raw_bars
-                                    .iter()
-                                    .map(|b| b.borrow().macd_4_9_9.0)
-                                    .max_by(|a, b| a.partial_cmp(b).unwrap())
-                                    .unwrap()
-                            })
-                            .max_by(|a, b| a.partial_cmp(b).unwrap())
-                            .unwrap()
-                    })
-                    .max_by(|a, b| a.partial_cmp(b).unwrap())
-                    .unwrap()
+                let mut diff = f32::MIN;
+                for b in zs.bis {
+                    for e in &b.fx_b.elements {
+                        for bar in &e.raw_bars {
+                            diff = diff.max(bar.borrow().macd_4_9_9.0);
+                        }
+                    }
+                }
+                diff
             };
 
             if false {
@@ -278,28 +261,17 @@ impl MacdArea {
                 };
                 if !use_fake {
                     let bi_max_fn = |bi: &BI| {
-                        bi.iter()
-                            .map(|n| {
-                                n.raw_bars
-                                    .iter()
-                                    .max_by(|a, b| {
-                                        a.borrow()
-                                            .macd_4_9_9
-                                            .2
-                                            .partial_cmp(&b.borrow().macd_4_9_9.2)
-                                            .unwrap()
-                                    })
-                                    .unwrap()
-                                    .clone()
-                            })
-                            .max_by(|a, b| {
-                                a.borrow()
-                                    .macd_4_9_9
-                                    .2
-                                    .partial_cmp(&b.borrow().macd_4_9_9.2)
-                                    .unwrap()
-                            })
-                            .clone()
+                        let mut bar = None;
+                        let mut max = f32::MIN;
+                        for n in bi.iter() {
+                            for b in &n.raw_bars {
+                                if b.borrow().macd_4_9_9.2 > max {
+                                    bar = Some(b.clone());
+                                    max = b.borrow().macd_4_9_9.2;
+                                }
+                            }
+                        }
+                        bar
                     };
                     let macd_a = bi_max_fn(bi_first);
                     let macd_b = bi_max_fn(bi_last);
@@ -333,7 +305,7 @@ impl MacdArea {
                         macd_b_val: macd_b.map(|x| x.borrow().macd_4_9_9.2).unwrap_or(0.0),
                     });
                 }
-                result.push(Signal {
+                let signal = Signal {
                     key: (
                         format!("{:?}", czsc.freq),
                         format!("D{}-MACD面积背驰", dindex + 1),
@@ -345,7 +317,14 @@ impl MacdArea {
                     ),
                     value: ("顶".to_string(), format!("{}笔", n), "other".to_string()),
                     score,
-                })
+                };
+                if n > 3 {
+                    result.push(signal.clone());
+                }
+                let now = OffsetDateTime::now_utc();
+                let now_min =
+                    OffsetDateTime::from_unix_timestamp(now.unix_timestamp() - now.second() as i64);
+                self.notify(now_min.unwrap(), signal);
             }
 
             if bi_first.direction == Direction::Down
@@ -361,28 +340,17 @@ impl MacdArea {
                 };
                 if !use_fake {
                     let bi_min_fn = |b: &BI| {
-                        b.iter()
-                            .map(|n| {
-                                n.raw_bars
-                                    .iter()
-                                    .min_by(|a, b| {
-                                        a.borrow()
-                                            .macd_4_9_9
-                                            .2
-                                            .partial_cmp(&b.borrow().macd_4_9_9.2)
-                                            .unwrap()
-                                    })
-                                    .unwrap()
-                                    .clone()
-                            })
-                            .min_by(|a, b| {
-                                a.borrow()
-                                    .macd_4_9_9
-                                    .2
-                                    .partial_cmp(&b.borrow().macd_4_9_9.2)
-                                    .unwrap()
-                            })
-                            .clone()
+                        let mut bar = None;
+                        let mut min = f32::MAX;
+                        for n in b.iter() {
+                            for b in &n.raw_bars {
+                                if b.borrow().macd_4_9_9.2 < min {
+                                    bar = Some(b.clone());
+                                    min = b.borrow().macd_4_9_9.2;
+                                }
+                            }
+                        }
+                        bar
                     };
                     let macd_a = bi_min_fn(bi_first);
                     let macd_b = bi_min_fn(bi_last);
@@ -416,7 +384,7 @@ impl MacdArea {
                         macd_b_val: macd_b.map(|x| x.borrow().macd_4_9_9.2).unwrap_or(0.0),
                     });
                 }
-                result.push(Signal {
+                let signal = Signal {
                     key: (
                         format!("{:?}", czsc.freq),
                         format!("D{}-MACD面积背驰", dindex + 1),
@@ -428,9 +396,32 @@ impl MacdArea {
                     ),
                     value: ("底".to_string(), format!("{}笔", n), "other".to_string()),
                     score,
-                })
+                };
+                if n > 3 {
+                    result.push(signal.clone());
+                }
+                let now = OffsetDateTime::now_utc();
+                let now_min =
+                    OffsetDateTime::from_unix_timestamp(now.unix_timestamp() - now.second() as i64);
+                self.notify(now_min.unwrap(), signal);
             }
         }
         return result;
+    }
+
+    fn notify(&self, dt: OffsetDateTime, signal: Signal) {
+        notify(signal.key(), None, signal.value(), dt);
+    }
+}
+
+#[cached(size = 1000)]
+fn notify(title: String, subtitle: Option<String>, body: String, dt: OffsetDateTime) {
+    if dt.unix_timestamp() < OffsetDateTime::now_utc().unix_timestamp() - 60 * 10 {
+        Notification::new()
+            .summary(title.as_str())
+            .subtitle(subtitle.unwrap_or("".to_string()).as_str())
+            .body(body.as_str())
+            .show()
+            .expect("TODO: panic message");
     }
 }

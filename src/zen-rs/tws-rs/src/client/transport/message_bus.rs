@@ -7,17 +7,17 @@ use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::Duration;
 
-use tokio::{select, task};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::net::TcpStream;
-use tokio::sync::mpsc::{Receiver, Sender, unbounded_channel, UnboundedReceiver, UnboundedSender};
+use tokio::sync::mpsc::{unbounded_channel, Receiver, Sender, UnboundedReceiver, UnboundedSender};
 use tokio::task::JoinHandle;
-use tracing::{error, info};
+use tokio::{select, task};
 use tracing::debug;
+use tracing::{error, info};
 
-use crate::Error;
 use crate::messages::{IncomingMessages, RequestMessage, ResponseMessage};
+use crate::Error;
 
 #[derive(Debug)]
 pub struct ResponseStream {
@@ -213,7 +213,7 @@ impl MessageBus for TcpMessageBus {
                     }
                     Err(err) => {
                         error!("error reading packet: {:?}", err);
-
+                        // TODO, reset requests mapping
                         return Ok(());
                     }
                 };
@@ -289,7 +289,7 @@ impl<K: std::hash::Hash + Eq + std::fmt::Debug, V: std::fmt::Debug> SenderHash<K
                 error!("error sending: {id:?}, {err}")
             }
         } else {
-            error!("no recipient found for: {id:?}, {message:?}")
+            error!("no recipient found for: {id:?}")
         }
         Ok(())
     }

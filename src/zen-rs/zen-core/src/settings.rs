@@ -52,6 +52,10 @@ impl Settings {
         let content =
             fs::read_to_string(s.event_matcher_file.as_str()).expect("TODO: panic message");
         let events = Matcher::from(content.as_str()).expect("panic");
+        debug!(
+            "event matcher:\n {}",
+            serde_yaml::to_string(&events).unwrap()
+        );
         s.matcher = Some(Rc::new(events));
         debug!("settings:\n {:?}", s);
         Ok(s)

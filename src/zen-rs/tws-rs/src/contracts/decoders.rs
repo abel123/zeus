@@ -1,6 +1,10 @@
-use crate::{contracts::SecurityType, Error, messages::ResponseMessage, server_versions};
+use crate::{contracts::SecurityType, messages::ResponseMessage, server_versions, Error};
+use std::collections::HashSet;
 
-use super::{Contract, ContractDescription, ContractDetails, MarketRule, PriceIncrement, TagValue};
+use super::{
+    Contract, ContractDescription, ContractDetails, MarketRule, PriceIncrement, SecDefOptParam,
+    TagValue,
+};
 
 pub(crate) fn contract_details(
     server_version: i32,
@@ -200,6 +204,35 @@ pub(crate) fn market_rule(message: &mut ResponseMessage) -> Result<MarketRule, E
     Ok(market_rule)
 }
 
+pub(crate) fn sec_def_opt(message: &mut ResponseMessage) -> Result<SecDefOptParam, Error> {
+    message.skip(); //message_type
+    let req_id = message.next_int()?;
+    let exchange = message.next_string()?;
+    let underlying_con_id = message.next_int()?;
+    let trading_class = message.next_string()?;
+    let multiplier = message.next_string()?;
+    let expirations_size = message.next_int()?;
+    let mut expirations = HashSet::new();
+    let mut strikes = Vec::<f64>::new();
+
+    for _ in 0..expirations_size {
+        expirations.insert(message.next_string()?);
+    }
+
+    let strikes_size = message.next_int()?;
+
+    for _ in 0..strikes_size {
+        strikes.push(message.next_double()?);
+    }
+    Ok(SecDefOptParam {
+        exchange,
+        underlying_con_id,
+        trading_class,
+        multiplier,
+        expirations,
+        strikes,
+    })
+}
 #[cfg(test)]
 mod tests {
     use super::*;

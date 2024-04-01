@@ -28,3 +28,6 @@ diesel_logger = "0.3.0"
 chrono = "0.4.34"
 notify-rust = "4.10.0"
 lru = "0.12.3"
+talipp = { path = "../talipp" }
+cached = { version = "0.49.2", features = ["async"] }
+

@@ -41,7 +41,7 @@ impl Mark {
     }
 }
 
-#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, Serialize)]
 pub enum Freq {
     Tick,
     F1,

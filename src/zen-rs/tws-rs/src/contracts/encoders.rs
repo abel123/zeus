@@ -1,9 +1,15 @@
-use super::Contract;
+use super::{Contract, ReqSecDefOptParams};
 use crate::messages::OutgoingMessages;
 use crate::messages::RequestMessage;
+use crate::server_versions::SEC_DEF_OPT_PARAMS_REQ;
+use crate::Error::ServerVersion;
 use crate::{server_versions, Error};
 
-pub(crate) fn request_contract_data(server_version: i32, request_id: i32, contract: &Contract) -> Result<RequestMessage, Error> {
+pub(crate) fn request_contract_data(
+    server_version: i32,
+    request_id: i32,
+    contract: &Contract,
+) -> Result<RequestMessage, Error> {
     const VERSION: i32 = 8;
 
     let mut packet = RequestMessage::default();
@@ -33,8 +39,13 @@ pub(crate) fn request_contract_data(server_version: i32, request_id: i32, contra
         packet.push_field(&contract.exchange);
         packet.push_field(&contract.primary_exchange);
     } else if server_version >= server_versions::LINKING {
-        if !contract.primary_exchange.is_empty() && (contract.exchange == "BEST" || contract.exchange == "SMART") {
-            packet.push_field(&format!("{}:{}", contract.exchange, contract.primary_exchange));
+        if !contract.primary_exchange.is_empty()
+            && (contract.exchange == "BEST" || contract.exchange == "SMART")
+        {
+            packet.push_field(&format!(
+                "{}:{}",
+                contract.exchange, contract.primary_exchange
+            ));
         } else {
             packet.push_field(&contract.exchange);
         }
@@ -60,7 +71,10 @@ pub(crate) fn request_contract_data(server_version: i32, request_id: i32, contra
     Ok(packet)
 }
 
-pub(crate) fn request_matching_symbols(request_id: i32, pattern: &str) -> Result<RequestMessage, Error> {
+pub(crate) fn request_matching_symbols(
+    request_id: i32,
+    pattern: &str,
+) -> Result<RequestMessage, Error> {
     let mut message = RequestMessage::default();
 
     message.push_field(&OutgoingMessages::RequestMatchingSymbols);
@@ -79,6 +93,29 @@ pub(crate) fn request_market_rule(market_rule_id: i32) -> Result<RequestMessage,
     Ok(message)
 }
 
+pub(crate) fn req_sec_def_opt(
+    server_version: i32,
+    request_id: i32,
+    req: &ReqSecDefOptParams,
+) -> Result<RequestMessage, Error> {
+    let mut message = RequestMessage::default();
+    if server_version < SEC_DEF_OPT_PARAMS_REQ {
+        return Err(ServerVersion(
+            server_version,
+            SEC_DEF_OPT_PARAMS_REQ,
+            "version too small".to_string(),
+        ));
+    }
+
+    message.push_field(&OutgoingMessages::RequestSecurityDefinitionOptionalParameters);
+    message.push_field(&request_id);
+    message.push_field(&req.underlying_symbol);
+    message.push_field(&req.fut_fop_exchange);
+    message.push_field(&req.underlying_sec_type);
+    message.push_field(&req.underlying_con_id);
+
+    Ok(message)
+}
 #[cfg(test)]
 mod tests {
     use super::*;

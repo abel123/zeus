@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::calculate::macd_area::BeichiInfo;
 use serde::{Deserialize, Serialize};
+use zen_core::objects::enums::Freq;
 
 #[derive(Deserialize, Debug)]
 pub(super) struct HistoryRequest {
@@ -249,4 +250,21 @@ pub(super) struct ZenResponse {
     pub bi: BiInfo,
     pub beichi: Vec<Vec<BeichiInfo>>,
     pub bar_beichi: Vec<()>,
+}
+
+#[derive(Deserialize, Debug)]
+pub(super) struct OptionPriceRequest {
+    pub intervals: Vec<isize>,
+    pub ma: Vec<isize>,
+    pub option: String,
+    pub symbol: String,
+}
+
+#[derive(Serialize, Debug)]
+pub struct OptionPriceItem {
+    pub interval: Freq,
+    pub ma: isize,
+    pub delta: f32,
+    pub price: f32,
+    pub option_price: f32,
 }

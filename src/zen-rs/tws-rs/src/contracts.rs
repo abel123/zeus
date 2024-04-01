@@ -1,12 +1,15 @@
+use cached::proc_macro::cached;
+use std::collections::HashSet;
 use std::convert::From;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::string::ToString;
+use tracing::error;
 
-use crate::{Error, server_versions};
 use crate::client::ClientRef;
-use crate::messages::{encode_option_field, ToField};
-use crate::messages::RequestMessage;
+use crate::messages::{encode_option_field, IncomingMessages, ToField};
+use crate::messages::{RequestMessage, ResponseMessage};
+use crate::{server_versions, Error};
 
 mod decoders;
 mod encoders;
@@ -166,6 +169,27 @@ impl Contract {
         }
     }
 
+    pub fn option(
+        symbol: &str,
+        last_trade_date_or_contract_month: &str,
+        strike: f64,
+        right: &str,
+        multiplier: &str,
+    ) -> Contract {
+        Contract {
+            security_type: SecurityType::Option,
+            currency: "USD".to_string(),
+            exchange: "SMART".to_string(),
+            symbol: symbol.to_string(),
+            last_trade_date_or_contract_month: last_trade_date_or_contract_month.to_string(),
+            strike,
+            right: right.to_string(),
+            multiplier: multiplier.to_string(),
+            trading_class: symbol.to_string(),
+            ..Default::default()
+        }
+    }
+
     /// Creates futures contract from specified symbol
     pub fn futures(symbol: &str) -> Contract {
         Contract {
@@ -266,7 +290,7 @@ pub struct DeltaNeutralContract {
 }
 
 /// ContractDetails provides extended contract details.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct ContractDetails {
     /// A fully-defined Contract object.
     pub contract: Contract,
@@ -374,7 +398,80 @@ impl ToField for Vec<TagValue> {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[allow(dead_code)]
+pub struct ReqSecDefOptParams {
+    pub underlying_symbol: String,
+    pub fut_fop_exchange: String,
+    pub underlying_sec_type: String,
+    pub underlying_con_id: i32,
+}
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct SecDefOptParam {
+    pub exchange: String,
+    pub underlying_con_id: i32,
+    pub trading_class: String,
+    pub multiplier: String,
+    pub expirations: HashSet<String>,
+    pub strikes: Vec<f64>,
+}
 // === API ===
+
+// Requests contract information.
+//
+// Provides all the contracts matching the contract provided. It can also be used to retrieve complete options and futures chains. Though it is now (in API version > 9.72.12) advised to use reqSecDefOptParams for that purpose.
+//
+// # Arguments
+// * `client` - [Client] with an active connection to gateway.
+// * `contract` - The [Contract] used as sample to query the available contracts. Typically, it will contain the [Contract]'s symbol, currency, security_type, and exchange.
+#[cached(
+    result = true,
+    time = 7200,
+    key = "String",
+    convert = r##"{ format!("{:?}", contract) }"##
+)]
+pub async fn contract_details(
+    client: &ClientRef,
+    contract: &Contract,
+) -> Result<Vec<ContractDetails>, Error> {
+    verify_contract(client, contract)?;
+
+    let request_id = client.next_request_id();
+    let packet = encoders::request_contract_data(client.server_version(), request_id, contract)?;
+
+    let mut responses = client.send(request_id, packet).await?;
+
+    let mut contract_details: Vec<ContractDetails> = Vec::default();
+
+    loop {
+        match responses.receiver.as_mut().unwrap().recv().await {
+            Some(mut message) => match message.message_type() {
+                IncomingMessages::ContractData => {
+                    let decoded =
+                        decoders::contract_details(client.server_version(), &mut message)?;
+                    contract_details.push(decoded);
+                }
+                IncomingMessages::ContractDataEnd => {
+                    break;
+                }
+                IncomingMessages::Error => {
+                    error!("error: {message:?}");
+                    return Err(Error::Simple(format!("contract_details {message:?}")));
+                }
+                _ => {
+                    error!("unexpected message: {:?}", message);
+                }
+            },
+            _ => {
+                break;
+            }
+        }
+    }
+
+    Ok(contract_details)
+}
 
 fn verify_contract(client: &ClientRef, contract: &Contract) -> Result<(), Error> {
     if !contract.security_id_type.is_empty() || !contract.security_id.is_empty() {
@@ -425,4 +522,47 @@ pub struct MarketRule {
 pub struct PriceIncrement {
     pub low_edge: f64,
     pub increment: f64,
+}
+
+#[cached(
+    result = true,
+    time = 7200,
+    key = "String",
+    convert = r##"{ format!("{:?}", req) }"##
+)]
+pub async fn sec_def_opt(
+    client: &ClientRef,
+    req: &ReqSecDefOptParams,
+) -> Result<Vec<SecDefOptParam>, Error> {
+    let request_id = client.next_request_id();
+    let packet = encoders::req_sec_def_opt(client.server_version(), request_id, req)?;
+
+    let mut responses = client.send(request_id, packet).await?;
+
+    let mut result = vec![];
+    loop {
+        match responses.receiver.as_mut().unwrap().recv().await {
+            Some(mut message) => match message.message_type() {
+                IncomingMessages::SecurityDefinitionOptionParameter => {
+                    let decoded = decoders::sec_def_opt(&mut message)?;
+                    result.push(decoded);
+                }
+                IncomingMessages::SecurityDefinitionOptionParameterEnd => {
+                    break;
+                }
+                IncomingMessages::Error => {
+                    error!("error: {message:?}");
+                    return Err(Error::Simple(format!(" {message:?}")));
+                }
+                _ => {
+                    error!("unexpected message: {:?}", message);
+                    return Err(Error::Simple(format!(" {message:?}")));
+                }
+            },
+            _ => {
+                return Err(Error::Simple(format!("unexpected message")));
+            }
+        }
+    }
+    Ok(result)
 }

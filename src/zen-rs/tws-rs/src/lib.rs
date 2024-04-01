@@ -1,4 +1,4 @@
-#![feature(type_alias_impl_trait)]
+//#![feature(type_alias_impl_trait)]
 
 pub use client::{Client, ClientRef};
 pub use errors::Error;

@@ -213,10 +213,19 @@ pub fn request_id_index(kind: IncomingMessages) -> Option<usize> {
         | IncomingMessages::HistoricalDataUpdate
         | IncomingMessages::HistoricalSchedule
         | IncomingMessages::HistoricalTick
+        | IncomingMessages::SecurityDefinitionOptionParameter
+        | IncomingMessages::SecurityDefinitionOptionParameterEnd
         | IncomingMessages::HistoricalTickBidAsk
+        | IncomingMessages::TickReqParams
+        | IncomingMessages::TickOptionComputation
         | IncomingMessages::HistoricalTickLast => Some(1),
+
         IncomingMessages::ContractDataEnd
         | IncomingMessages::RealTimeBars
+        | IncomingMessages::MarketDataType
+        | IncomingMessages::TickPrice
+        | IncomingMessages::TickSize
+        | IncomingMessages::TickGeneric
         | IncomingMessages::Error
         | IncomingMessages::ExecutionDataEnd => Some(2),
         _ => {

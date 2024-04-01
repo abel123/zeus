@@ -1,33 +1,38 @@
 use std::cell::RefCell;
 use std::cmp::max;
 use std::collections::HashMap;
-use std::ops::DerefMut;
+use std::ops::{DerefMut, Sub};
 use std::string::ToString;
+use std::time::Duration;
 
-use actix_web::{error, Error, get, post, Responder, Result, web};
 use actix_web::web::Json;
-use diesel::ExpressionMethods;
+use actix_web::{error, get, post, web, Error, Responder, Result};
 use diesel::internal::derives::multiconnection::SelectStatementAccessor;
 use diesel::prelude::*;
+use diesel::ExpressionMethods;
 use diesel_logger::LoggingConnection;
-use time::OffsetDateTime;
+use time::{format_description, OffsetDateTime};
 use tokio::sync::oneshot::channel;
 use tokio::task::spawn_local;
-use tracing::debug;
+use tracing::{debug, info};
 
 use tws_rs::client::market_data::historical::cancel_historical_data;
-use tws_rs::contracts::Contract;
-use zen_core::objects::enums::{Direction, Freq};
+use tws_rs::client::market_data::realtime::{req_mkt_data, ReqMktDataParam};
+use tws_rs::contracts::{
+    contract_details, sec_def_opt, Contract, ReqSecDefOptParams, SecurityType,
+};
 use zen_core::objects::enums::Freq::F1;
+use zen_core::objects::enums::{Direction, Freq};
 
 use crate::api::params::{
-    BiInfo, Config, Exchange, HistoryRequest, HistoryResponse, LibrarySymbolInfo, SearchRequest,
-    SearchSymbolResultItem, SymbolRequest, ZenBiDetail, ZenRequest, ZenResponse,
+    BiInfo, Config, Exchange, HistoryRequest, HistoryResponse, LibrarySymbolInfo, OptionPriceItem,
+    OptionPriceRequest, SearchRequest, SearchSymbolResultItem, SymbolRequest, ZenBiDetail,
+    ZenRequest, ZenResponse,
 };
 use crate::db::establish_connection;
 use crate::db::models::Symbol;
-use crate::schema::symbols::{exchange, screener, symbol, type_};
 use crate::schema::symbols::dsl::symbols;
+use crate::schema::symbols::{exchange, screener, symbol, type_};
 use crate::zen_manager::{AppZenMgr, Store, ZenManager};
 
 mod params;
@@ -116,6 +121,7 @@ pub(super) async fn history(
 #[get("/datafeed/udf/search")]
 async fn search_symbol(
     web::Query(params): web::Query<SearchRequest>,
+    z: web::Data<AppZenMgr>,
     conn: web::Data<RefCell<LoggingConnection<SqliteConnection>>>,
 ) -> Result<impl Responder> {
     use crate::schema::symbols::dsl::*;
@@ -132,7 +138,7 @@ async fn search_symbol(
         .load(conn.borrow_mut().deref_mut())
         .expect("Error loading posts");
     debug!("db res {:?}", results);
-    let obj: Vec<SearchSymbolResultItem> = results
+    let mut obj: Vec<SearchSymbolResultItem> = results
         .iter()
         .map(|e| {
             let e = (*e).clone();
@@ -146,6 +152,97 @@ async fn search_symbol(
             }
         })
         .collect();
+    if params.query.contains("TSLA ") || params.query.contains("SPY ") {
+        let contract = Contract::stock(params.query.split(" ").next().unwrap());
+        let rs = ZenManager::try_subscribe(
+            z.get_ref().clone(),
+            &contract,
+            Freq::D,
+            OffsetDateTime::now_utc()
+                .sub(Duration::from_secs(60 * 60))
+                .unix_timestamp(),
+            OffsetDateTime::now_utc().unix_timestamp(),
+        )
+        .await;
+        if rs.is_err() {
+            return Err(error::ErrorInternalServerError(rs.unwrap_err()));
+        }
+        let zen = z.borrow().get_czsc(&contract, Freq::D);
+        let last_price = zen
+            .borrow()
+            .czsc
+            .bars_raw
+            .last()
+            .map(|x| x.borrow().close)
+            .unwrap_or(0.0);
+        info!("last_price {}", last_price);
+
+        let client = &z.borrow().client.read().await.clone();
+        let client = client.borrow();
+        let client_ref = client.as_ref().unwrap();
+        let contracts = contract_details(client_ref, &contract).await.unwrap();
+
+        let params = sec_def_opt(
+            client_ref,
+            &ReqSecDefOptParams {
+                underlying_symbol: contracts[0].contract.symbol.clone(),
+                fut_fop_exchange: "".to_string(),
+                underlying_sec_type: contracts[0].contract.security_type.to_string(),
+                underlying_con_id: contracts[0].contract.contract_id,
+            },
+        )
+        .await
+        .unwrap();
+        let params = params
+            .iter()
+            .filter(|x| x.exchange == "SMART")
+            .collect::<Vec<_>>();
+
+        let formatter = format_description::parse("[year][month][day]").unwrap();
+
+        let expirations = params[0].expirations.clone();
+        let mut expirations = expirations
+            .iter()
+            .filter(|x| (**x) >= OffsetDateTime::now_utc().format(&formatter).unwrap())
+            .collect::<Vec<_>>();
+        expirations.sort();
+
+        for expiration in expirations.iter().take(2) {
+            for strike in &params[0].strikes {
+                for right in ["P", "C"] {
+                    let gap = if params[0].trading_class == "TSLA" {
+                        250
+                    } else {
+                        100
+                    };
+                    if *strike > last_price as f64 - 10.0
+                        && *strike < last_price as f64 + 10.0
+                        && (*strike * 100.0) as i64 % gap == 0
+                    {
+                        let option = Contract::option(
+                            params[0].trading_class.as_str(),
+                            expiration.as_str(),
+                            *strike,
+                            right,
+                            params[0].multiplier.as_str(),
+                        );
+                        let option = contract_details(client_ref, &option).await;
+                        if option.is_ok() {
+                            let option = &option.unwrap()[0];
+                            obj.push(SearchSymbolResultItem {
+                                symbol: option.contract.local_symbol.clone(),
+                                full_name: option.contract.local_symbol.clone(),
+                                description: option.contract.local_symbol.clone(),
+                                exchange: option.contract.exchange.clone(),
+                                ticker: format!("option:{}", option.contract.local_symbol),
+                                r#type: "option".to_string(),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
     Ok(Json(obj))
 }
 
@@ -307,7 +404,9 @@ pub(crate) async fn zen_element(
         beichi: vec![],
         bar_beichi: vec![],
     };
+    let mut last_dir = None;
     for bi in &zen.borrow().czsc.bi_list {
+        last_dir = Some(bi.direction.clone());
         resp.bi.finished.push(ZenBiDetail {
             direction: String::from(bi.direction.as_str()),
             end: if bi.direction == Direction::Down {
@@ -324,7 +423,123 @@ pub(crate) async fn zen_element(
             start_ts: bi.fx_a.dt.unix_timestamp(),
         })
     }
+    match last_dir {
+        Some(Direction::Up) => {
+            let bar = zen
+                .borrow()
+                .czsc
+                .bars_ubi
+                .iter()
+                .skip(1)
+                .min_by(|a, b| a.low.partial_cmp(&b.low).unwrap())
+                .map(|a| a.clone())
+                .unwrap();
+            resp.bi.unfinished.push(ZenBiDetail {
+                direction: String::from(Direction::Down.as_str()),
+                end: bar.low,
+                end_ts: bar.dt.unix_timestamp(),
+                start: zen.borrow().czsc.bars_ubi[1].high,
+                start_ts: zen.borrow().czsc.bars_ubi[1].dt.unix_timestamp(),
+            });
+        }
+        Some(Direction::Down) => {
+            let bar = zen
+                .borrow()
+                .czsc
+                .bars_ubi
+                .iter()
+                .skip(1)
+                .max_by(|a, b| a.high.partial_cmp(&b.high).unwrap())
+                .map(|a| a.clone())
+                .unwrap();
+            resp.bi.unfinished.push(ZenBiDetail {
+                direction: String::from(Direction::Up.as_str()),
+                end: bar.high,
+                end_ts: bar.dt.unix_timestamp(),
+                start: zen.borrow().czsc.bars_ubi[1].low,
+                start_ts: zen.borrow().czsc.bars_ubi[1].dt.unix_timestamp(),
+            });
+        }
+        _ => {}
+    }
+
     resp.beichi
         .push(zen.borrow().bc_processor.beichi_tracker.clone());
     Ok(Json(resp))
+}
+
+#[post("/ma/option_price")]
+async fn option_price(
+    web::Json(params): web::Json<OptionPriceRequest>,
+    z: web::Data<AppZenMgr>,
+) -> Result<impl Responder> {
+    if params.option.is_empty() {
+        return Err(error::ErrorInternalServerError("option empty"));
+    }
+    let mut result = vec![];
+    {
+        z.borrow().connect().await;
+    }
+    let client = &z.borrow().client.read().await.clone();
+    let client = client.borrow();
+    let client_ref = client.as_ref().unwrap();
+
+    let option = Contract {
+        local_symbol: params.option.clone(),
+        security_type: SecurityType::Option,
+        exchange: "SMART".to_string(),
+        ..Contract::default()
+    };
+    let details = contract_details(&client_ref, &option).await;
+    //info!("details {:?}", details);
+    let ticker = req_mkt_data(
+        &client_ref,
+        &ReqMktDataParam {
+            contract: details.unwrap()[0].contract.clone(),
+            generic_tick_list: Default::default(),
+            snapshot: false,
+            regulatory_snapshot: false,
+            mkt_data_options: vec![],
+        },
+    )
+    .await;
+
+    let mut delta = 0.0f32;
+    let mut opt_price = -1.0f32;
+    if ticker.is_ok() {
+        let ticker = ticker.unwrap().clone();
+        let t = ticker.read().await;
+        delta = t
+            .as_ref()
+            .map(|v| v.opt_compute.as_ref().map(|o| o.delta).unwrap_or(0.0))
+            .unwrap_or(0.0) as f32;
+        opt_price = t
+            .as_ref()
+            .map(|v| v.opt_compute.as_ref().map(|o| o.opt_price).unwrap_or(0.0))
+            .unwrap_or(0.0) as f32;
+    }
+    for interval in &params.intervals {
+        for ma in &params.ma {
+            let freq = ZenManager::freq_map()
+                .get(&interval.to_string())
+                .unwrap()
+                .clone();
+            let contract = Contract::stock(params.symbol.as_str());
+            let zen = z.borrow().get_czsc(&contract, freq);
+            let zen = zen.borrow();
+            let sma = zen.tracker.store.get(ma);
+
+            let ma_val = sma.map(|x| x.ma()).unwrap_or(0.0);
+            let last = sma.map(|x| x.last()).unwrap_or(0.0);
+            result.push(OptionPriceItem {
+                interval: freq,
+                price: ma_val,
+                delta,
+                ma: *ma,
+                option_price: (opt_price - (ma_val - last) * delta),
+            });
+        }
+    }
+
+    Ok(Json(result))
 }

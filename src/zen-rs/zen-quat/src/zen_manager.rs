@@ -9,7 +9,7 @@ use std::rc::Rc;
 use futures_util::StreamExt;
 use lru::LruCache;
 use notify_rust::Notification;
-use time::{Duration, format_description, OffsetDateTime};
+use time::{format_description, Duration, OffsetDateTime};
 use tokio::select;
 use tokio::sync::oneshot::{channel, Sender};
 use tokio::sync::RwLock;
@@ -18,19 +18,20 @@ use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info};
 
-use tws_rs::{Client, ClientRef, Error};
 use tws_rs::client::market_data::historical;
 use tws_rs::client::market_data::historical::{
-    BarSize, cancel_historical_data, historical_data, TWSDuration, WhatToShow,
+    cancel_historical_data, historical_data, BarSize, TWSDuration, WhatToShow,
 };
 use tws_rs::contracts::Contract;
 use tws_rs::messages::ResponseMessage;
-use zen_core::{Bar, CZSC, Settings};
+use tws_rs::{Client, ClientRef, Error};
 use zen_core::objects::enums::Freq;
 use zen_core::objects::trade::{Matcher, Signal};
+use zen_core::{Bar, Settings, CZSC};
 
 use crate::calculate::macd_area::MacdArea;
 use crate::calculate::r#trait::Processor;
+use crate::calculate::sma_tracker::SMATracker;
 
 pub(crate) struct Zen {
     pub czsc: CZSC,
@@ -42,6 +43,7 @@ pub(crate) struct Zen {
     token: Option<CancellationToken>,
     pub(crate) request_id: i32,
     pub(crate) bc_processor: MacdArea,
+    pub(crate) tracker: SMATracker,
     signals: Vec<Signal>,
 }
 
@@ -62,6 +64,7 @@ impl Zen {
             token: None,
             request_id: 0,
             bc_processor: MacdArea::new(1),
+            tracker: SMATracker::new(vec![15, 30, 60, 120, 200]),
             signals: vec![],
         }
     }
@@ -78,11 +81,13 @@ impl Zen {
         self.realtime = false;
         self.token = None;
         self.bc_processor.beichi_tracker.clear();
+        self.tracker = SMATracker::new(vec![15, 30, 60, 120, 200]);
     }
 
     pub fn update(&mut self, bar: Bar) {
-        self.czsc.update(bar);
-        self.signals = self.bc_processor.process(&self.czsc);
+        let is_new = self.czsc.update(bar);
+        self.signals = self.bc_processor.process(&self.czsc, is_new);
+        self.tracker.process(&self.czsc, is_new);
     }
     pub fn need_subscribe(&self, from: i64, to: i64) -> bool {
         if false {
@@ -133,7 +138,7 @@ impl Store {
             store: Default::default(),
             setting: Settings::new().expect("config init error"),
             lock: Default::default(),
-            notify_dedup: LruCache::new(NonZeroUsize::new(100).unwrap()),
+            notify_dedup: LruCache::new(NonZeroUsize::new(1000).unwrap()),
         }
     }
 
@@ -189,32 +194,24 @@ impl Store {
         self.setting.matcher.as_ref().and_then(|m| {
             let event = m.is_match(signals);
             if event.is_some() {
-                debug!("event: {:?}", event);
+                //debug!("event: {:?}", event);
                 if let Some((ev, factor)) = event {
                     if ev.enable_notify && factor.enable_notify {
-                        if self
-                            .notify_dedup
-                            .get(
-                                format!(
-                                    "{:?}{:?}{:?}",
-                                    ev,
-                                    factor,
-                                    dt.format(
-                                        &format_description::parse(
-                                            "[year]-[month]-[day] [hour]:[minute]",
-                                        )
-                                        .unwrap()
-                                    )
+                        let key = format!(
+                            "{:?}{:?}{:?}",
+                            ev,
+                            factor,
+                            dt.format(
+                                &format_description::parse("[year]-[month]-[day] [hour]:[minute]",)
                                     .unwrap()
-                                )
-                                .as_str(),
                             )
-                            .is_none()
-                        {
+                            .unwrap()
+                        );
+                        if self.notify_dedup.get(key.as_str()).is_none() {
                             Notification::new()
                                 .summary(
                                     format!(
-                                        "✅ {} - {}",
+                                        "{} - {}",
                                         //ev.name,
                                         factor.name,
                                         dt.format(
@@ -227,6 +224,7 @@ impl Store {
                                     )
                                     .as_str(),
                                 )
+                                .subtitle("✅")
                                 .body(
                                     factor
                                         .signals_all
@@ -238,21 +236,7 @@ impl Store {
                                 )
                                 .show()
                                 .unwrap();
-                            self.notify_dedup.push(
-                                format!(
-                                    "{:?}{:?}{:?}",
-                                    ev,
-                                    factor,
-                                    dt.format(
-                                        &format_description::parse(
-                                            "[month]-[day] [hour]:[minute]:[second]",
-                                        )
-                                        .unwrap()
-                                    )
-                                    .unwrap()
-                                ),
-                                true,
-                            );
+                            self.notify_dedup.push(key, true);
                         }
                     }
                 }
@@ -275,7 +259,7 @@ impl ZenManager {
         }
     }
 
-    async fn connect(&self) -> Result<(), Error> {
+    pub async fn connect(&self) -> Result<(), Error> {
         if self.client.read().await.borrow().is_some() {
             return Ok(());
         }
