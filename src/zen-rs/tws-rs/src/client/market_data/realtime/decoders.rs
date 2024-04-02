@@ -9,6 +9,7 @@ pub fn decode_tick_option_computation_msg(
     let version = message.next_int()?;
     let req_id = message.next_int()?;
     let tick_type = message.next_int()?;
+    message.skip();
     let mut implied_vol = message.next_double()?;
     if (implied_vol - (-1.0f64)).abs() < f64::EPSILON {
         // -1 is the "not yet computed" indicator

@@ -6,7 +6,7 @@ import { syncEffect } from "recoil-sync";
 
 export const symbolState = atom({
     key: "symbolState", // unique ID (with respect to other atoms/selectors)
-    default: "SPY", // default value (aka initial value)
+    default: "TSLA", // default value (aka initial value)
     effects: [syncEffect({ refine: string() })],
 });
 

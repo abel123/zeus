@@ -4,6 +4,7 @@ import GridLayout from "react-grid-layout";
 import { StockChart } from "../widgets/charts/stock";
 import { ResolutionString } from "@/public/static/charting_library/charting_library";
 import { StockOptionTable } from "../stock/stock_option_table";
+import { UDFCompatibleDatafeed } from "@/public/static/datafeeds/udf/src/udf-compatible-datafeed";
 
 interface Props {}
 
@@ -51,7 +52,7 @@ export const MainGrid = (props: Props) => {
                 <div className="col-span-4 grid grid-rows-9">
                     <div key="2-1" className="row-span-4 border-solid border-2 border-slate-300">
                         <StockChart
-                            resolution={"15" as ResolutionString}
+                            resolution={"1D" as ResolutionString}
                             macd_config={[{ fast: 4, slow: 9, signal: 9 }]}
                             hidden_extra_toolbar={true}
                             standalone={false}

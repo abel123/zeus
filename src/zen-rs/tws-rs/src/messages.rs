@@ -225,6 +225,7 @@ pub fn request_id_index(kind: IncomingMessages) -> Option<usize> {
         | IncomingMessages::MarketDataType
         | IncomingMessages::TickPrice
         | IncomingMessages::TickSize
+        | IncomingMessages::Tickstring
         | IncomingMessages::TickGeneric
         | IncomingMessages::Error
         | IncomingMessages::ExecutionDataEnd => Some(2),

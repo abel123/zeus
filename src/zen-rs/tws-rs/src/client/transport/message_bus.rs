@@ -214,6 +214,7 @@ impl MessageBus for TcpMessageBus {
                     Err(err) => {
                         error!("error reading packet: {:?}", err);
                         // TODO, reset requests mapping
+
                         return Ok(());
                     }
                 };

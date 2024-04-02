@@ -196,7 +196,7 @@ impl Store {
             if event.is_some() {
                 //debug!("event: {:?}", event);
                 if let Some((ev, factor)) = event {
-                    if ev.enable_notify && factor.enable_notify {
+                    if ev.enable_notify {
                         let key = format!(
                             "{:?}{:?}{:?}",
                             ev,
@@ -212,8 +212,7 @@ impl Store {
                                 .summary(
                                     format!(
                                         "{} - {}",
-                                        //ev.name,
-                                        factor.name,
+                                        ev.name,
                                         dt.format(
                                             &format_description::parse(
                                                 "[month]-[day] [hour]:[minute]:[second]",

@@ -508,7 +508,10 @@ async fn option_price(
     let mut opt_price = -1.0f32;
     if ticker.is_ok() {
         let ticker = ticker.unwrap().clone();
+
         let t = ticker.read().await;
+        //info!("opt_compute {:?}", t);
+
         delta = t
             .as_ref()
             .map(|v| v.opt_compute.as_ref().map(|o| o.delta).unwrap_or(0.0))
@@ -536,7 +539,7 @@ async fn option_price(
                 price: ma_val,
                 delta,
                 ma: *ma,
-                option_price: (opt_price - (ma_val - last) * delta),
+                option_price: (opt_price + (ma_val - last) * delta),
             });
         }
     }

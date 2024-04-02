@@ -201,8 +201,6 @@ pub struct Factor {
     // signals_not 不能满足其中任一信号，允许为空
     #[serde(skip_serializing_if = "Option::is_none")]
     signals_not: Option<Vec<Signal>>,
-    pub name: String,
-    pub enable_notify: bool,
 }
 
 impl Factor {

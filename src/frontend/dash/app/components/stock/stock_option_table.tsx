@@ -11,7 +11,7 @@ export const StockOptionTable = () => {
     useEffect(() => {
         let interval = setInterval(() => {
             const res = axios
-                .post(`http://127.0.0.1:8000/ma/option_price`, {
+                .post(`http://127.0.0.1:8080/ma/option_price`, {
                     intervals: [3, 5, 15, 60],
                     ma: [15, 30, 60, 120, 200],
                     symbol: symbol,

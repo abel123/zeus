@@ -10,7 +10,7 @@ export const OptionSelect = () => {
 
     useEffect(() => {
         axios
-            .get(`http://127.0.0.1:8000/datafeed/udf/search?limit=30&query=${symbol}%20&type=&exchange=america`)
+            .get(`http://127.0.0.1:8080/datafeed/udf/search?limit=30&query=${symbol}%20&type=&exchange=america`)
             .then(function (res) {
                 console.log("option response", res);
                 setSelectOption(res.data);

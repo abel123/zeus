@@ -41,7 +41,9 @@ export const TVChartContainer = (
             symbol: props.standalone ? props.symbol : symbol,
             // BEWARE: no trailing slash is expected in feed URL
             //datafeed: (globalThis as any).datafeed ?? DataFeedFactory("http://127.0.0.1:8000"),
-            datafeed: new UDFCompatibleDatafeed("http://127.0.0.1:8080/datafeed/udf", 5 * 1000),
+            datafeed:
+                (globalThis as any).datafeed ??
+                new UDFCompatibleDatafeed("http://127.0.0.1:8080/datafeed/udf", 5 * 1000),
             interval: props.interval as ResolutionString,
             container: chartContainerRef.current,
             library_path: props.library_path,
@@ -70,7 +72,7 @@ export const TVChartContainer = (
             user_id: props.user_id,
             fullscreen: props.fullscreen,
             autosize: props.autosize,
-            symbol_search_request_delay: 1200,
+            symbol_search_request_delay: 6000,
             //theme: "Dark",
             timezone: "Asia/Chongqing",
             overrides: {

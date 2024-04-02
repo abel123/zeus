@@ -5,8 +5,11 @@ import { NavBar } from "../app/navbar";
 import Head from "next/head";
 import { RecoilRoot } from "recoil";
 import { RecoilURLSyncJSONNext } from "recoil-sync-next";
+import { UDFCompatibleDatafeed } from "@/public/static/datafeeds/udf/src/udf-compatible-datafeed";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+    (globalThis as any).datafeed =
+        (globalThis as any).datafeed ?? new UDFCompatibleDatafeed("http://127.0.0.1:8080/datafeed/udf", 5 * 1000);
     return (
         <html lang="en">
             <Head>

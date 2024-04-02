@@ -311,7 +311,7 @@ pub struct TickEFP {
     pub dividend_impact: f64,
     pub dividends_to_last_trade_date: f64,
 }
-
+#[derive(Debug, Clone)]
 pub struct Ticker {
     pub contract: Contract,
     pub opt_compute: Option<TickOptionComputation>,
@@ -345,7 +345,7 @@ pub async fn req_mkt_data(
         loop {
             match receiver.as_mut().unwrap().recv().await {
                 Some(mut message) => {
-                    debug!("msg {:?}", message);
+                    //debug!("msg {:?}", message);
                     match message.message_type() {
                         IncomingMessages::TickOptionComputation => {
                             let opt_compute =

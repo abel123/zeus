@@ -97,6 +97,8 @@ class OptionTracker(metaclass=SingletonABCMeta):
                 delta = 0.0
                 if greek != None:
                     delta = greek.delta
+                if delta == None:
+                    delta = 0.0
                 result.append(
                     Row(
                         interval=p,
