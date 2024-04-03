@@ -372,8 +372,6 @@ mod tests {
                 }],
                 signals_any: None,
                 signals_not: None,
-                name: "".to_string(),
-                enable_notify: false,
             }],
             signals_all: None,
             signals_any: None,
