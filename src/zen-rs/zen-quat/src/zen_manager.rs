@@ -44,8 +44,7 @@ pub(crate) struct Zen {
     token: Option<CancellationToken>,
     pub(crate) request_id: i32,
     pub(crate) bc_processor: MacdArea,
-    pub(crate) tracker: SMATracker,
-    signals: Vec<Signal>,
+    pub(crate) sma_tracker: SMATracker,
 }
 
 impl Drop for Zen {
@@ -65,8 +64,7 @@ impl Zen {
             token: None,
             request_id: 0,
             bc_processor: MacdArea::new(1),
-            tracker: SMATracker::new(vec![15, 30, 60, 120, 200]),
-            signals: vec![],
+            sma_tracker: SMATracker::new(vec![15, 30, 60, 120, 200]),
         }
     }
 
@@ -82,28 +80,16 @@ impl Zen {
         self.realtime = false;
         self.token = None;
         self.bc_processor.beichi_tracker.clear();
-        self.tracker = SMATracker::new(vec![15, 30, 60, 120, 200]);
+        self.sma_tracker = SMATracker::new(vec![15, 30, 60, 120, 200]);
     }
 
-    pub fn update(&mut self, bar: Bar) {
+    pub fn update(&mut self, bar: Bar) -> Vec<Signal> {
         let is_new = self.czsc.update(bar);
-        self.signals = self.bc_processor.process(&self.czsc, is_new);
-        self.tracker.process(&self.czsc, is_new);
+        let signals = self.bc_processor.process(&self.czsc, is_new);
+        self.sma_tracker.process(&self.czsc, is_new);
+        return signals;
     }
     pub fn need_subscribe(&self, from: i64, to: i64) -> bool {
-        if false {
-            debug!(
-                "need_subscribe {:?} {:?} {} {} {:?}-{:?} required {:?}-{:?}",
-                self.contract.symbol,
-                self.freq,
-                self.subscribed,
-                self.realtime,
-                self.czsc.start(),
-                self.czsc.end(),
-                OffsetDateTime::from_unix_timestamp(from),
-                OffsetDateTime::from_unix_timestamp(to)
-            );
-        }
         if !self.subscribed {
             return true;
         }
@@ -127,68 +113,49 @@ impl Zen {
     }
 }
 pub(crate) struct Store {
-    store: HashMap<(Contract, Freq), Rc<RefCell<Zen>>>,
+    store: HashMap<(Contract, Freq), Rc<RwLock<Zen>>>,
+    signal_tracker: HashMap<(Contract, Freq), Vec<Signal>>,
     setting: Settings,
-    pub lock: HashMap<(Contract, Freq), Rc<RwLock<()>>>,
-    notify_dedup: LruCache<String, bool>,
 }
 
 impl Store {
     pub fn new() -> Self {
         Self {
             store: Default::default(),
+            signal_tracker: Default::default(),
             setting: Settings::new().expect("config init error"),
-            lock: Default::default(),
-            notify_dedup: LruCache::new(NonZeroUsize::new(1000).unwrap()),
         }
     }
 
     fn onerror(&mut self, rsp: ResponseMessage) {
         debug!("onerror {:?}", rsp);
         match rsp.fields[3].as_str() {
-            "1100" => self.store.iter().for_each(|(k, v)| {
-                v.borrow_mut().reset();
-            }),
+            "1100" => {
+                self.store.clear();
+            }
             _ => {}
         }
     }
-    pub fn get_czsc(&mut self, sym: &Contract, freq: Freq) -> Rc<RefCell<Zen>> {
+    pub fn get_czsc(&mut self, sym: &Contract, freq: Freq) -> Rc<RwLock<Zen>> {
         match self.store.entry((sym.clone(), freq)) {
             Entry::Occupied(o) => o.get().clone(),
-            Entry::Vacant(v) => {
-                self.lock
-                    .insert((sym.clone(), freq), Rc::new(RwLock::new(())));
-                v.insert(Rc::new(RefCell::new(Zen::new(
+            Entry::Vacant(v) => v
+                .insert(Rc::new(RwLock::new(Zen::new(
                     sym.clone(),
                     freq,
                     self.setting.clone(),
                 ))))
-                .clone()
-            }
+                .clone(),
         }
     }
 
-    pub fn get_or_insert_czsc_lock(&mut self, sym: &Contract, freq: Freq) -> Rc<RwLock<()>> {
-        match self.lock.entry((sym.clone(), freq)) {
-            Entry::Occupied(o) => self.get_czsc_lock(sym, freq),
-            Entry::Vacant(v) => {
-                self.lock
-                    .insert((sym.clone(), freq), Rc::new(RwLock::new(())));
-                self.get_czsc_lock(sym, freq)
-            }
-        }
-    }
-
-    pub fn get_czsc_lock(&self, sym: &Contract, freq: Freq) -> Rc<RwLock<()>> {
-        self.lock.get(&(sym.clone(), freq)).unwrap().clone()
-    }
-    pub fn process(&mut self, sym: &Contract, dt: OffsetDateTime) {
+    pub async fn process(&self, sym: &Contract, dt: OffsetDateTime) {
         let mut signals = vec![];
-        self.store.iter().for_each(|x| {
+        for x in &self.signal_tracker {
             if x.0 .0.symbol == sym.symbol {
-                signals.append(x.1.borrow().signals.clone().as_mut())
+                signals.append(x.1.clone().as_mut())
             }
-        });
+        }
         if signals.len() > 0 {
             //debug!("{}, signals {:?}", dt, signals);
         }
@@ -230,13 +197,12 @@ impl ZenManager {
         info!("connecting to TWS");
         let client_ref = client.connect().await?;
         info!("connected");
-        let store = self.store.clone();
+        let mut store = self.store.clone();
         spawn_local(async move {
-            client
-                .blocking_process(move |m| {
-                    store.borrow_mut().onerror(m);
-                })
-                .await?;
+            let callback = move |m| {
+                store.borrow_mut().onerror(m);
+            };
+            client.blocking_process(callback).await?;
             Ok::<(), Error>(())
         });
         *cref.borrow_mut() = Some(client_ref);
@@ -269,8 +235,8 @@ impl ZenManager {
         cancel_historical_data(client, request_id).await?;
         Ok(())
     }
-    pub fn get_czsc(&self, contract: &Contract, freq: Freq) -> Rc<RefCell<Zen>> {
-        self.store.borrow_mut().get_czsc(contract, freq)
+    pub fn get_czsc(&self, contract: &Contract, freq: Freq) -> Rc<RwLock<Zen>> {
+        { self.store.borrow_mut().get_czsc(contract, freq) }.clone()
     }
     pub async fn try_subscribe(
         mgr: Rc<RefCell<Self>>,
@@ -281,47 +247,22 @@ impl ZenManager {
     ) -> Result<(), Error> {
         let c = contract.clone();
         let subscribe = {
-            {
-                let _ = mgr
-                    .borrow()
-                    .store
-                    .borrow_mut()
-                    .get_or_insert_czsc_lock(contract, freq);
-            }
-            let lock = mgr.borrow().store.borrow().get_czsc_lock(contract, freq);
-            let _ = lock.read().await;
-            let zen = mgr.borrow().get_czsc(contract, freq);
-            let x = zen.borrow().need_subscribe(from, to);
+            let zen = { mgr.borrow().get_czsc(contract, freq) };
+            let zen = zen.read().await;
+            let x = zen.need_subscribe(from, to);
             x
         };
         if subscribe {
-            let lock = mgr.borrow().store.borrow().get_czsc_lock(contract, freq);
-            let _ = lock.write().await;
-            let zen = mgr.borrow().get_czsc(contract, freq);
-
-            if zen.borrow().need_subscribe(from, to) {
-                debug!(
-                    "need_subscribe {:?} {:?} {} {} {:?}-{:?} required {:?}-{:?}",
-                    zen.borrow().contract.symbol,
-                    zen.borrow().freq,
-                    zen.borrow().subscribed,
-                    zen.borrow().realtime,
-                    zen.borrow().czsc.start(),
-                    zen.borrow().czsc.end(),
-                    OffsetDateTime::from_unix_timestamp(from),
-                    OffsetDateTime::from_unix_timestamp(to)
-                );
-                let (send, recv) = channel::<()>();
-                spawn_local(async move {
-                    mgr.borrow()
-                        .subscribe_with(&c, freq, from, to, send)
-                        .await
-                        .expect("TODO: panic message");
-                });
-                return recv
+            let (send, recv) = channel::<()>();
+            spawn_local(async move {
+                mgr.borrow()
+                    .subscribe_with(&c, freq, from, to, send)
                     .await
-                    .map_err(|e| Error::Simple("subscribe error".to_string()));
-            }
+                    .expect("TODO: panic message");
+            });
+            return recv
+                .await
+                .map_err(|e| Error::Simple("subscribe error".to_string()));
         }
         Ok(())
     }
@@ -342,59 +283,102 @@ impl ZenManager {
         let client = client.borrow();
         let client = client.as_ref().unwrap();
 
-        let zen = self.store.borrow_mut().get_czsc(contract, freq);
-        self.cancel_historical_data(zen.borrow().request_id).await?;
+        let token = CancellationToken::new();
+        let cloned_token = token.clone();
 
-        zen.borrow_mut().token.take().map(|t| t.cancel());
+        let mut stream = {
+            let mut zen = { self.store.borrow_mut().get_czsc(contract, freq) };
+            let mut zen = zen.write().await;
+            if !zen.need_subscribe(from, to) {
+                sender.send(()).unwrap();
+                return Ok(());
+            }
 
-        let mut keep_up = OffsetDateTime::now_utc() - OffsetDateTime::from_unix_timestamp(to)?
-            < Duration::days(36);
-        if freq == Freq::D || freq == Freq::M || freq == Freq::S || freq == Freq::Y {
-            keep_up = OffsetDateTime::now_utc() - OffsetDateTime::from_unix_timestamp(to)?
-                < Duration::days(365 * 4);
-        }
-        let (bars, mut stream) = historical_data(
-            client,
-            &contract,
-            None,
-            timedelta_to_duration(Duration::seconds(
+            self.cancel_historical_data(zen.request_id).await?;
+
+            zen.token.take().map(|t| t.cancel());
+
+            let mut keep_up = OffsetDateTime::now_utc() - OffsetDateTime::from_unix_timestamp(to)?
+                < Duration::days(365);
+            if freq == Freq::D || freq == Freq::M || freq == Freq::S || freq == Freq::Y {
+                keep_up = OffsetDateTime::now_utc() - OffsetDateTime::from_unix_timestamp(to)?
+                    < Duration::days(365 * 4);
+            }
+            debug!(
+                "need_subscribe {:?} {:?} {} {} {:?}-{:?} required {:?}-{:?} {} {:?}",
+                zen.contract.symbol,
+                zen.freq,
+                zen.subscribed,
+                zen.realtime,
+                zen.czsc.start(),
+                zen.czsc.end(),
+                OffsetDateTime::from_unix_timestamp(from),
+                OffsetDateTime::from_unix_timestamp(to),
+                keep_up,
                 if keep_up {
                     OffsetDateTime::now_utc().unix_timestamp()
                 } else {
                     to
-                } - from,
-            )),
-            to_barsize(freq),
-            Some(WhatToShow::Trades),
-            true,
-            keep_up,
-        )
-        .await?;
-        //info!("cost {:?}, bars: {:?}", now.elapsed(), &bars.bars);
-        let symbol = contract.symbol.clone();
-        zen.borrow_mut().reset();
+                } - from
+            );
+            let (bars, mut stream) = historical_data(
+                client,
+                &contract,
+                None,
+                timedelta_to_duration(Duration::seconds(
+                    if keep_up {
+                        OffsetDateTime::now_utc().unix_timestamp()
+                    } else {
+                        to
+                    } - from,
+                )),
+                to_barsize(freq),
+                Some(WhatToShow::Trades),
+                true,
+                keep_up,
+            )
+            .await?;
+            //info!("cost {:?}, bars: {:?}", now.elapsed(), &bars.bars);
+            let symbol = contract.symbol.clone();
+            zen.reset();
 
-        for e in &bars.bars {
-            zen.borrow_mut().update(e.to_bar(freq));
-            self.store.borrow_mut().process(contract, e.date);
-        }
+            for e in &bars.bars {
+                let signals = zen.update(e.to_bar(freq));
+                {
+                    self.store
+                        .borrow_mut()
+                        .signal_tracker
+                        .insert((contract.clone(), freq), signals)
+                };
+            }
 
-        zen.borrow_mut().subscribed = true;
-        zen.borrow_mut().realtime = keep_up;
-        zen.borrow_mut().request_id = bars.request_id.unwrap();
-        let token = CancellationToken::new();
-        let cloned_token = token.clone();
-        zen.borrow_mut().token = Some(token);
+            zen.subscribed = true;
+            zen.realtime = keep_up;
+            zen.request_id = bars.request_id.unwrap();
+            zen.token = Some(token);
 
+            stream
+        };
+
+        {
+            self.store
+                .borrow()
+                .process(contract, OffsetDateTime::now_utc())
+                .await
+        };
         sender.send(()).unwrap();
 
         loop {
             select! {
                 Some(Ok(e)) = stream.next() =>{
-                            let e: historical::Bar = e;
-                        zen.borrow_mut().update(e.to_bar(freq));
-                        self.store.borrow_mut().process(contract, e.date);
+                        let e: historical::Bar = e;
+                        let mut zen = {self.store.borrow_mut().get_czsc(contract, freq)};
+                    {
 
+                        let mut zen = zen.write().await;
+                        zen.update(e.to_bar(freq));
+                    }
+                        self.store.borrow_mut().process(contract, e.date).await;
                         }
                 _ = cloned_token.cancelled() => {
                     break;

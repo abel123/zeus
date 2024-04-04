@@ -73,8 +73,9 @@ pub(super) async fn history(
     let (mut o, mut c, mut h, mut l) = (vec![], vec![], vec![], vec![]);
     let (mut t, mut v) = (vec![], vec![]);
     let zen = z.borrow().get_czsc(&contract, freq);
+    let zen = zen.read().await;
     if params.countback > 0 {
-        for (idx, bar) in zen.borrow().czsc.bars_raw.iter().enumerate() {
+        for (idx, bar) in zen.czsc.bars_raw.iter().enumerate() {
             if bar.borrow().dt <= to {
                 index = idx as isize;
             } else {
@@ -82,7 +83,7 @@ pub(super) async fn history(
             }
         }
         for idx in max((index + 1 - (params.countback as isize)), 0)..(index + 1) {
-            let bar = &zen.borrow().czsc.bars_raw[idx as usize];
+            let bar = &zen.czsc.bars_raw[idx as usize];
             o.push(bar.borrow().open);
             c.push(bar.borrow().close);
             h.push(bar.borrow().high);
@@ -91,7 +92,7 @@ pub(super) async fn history(
             v.push(bar.borrow().vol);
         }
     } else {
-        for bar in &zen.borrow().czsc.bars_raw {
+        for bar in &zen.czsc.bars_raw {
             if bar.borrow().dt < from {
                 continue;
             }
@@ -168,8 +169,8 @@ async fn search_symbol(
             return Err(error::ErrorInternalServerError(rs.unwrap_err()));
         }
         let zen = z.borrow().get_czsc(&contract, Freq::D);
+        let zen = zen.read().await;
         let last_price = zen
-            .borrow()
             .czsc
             .bars_raw
             .last()
@@ -392,6 +393,7 @@ pub(crate) async fn zen_element(
         ZenManager::try_subscribe(z.get_ref().clone(), &contract, freq, params.from, params.to)
             .await;
     let zen = z.borrow().get_czsc(&contract, freq);
+    let zen = zen.read().await;
     if rs.is_err() {
         return Err(error::ErrorInternalServerError(rs.unwrap_err()));
     }
@@ -405,7 +407,7 @@ pub(crate) async fn zen_element(
         bar_beichi: vec![],
     };
     let mut last_dir = None;
-    for bi in &zen.borrow().czsc.bi_list {
+    for bi in &zen.czsc.bi_list {
         last_dir = Some(bi.direction.clone());
         resp.bi.finished.push(ZenBiDetail {
             direction: String::from(bi.direction.as_str()),
@@ -426,7 +428,6 @@ pub(crate) async fn zen_element(
     match last_dir {
         Some(Direction::Up) => {
             let bar = zen
-                .borrow()
                 .czsc
                 .bars_ubi
                 .iter()
@@ -438,13 +439,12 @@ pub(crate) async fn zen_element(
                 direction: String::from(Direction::Down.as_str()),
                 end: bar.low,
                 end_ts: bar.dt.unix_timestamp(),
-                start: zen.borrow().czsc.bars_ubi[1].high,
-                start_ts: zen.borrow().czsc.bars_ubi[1].dt.unix_timestamp(),
+                start: zen.czsc.bars_ubi[1].high,
+                start_ts: zen.czsc.bars_ubi[1].dt.unix_timestamp(),
             });
         }
         Some(Direction::Down) => {
             let bar = zen
-                .borrow()
                 .czsc
                 .bars_ubi
                 .iter()
@@ -456,15 +456,14 @@ pub(crate) async fn zen_element(
                 direction: String::from(Direction::Up.as_str()),
                 end: bar.high,
                 end_ts: bar.dt.unix_timestamp(),
-                start: zen.borrow().czsc.bars_ubi[1].low,
-                start_ts: zen.borrow().czsc.bars_ubi[1].dt.unix_timestamp(),
+                start: zen.czsc.bars_ubi[1].low,
+                start_ts: zen.czsc.bars_ubi[1].dt.unix_timestamp(),
             });
         }
         _ => {}
     }
 
-    resp.beichi
-        .push(zen.borrow().bc_processor.beichi_tracker.clone());
+    resp.beichi.push(zen.bc_processor.beichi_tracker.clone());
     Ok(Json(resp))
 }
 
@@ -529,8 +528,8 @@ async fn option_price(
                 .clone();
             let contract = Contract::stock(params.symbol.as_str());
             let zen = z.borrow().get_czsc(&contract, freq);
-            let zen = zen.borrow();
-            let sma = zen.tracker.store.get(ma);
+            let zen = zen.read().await;
+            let sma = zen.sma_tracker.store.get(ma);
 
             let ma_val = sma.map(|x| x.ma()).unwrap_or(0.0);
             let last = sma.map(|x| x.last()).unwrap_or(0.0);
