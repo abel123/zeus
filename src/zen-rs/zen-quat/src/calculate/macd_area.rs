@@ -1,4 +1,5 @@
 use crate::calculate::r#trait::Processor;
+use crate::utils::notify::Notify;
 use cached::proc_macro::cached;
 use lru::LruCache;
 use notify_rust::Notification;
@@ -324,7 +325,7 @@ impl MacdArea {
                     result.push(signal.clone());
                 }
                 if !use_fake {
-                    self.notify(bi_last.fx_b.dt, signal);
+                    Notify::notify_signal(bi_last.fx_b.dt, signal);
                 }
             }
 
@@ -404,32 +405,10 @@ impl MacdArea {
                     result.push(signal.clone());
                 }
                 if !use_fake {
-                    self.notify(bi_last.fx_b.dt, signal);
+                    Notify::notify_signal(bi_last.fx_b.dt, signal);
                 }
             }
         }
         return result;
-    }
-
-    fn notify(&self, dt: OffsetDateTime, signal: Signal) {
-        let format = format_description::parse("[year]-[month]-[day] [hour]:[minute]").unwrap();
-        notify(
-            signal.key(),
-            Some(dt.format(&format).unwrap()),
-            signal.value(),
-            dt,
-        );
-    }
-}
-
-#[cached(size = 1000)]
-fn notify(title: String, subtitle: Option<String>, body: String, dt: OffsetDateTime) {
-    if dt.unix_timestamp() > OffsetDateTime::now_utc().unix_timestamp() - 60 * 10 {
-        Notification::new()
-            .summary(title.as_str())
-            .subtitle(subtitle.unwrap_or("".to_string()).as_str())
-            .body(body.as_str())
-            .show()
-            .expect("TODO: panic message");
     }
 }

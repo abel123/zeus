@@ -25,6 +25,7 @@ mod api;
 mod calculate;
 mod db;
 mod schema;
+mod utils;
 mod zen_manager;
 
 fn main() -> std::io::Result<()> {

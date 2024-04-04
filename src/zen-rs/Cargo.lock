@@ -3022,6 +3022,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "tracing-test",
+ "zen-core",
 ]
 
 [[package]]

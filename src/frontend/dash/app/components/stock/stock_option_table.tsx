@@ -45,9 +45,9 @@ export const StockOptionTable = () => {
                     <div key={index} className="flex flex-row">
                         <div className="basis-1/5 row-span-1 border-2">{row.interval}</div>
                         <div className="basis-1/5 row-span-1 border-2">{row.ma}</div>
-                        <div className="basis-1/5 row-span-1 border-2">{row.delta.toFixed(2)}</div>
-                        <div className="basis-1/5 row-span-1 border-2">{row.price.toFixed(2)}</div>
-                        <div className="basis-1/5 row-span-1 border-2">{row.option_price.toFixed(2)}</div>
+                        <div className="basis-1/5 row-span-1 border-2">{row.delta?.toFixed(2)}</div>
+                        <div className="basis-1/5 row-span-1 border-2">{row.price?.toFixed(2)}</div>
+                        <div className="basis-1/5 row-span-1 border-2">{row.option_price?.toFixed(2)}</div>
                     </div>
                 );
             })}

@@ -32,6 +32,7 @@ use zen_core::{Bar, Settings, CZSC};
 use crate::calculate::macd_area::MacdArea;
 use crate::calculate::r#trait::Processor;
 use crate::calculate::sma_tracker::SMATracker;
+use crate::utils::notify::Notify;
 
 pub(crate) struct Zen {
     pub czsc: CZSC,
@@ -197,46 +198,7 @@ impl Store {
                 //debug!("event: {:?}", event);
                 if let Some((ev, factor)) = event {
                     if ev.enable_notify {
-                        let key = format!(
-                            "{:?}{:?}{:?}",
-                            ev,
-                            factor,
-                            dt.format(
-                                &format_description::parse("[year]-[month]-[day] [hour]:[minute]",)
-                                    .unwrap()
-                            )
-                            .unwrap()
-                        );
-                        if self.notify_dedup.get(key.as_str()).is_none() {
-                            Notification::new()
-                                .summary(
-                                    format!(
-                                        "{} - {}",
-                                        ev.name,
-                                        dt.format(
-                                            &format_description::parse(
-                                                "[month]-[day] [hour]:[minute]:[second]",
-                                            )
-                                            .unwrap()
-                                        )
-                                        .unwrap()
-                                    )
-                                    .as_str(),
-                                )
-                                .subtitle("✅")
-                                .body(
-                                    factor
-                                        .signals_all
-                                        .iter()
-                                        .map(|x| format!("{:?}", x))
-                                        .collect::<Vec<_>>()
-                                        .join("\n")
-                                        .as_str(),
-                                )
-                                .show()
-                                .unwrap();
-                            self.notify_dedup.push(key, true);
-                        }
+                        Notify::notify_event(dt, ev, factor);
                     }
                 }
             }
@@ -386,7 +348,7 @@ impl ZenManager {
         zen.borrow_mut().token.take().map(|t| t.cancel());
 
         let mut keep_up = OffsetDateTime::now_utc() - OffsetDateTime::from_unix_timestamp(to)?
-            < Duration::days(365);
+            < Duration::days(36);
         if freq == Freq::D || freq == Freq::M || freq == Freq::S || freq == Freq::Y {
             keep_up = OffsetDateTime::now_utc() - OffsetDateTime::from_unix_timestamp(to)?
                 < Duration::days(365 * 4);
@@ -402,7 +364,7 @@ impl ZenManager {
                     to
                 } - from,
             )),
-            freq_convert(freq),
+            to_barsize(freq),
             Some(WhatToShow::Trades),
             true,
             keep_up,
@@ -413,19 +375,7 @@ impl ZenManager {
         zen.borrow_mut().reset();
 
         for e in &bars.bars {
-            zen.borrow_mut().update(Bar {
-                id: 0,
-                dt: e.date,
-                freq,
-                open: e.open as f32,
-                high: e.high as f32,
-                low: e.low as f32,
-                vol: e.volume as f32,
-                amount: 0.0,
-                close: e.close as f32,
-                cache: Default::default(),
-                macd_4_9_9: (0.0, 0.0, 0.0),
-            });
+            zen.borrow_mut().update(e.to_bar(freq));
             self.store.borrow_mut().process(contract, e.date);
         }
 
@@ -442,19 +392,7 @@ impl ZenManager {
             select! {
                 Some(Ok(e)) = stream.next() =>{
                             let e: historical::Bar = e;
-                        zen.borrow_mut().update(Bar {
-                            id: 0,
-                            dt: e.date,
-                            freq,
-                            open: e.open as f32,
-                            high: e.high as f32,
-                            low: e.low as f32,
-                            vol: e.volume as f32,
-                            amount: 0.0,
-                            close: e.close as f32,
-                            cache: Default::default(),
-                            macd_4_9_9: (0.0,0.0,0.0)
-                        });
+                        zen.borrow_mut().update(e.to_bar(freq));
                         self.store.borrow_mut().process(contract, e.date);
 
                         }
@@ -471,7 +409,7 @@ impl ZenManager {
     }
 }
 
-fn freq_convert(freq: Freq) -> BarSize {
+fn to_barsize(freq: Freq) -> BarSize {
     match freq {
         Freq::Tick => BarSize::Sec,
         Freq::F1 => BarSize::Min,

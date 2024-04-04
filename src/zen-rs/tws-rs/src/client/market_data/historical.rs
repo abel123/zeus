@@ -5,18 +5,20 @@ use drop_stream::DropStream;
 use time::{Date, OffsetDateTime};
 use time_tz::Tz;
 use tokio::select;
-use tokio_stream::{Stream, StreamExt};
 use tokio_stream::wrappers::UnboundedReceiverStream;
+use tokio_stream::{Stream, StreamExt};
 use tracing::{error, warn};
+use zen_core::objects;
+use zen_core::objects::enums::Freq;
 
-use crate::{Error, server_versions};
-use crate::client::ClientRef;
 use crate::client::market_data::historical::decoders::decode_historical_data_update;
 use crate::client::transport::message_bus::Signal;
+use crate::client::ClientRef;
 use crate::contracts::Contract;
 use crate::messages::{
     IncomingMessages, OutgoingMessages, RequestMessage, ResponseMessage, ToField,
 };
+use crate::{server_versions, Error};
 
 mod decoders;
 mod encoders;
@@ -43,6 +45,23 @@ pub struct Bar {
     pub count: i32,
 }
 
+impl Bar {
+    pub fn to_bar(&self, freq: Freq) -> objects::chan::Bar {
+        objects::chan::Bar {
+            id: 0,
+            dt: self.date,
+            freq,
+            open: self.open as f32,
+            high: self.high as f32,
+            low: self.low as f32,
+            vol: self.volume as f32,
+            amount: 0.0,
+            close: self.close as f32,
+            cache: Default::default(),
+            macd_4_9_9: (0.0, 0.0, 0.0),
+        }
+    }
+}
 #[derive(Clone, Debug, Copy)]
 pub enum BarSize {
     Sec,
