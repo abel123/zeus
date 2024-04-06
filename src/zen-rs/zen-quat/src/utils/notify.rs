@@ -1,6 +1,6 @@
 use cached::proc_macro::cached;
 use notify_rust::Notification;
-use time::{format_description, OffsetDateTime};
+use time::{format_description, Duration, OffsetDateTime};
 use zen_core::objects::trade::{Event, Factor, Signal};
 
 pub struct Notify {}
@@ -42,7 +42,7 @@ fn notify(
     dt: OffsetDateTime,
     realtime: bool,
 ) {
-    if !realtime || dt.unix_timestamp() > OffsetDateTime::now_utc().unix_timestamp() - 60 * 10 {
+    if !realtime || dt > OffsetDateTime::now_utc() - Duration::hours(2) {
         Notification::new()
             .summary(title.as_str())
             .subtitle(subtitle.unwrap_or("".to_string()).as_str())
