@@ -14,3 +14,8 @@ export const optionState = atom({
     key: "optionState", // unique ID (with respect to other atoms/selectors)
     default: "", // default value (aka initial value)
 });
+
+export const replayState = atom({
+    key: "replayState",
+    default: 0,
+});

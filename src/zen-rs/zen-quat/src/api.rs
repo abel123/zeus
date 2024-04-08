@@ -6,7 +6,7 @@ use std::string::ToString;
 use std::time::Duration;
 
 use actix_web::web::Json;
-use actix_web::{error, get, post, web, Error, Responder, Result};
+use actix_web::{error, get, post, web, Error, HttpRequest, Responder, Result};
 use diesel::internal::derives::multiconnection::SelectStatementAccessor;
 use diesel::prelude::*;
 use diesel::ExpressionMethods;
@@ -39,6 +39,7 @@ mod params;
 
 #[get("/datafeed/udf/history")]
 pub(super) async fn history(
+    req: HttpRequest,
     web::Query(params): web::Query<HistoryRequest>,
     z: web::Data<AppZenMgr>,
 ) -> Result<impl Responder> {
@@ -51,9 +52,21 @@ pub(super) async fn history(
         .get(&params.resolution)
         .unwrap()
         .clone();
-    let rs =
-        ZenManager::try_subscribe(z.get_ref().clone(), &contract, freq, params.from, params.to)
-            .await;
+
+    let backtest = req
+        .headers()
+        .get("Realtime")
+        .map(|x| x.to_str().unwrap() == "false")
+        .unwrap_or(false);
+    let rs = ZenManager::try_subscribe(
+        z.get_ref().clone(),
+        &contract,
+        freq,
+        params.from,
+        params.to,
+        backtest,
+    )
+    .await;
     if rs.is_err() {
         return Ok(Json(HistoryResponse {
             s: "error".to_string(),
@@ -163,6 +176,7 @@ async fn search_symbol(
                 .sub(Duration::from_secs(60 * 60))
                 .unix_timestamp(),
             OffsetDateTime::now_utc().unix_timestamp(),
+            true,
         )
         .await;
         if rs.is_err() {
@@ -376,7 +390,8 @@ pub(crate) async fn config() -> Result<impl Responder> {
 
 #[post("/zen/elements")]
 pub(crate) async fn zen_element(
-    web::Json(params): web::Json<ZenRequest>,
+    req: HttpRequest,
+    Json(params): Json<ZenRequest>,
     z: web::Data<AppZenMgr>,
 ) -> Result<impl Responder> {
     //debug!("zen_element {:?}", params);
@@ -389,9 +404,20 @@ pub(crate) async fn zen_element(
         .get(&params.resolution)
         .unwrap()
         .clone();
-    let rs =
-        ZenManager::try_subscribe(z.get_ref().clone(), &contract, freq, params.from, params.to)
-            .await;
+    let backtest = req
+        .headers()
+        .get("Realtime")
+        .map(|x| x.to_str().unwrap() == "false")
+        .unwrap_or(false);
+    let rs = ZenManager::try_subscribe(
+        z.get_ref().clone(),
+        &contract,
+        freq,
+        params.from,
+        params.to,
+        backtest,
+    )
+    .await;
     let zen = z.borrow().get_czsc(&contract, freq);
     let zen = zen.read().await;
     if rs.is_err() {

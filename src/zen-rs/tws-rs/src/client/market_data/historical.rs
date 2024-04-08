@@ -5,6 +5,7 @@ use drop_stream::DropStream;
 use time::{Date, OffsetDateTime};
 use time_tz::Tz;
 use tokio::select;
+use tokio::sync::mpsc::unbounded_channel;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::{Stream, StreamExt};
 use tracing::{error, warn};
@@ -377,12 +378,17 @@ pub async fn historical_data<'a>(
     )?;
 
     let mut stream = client.send(request_id, request).await?;
-    let _ = stream.request_id.take();
+    if keep_up_to_date {
+        let _ = stream.request_id.take();
+    }
 
     let sender = stream.sender.clone();
     let dropper = move || {
-        sender.send(Signal::Request(request_id)).unwrap_or(());
+        if keep_up_to_date {
+            sender.send(Signal::Request(request_id)).unwrap_or(());
+        }
     };
+
     let mut stream = UnboundedReceiverStream::new(stream.receiver.take().unwrap());
     if let Some(mut message) = stream.next().await {
         let time_zone = if let Some(tz) = client.time_zone {
@@ -399,6 +405,11 @@ pub async fn historical_data<'a>(
                     &mut message,
                 )?;
                 msg.request_id = Some(request_id);
+
+                if !keep_up_to_date {
+                    let (_, rx) = unbounded_channel();
+                    stream = UnboundedReceiverStream::new(rx);
+                }
                 let stream = stream.map(|mut e| {
                     decode_historical_data_update(client.server_version, time_zone, &mut e)
                 });

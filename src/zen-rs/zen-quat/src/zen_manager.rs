@@ -1,6 +1,8 @@
+use cached::CachedAsync;
 use std::cell::RefCell;
+use std::cmp::max;
 use std::collections::hash_map::Entry;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::num::NonZeroUsize;
 use std::ops::Deref;
@@ -32,6 +34,7 @@ use zen_core::{Bar, Settings, CZSC};
 use crate::calculate::macd_area::MacdArea;
 use crate::calculate::r#trait::Processor;
 use crate::calculate::sma_tracker::SMATracker;
+use crate::db::models::Symbol;
 use crate::utils::notify::Notify;
 
 pub(crate) struct Zen {
@@ -89,7 +92,7 @@ impl Zen {
         self.sma_tracker.process(&self.czsc, is_new);
         return signals;
     }
-    pub fn need_subscribe(&self, from: i64, to: i64) -> bool {
+    pub fn need_subscribe(&self, from: i64, to: i64, replay: bool) -> bool {
         if !self.subscribed {
             return true;
         }
@@ -104,6 +107,9 @@ impl Zen {
             } else {
                 return true;
             }
+        }
+        if replay {
+            return true;
         }
         //else {
         if self.czsc.start().is_none() {
@@ -173,6 +179,24 @@ impl Store {
         });
     }
 }
+
+struct BarReplayer {
+    data: HashMap<(Contract, Freq), VecDeque<Bar>>,
+}
+
+impl BarReplayer {
+    pub fn new() -> Self {
+        Self {
+            data: Default::default(),
+        }
+    }
+
+    pub fn advance(contract: Contract, dt: &OffsetDateTime) -> Vec<Bar> {
+        for freq in vec![Freq::F1, Freq::F3, Freq::F5, Freq::F15, Freq::F60, Freq::D] {}
+        vec![]
+    }
+}
+
 pub(crate) struct ZenManager {
     pub client: RwLock<Rc<RefCell<Option<ClientRef>>>>,
     pub store: Rc<RefCell<Store>>,
@@ -244,19 +268,20 @@ impl ZenManager {
         freq: Freq,
         from: i64,
         to: i64,
+        replay: bool,
     ) -> Result<(), Error> {
         let c = contract.clone();
         let subscribe = {
             let zen = { mgr.borrow().get_czsc(contract, freq) };
             let zen = zen.read().await;
-            let x = zen.need_subscribe(from, to);
+            let x = zen.need_subscribe(from, to, replay);
             x
         };
         if subscribe {
             let (send, recv) = channel::<()>();
             spawn_local(async move {
                 mgr.borrow()
-                    .subscribe_with(&c, freq, from, to, send)
+                    .subscribe_with(&c, freq, from, to, replay, send)
                     .await
                     .expect("TODO: panic message");
             });
@@ -272,6 +297,7 @@ impl ZenManager {
         freq: Freq,
         from: i64,
         to: i64,
+        replay: bool,
         sender: Sender<()>,
     ) -> Result<(), Error> {
         let e = self.connect().await;
@@ -289,12 +315,14 @@ impl ZenManager {
         let mut stream = {
             let mut zen = { self.store.borrow_mut().get_czsc(contract, freq) };
             let mut zen = zen.write().await;
-            if !zen.need_subscribe(from, to) {
+            if !zen.need_subscribe(from, to, replay) {
                 sender.send(()).unwrap();
                 return Ok(());
             }
 
-            self.cancel_historical_data(zen.request_id).await?;
+            if zen.realtime {
+                self.cancel_historical_data(zen.request_id).await?;
+            }
 
             zen.token.take().map(|t| t.cancel());
 
@@ -304,8 +332,13 @@ impl ZenManager {
                 keep_up = OffsetDateTime::now_utc() - OffsetDateTime::from_unix_timestamp(to)?
                     < Duration::days(365 * 4);
             }
+            keep_up = keep_up && !replay;
+            let mut to = to;
+            if replay && !zen.realtime {
+                to = max(to, zen.czsc.end().map(|e| e.unix_timestamp()).unwrap_or(0));
+            }
             debug!(
-                "need_subscribe {:?} {:?} {} {} {:?}-{:?} required {:?}-{:?} {} {:?}",
+                "need_subscribe {:?} {:?} {} {} {:?}-{:?} required {:?}-{:?} {} {} {:?}",
                 zen.contract.symbol,
                 zen.freq,
                 zen.subscribed,
@@ -315,6 +348,7 @@ impl ZenManager {
                 OffsetDateTime::from_unix_timestamp(from),
                 OffsetDateTime::from_unix_timestamp(to),
                 keep_up,
+                replay,
                 if keep_up {
                     OffsetDateTime::now_utc().unix_timestamp()
                 } else {
@@ -324,7 +358,11 @@ impl ZenManager {
             let (bars, mut stream) = historical_data(
                 client,
                 &contract,
-                None,
+                if !keep_up {
+                    Some(OffsetDateTime::from_unix_timestamp(to).unwrap())
+                } else {
+                    None
+                },
                 timedelta_to_duration(Duration::seconds(
                     if keep_up {
                         OffsetDateTime::now_utc().unix_timestamp()

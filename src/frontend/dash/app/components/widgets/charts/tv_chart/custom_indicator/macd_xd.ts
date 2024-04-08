@@ -229,8 +229,8 @@ export const macd_xd = (PineJS: PineJS) => {
                     }
                 }
 
-                console.log("params", fast_length, slow_length, src, signal_length, sma_source, sma_signal);
-                console.log("value", macd.get(0), signal, hist, this.last_hist, color);
+                //console.log("params", fast_length, slow_length, src, signal_length, sma_source, sma_signal);
+                //console.log("value", macd.get(0), signal, hist, this.last_hist, color);
                 this.last_hist = hist;
                 this.last_low = low;
                 this.last_high = high;

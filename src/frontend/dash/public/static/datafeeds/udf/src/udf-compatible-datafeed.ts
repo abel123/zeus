@@ -10,7 +10,10 @@ export class UDFCompatibleDatafeed extends UDFCompatibleDatafeedBase {
         limitedServerResponse?: LimitedResponseConfiguration
     ) {
         console.log("new datafeed udf");
-        const requester = new Requester();
+        let requester = new Requester();
+        if (updateFrequency < 0) {
+            requester = new Requester({ Realtime: "false" });
+        }
         const quotesProvider = new QuotesProvider(datafeedURL, requester);
         super(datafeedURL, quotesProvider, requester, updateFrequency, limitedServerResponse);
     }

@@ -3,6 +3,7 @@ import { FullscreenButton } from "../components/widgets/button/fullscreen";
 import { useRecoilState } from "recoil";
 import { symbolState } from "../store/dashboard";
 import { OptionSelect } from "./option_select";
+import { Replay } from "../components/replay";
 
 export const NavBar = () => {
     const [symbol, setSymbol] = useRecoilState(symbolState);

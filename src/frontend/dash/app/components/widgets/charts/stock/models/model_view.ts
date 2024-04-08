@@ -8,6 +8,7 @@ import {
 import axios from "axios";
 import { Beichi, Bi, BiInfo, End, MacdConfig, Start, Zen } from "./zen";
 import { debounce } from "lodash";
+import { DataFeedWrapper, State } from "../../tv_chart/datafeed";
 
 export class ModelView {
     chart?: IChartWidgetApi;
@@ -109,8 +110,15 @@ export class ModelView {
         if (this.chart == undefined) {
             return;
         }
+        let Datafeed = (globalThis as any).datafeed as DataFeedWrapper;
+
+        let replay = Datafeed.state == State.Replay;
+
         let chart = this.chart;
         let range = chart.getVisibleRange();
+        if (replay && Datafeed.replay_time != null) {
+            range.to = Math.min(range.to, Datafeed.replay_time);
+        }
         let symbol = chart.symbolExt();
         console.log("symbol", symbol);
         let resolution = chart.resolution();
@@ -118,14 +126,24 @@ export class ModelView {
             return;
         }
 
+        let headers = {};
+        if (replay) {
+            headers = { Realtime: "false" };
+        }
         axios
-            .post<Zen>("http://127.0.0.1:8080/zen/elements", {
-                from: range.from,
-                to: range.to,
-                symbol: symbol?.full_name,
-                resolution: resolution,
-                macd_config: this.macd_config,
-            })
+            .post<Zen>(
+                "http://127.0.0.1:8080/zen/elements",
+                {
+                    from: range.from,
+                    to: range.to,
+                    symbol: symbol?.full_name,
+                    resolution: resolution,
+                    macd_config: this.macd_config,
+                },
+                {
+                    headers: headers,
+                }
+            )
             .then((response) => {
                 this.groupIds.forEach((id: any, idx: any) => {
                     try {
