@@ -212,7 +212,7 @@ export const macd_xd = (PineJS: PineJS) => {
                         color = col_grow_above;
                     } else {
                         color = col_fall_above;
-                        if (period === "1" && high > this.last_high && src != "volume") {
+                        if ((period === "1" || period == "3") && high > this.last_high && src != "volume") {
                             color = col_above_beichi;
                         }
                     }
@@ -220,7 +220,7 @@ export const macd_xd = (PineJS: PineJS) => {
                     // 柱子向上
                     if (this.last_hist < hist) {
                         color = col_grow_below;
-                        if (period === "1" && src != "volume" && low < this.last_low) {
+                        if ((period === "1" || period == "3") && src != "volume" && low < this.last_low) {
                             //价向下
                             color = col_below_beichi;
                         }

@@ -434,6 +434,9 @@ pub(crate) async fn zen_element(
     };
     let mut last_dir = None;
     for bi in &zen.czsc.bi_list {
+        if bi.fx_b.dt.unix_timestamp() < params.from {
+            continue;
+        }
         last_dir = Some(bi.direction.clone());
         resp.bi.finished.push(ZenBiDetail {
             direction: String::from(bi.direction.as_str()),
@@ -489,7 +492,13 @@ pub(crate) async fn zen_element(
         _ => {}
     }
 
-    resp.beichi.push(zen.bc_processor.beichi_tracker.clone());
+    resp.beichi.push(vec![]);
+    for bc in &zen.bc_processor.beichi_tracker {
+        if bc.end.right_dt < params.from {
+            continue;
+        }
+        resp.beichi[0].push(bc.clone());
+    }
     Ok(Json(resp))
 }
 

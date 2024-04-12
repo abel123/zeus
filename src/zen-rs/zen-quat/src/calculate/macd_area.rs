@@ -16,15 +16,15 @@ use zen_core::{Bar, CZSC};
 
 #[derive(Debug, Clone, Serialize, Eq, PartialEq)]
 pub(crate) struct Range {
-    left_dt: i64,
-    right_dt: i64,
+    pub left_dt: i64,
+    pub right_dt: i64,
 }
 
 #[derive(Serialize, Debug, Clone)]
 pub(crate) struct BeichiInfo {
     direction: Direction,
-    start: Range,
-    end: Range,
+    pub start: Range,
+    pub end: Range,
     high: f32,
     low: f32,
     r#type: String,
@@ -62,6 +62,12 @@ impl Processor for MacdArea {
             .map(|b| self.last_bi_start_dt = b.fx_a.dt);
         self.beichi_tracker
             .dedup_by(|a, b| a.start == b.start && a.end == b.end);
+
+        if self.beichi_tracker.len() > 100 {
+            self.beichi_tracker = self
+                .beichi_tracker
+                .split_off(self.beichi_tracker.len() - 100);
+        }
         return result;
     }
 }

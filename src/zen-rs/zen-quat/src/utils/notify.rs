@@ -47,6 +47,7 @@ fn notify(
             .summary(title.as_str())
             .subtitle(subtitle.unwrap_or("".to_string()).as_str())
             .body(body.as_str())
+            .sound_name("Submarine")
             .show()
             .unwrap();
     }

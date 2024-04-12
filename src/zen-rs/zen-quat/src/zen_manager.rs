@@ -11,15 +11,21 @@ use std::rc::Rc;
 use futures_util::StreamExt;
 use lru::LruCache;
 use notify_rust::Notification;
-use time::{format_description, Duration, OffsetDateTime};
+use time::macros::offset;
+use time::{format_description, Duration, OffsetDateTime, UtcOffset};
 use tokio::select;
 use tokio::sync::oneshot::{channel, Sender};
 use tokio::sync::RwLock;
 use tokio::task::spawn_local;
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
+use crate::calculate::macd_area::MacdArea;
+use crate::calculate::r#trait::Processor;
+use crate::calculate::sma_tracker::SMATracker;
+use crate::db::models::Symbol;
+use crate::utils::notify::Notify;
 use tws_rs::client::market_data::historical;
 use tws_rs::client::market_data::historical::{
     cancel_historical_data, historical_data, BarSize, TWSDuration, WhatToShow,
@@ -30,12 +36,6 @@ use tws_rs::{Client, ClientRef, Error};
 use zen_core::objects::enums::Freq;
 use zen_core::objects::trade::{Matcher, Signal};
 use zen_core::{Bar, Settings, CZSC};
-
-use crate::calculate::macd_area::MacdArea;
-use crate::calculate::r#trait::Processor;
-use crate::calculate::sma_tracker::SMATracker;
-use crate::db::models::Symbol;
-use crate::utils::notify::Notify;
 
 pub(crate) struct Zen {
     pub czsc: CZSC,
@@ -122,6 +122,7 @@ pub(crate) struct Store {
     store: HashMap<(Contract, Freq), Rc<RwLock<Zen>>>,
     signal_tracker: HashMap<(Contract, Freq), Vec<Signal>>,
     setting: Settings,
+    cache_data: HashMap<(Contract, Freq), VecDeque<Bar>>,
 }
 
 impl Store {
@@ -130,7 +131,103 @@ impl Store {
             store: Default::default(),
             signal_tracker: Default::default(),
             setting: Settings::new().expect("config init error"),
+            cache_data: Default::default(),
         }
+    }
+
+    pub async fn advance(
+        &mut self,
+        client: &ClientRef,
+        contract: Contract,
+    ) -> Result<Vec<Bar>, Error> {
+        for freq in vec![Freq::F1, Freq::F3, Freq::F5, Freq::F15, Freq::F60, Freq::D] {
+            let zen = self.store.get(&(contract.clone(), freq));
+            if zen.is_none() {
+                continue;
+            }
+            let last_time = {
+                let zen = zen.unwrap();
+                let zen = zen.read().await;
+                if zen.realtime {
+                    continue;
+                }
+                zen.czsc.end()
+            };
+            if last_time.is_none() {
+                continue;
+            }
+            let last_time = last_time.unwrap();
+            let cache = self.cache_data.entry((contract.clone(), freq)).or_default();
+            {
+                let to = last_time
+                    + *HashMap::from([
+                        (Freq::F1, Duration::days(1)),
+                        (Freq::F3, Duration::days(7)),
+                        (Freq::F5, Duration::days(14)),
+                        (Freq::F15, Duration::weeks(7)),
+                        (Freq::F60, Duration::weeks(20)),
+                        (Freq::D, Duration::weeks(100)),
+                        (Freq::W, Duration::weeks(400)),
+                    ])
+                    .get(&freq)
+                    .unwrap_or(&Duration::days(10));
+
+                if last_time.to_offset(offset!(-4))
+                    > OffsetDateTime::now_utc().to_offset(offset!(-4)) - Duration::days(1)
+                {
+                    warn!("reached recent time");
+                    continue;
+                }
+
+                if cache.is_empty() {
+                    let (bars, _) = historical_data(
+                        client,
+                        &contract,
+                        Some(to),
+                        timedelta_to_duration(to - last_time),
+                        to_barsize(freq),
+                        Some(WhatToShow::Trades),
+                        true,
+                        false,
+                    )
+                    .await?;
+                    if bars.start > last_time {
+                        panic!("should load with earlier data");
+                    }
+
+                    for bar in bars.bars {
+                        if bar.date > last_time {
+                            cache.push_back(bar.to_bar(freq));
+                        }
+                    }
+                }
+            }
+            if cache.is_empty() {
+                warn!("cache empty {:?}", last_time);
+                continue;
+            }
+
+            let zen = zen.unwrap();
+            let mut zen = zen.write().await;
+            let offset = HashMap::from([
+                (Freq::F1, None),
+                (Freq::F3, Some((Duration::minutes(3), Freq::F1))),
+                (Freq::F5, Some((Duration::minutes(5), Freq::F1))),
+                (Freq::F15, Some((Duration::minutes(15), Freq::F5))),
+                (Freq::F60, Some((Duration::hours(1), Freq::F15))),
+                (Freq::D, Some((Duration::days(1), Freq::F60))),
+                (Freq::W, Some((Duration::weeks(1), Freq::D))),
+            ])
+            .get(&freq)
+            .unwrap();
+
+            if false{//offset.is_some() {
+            } else {
+                // append
+                zen.czsc.update(cache.pop_front().unwrap());
+            }
+        }
+        Ok(vec![])
     }
 
     fn onerror(&mut self, rsp: ResponseMessage) {
@@ -143,16 +240,16 @@ impl Store {
         }
     }
     pub fn get_czsc(&mut self, sym: &Contract, freq: Freq) -> Rc<RwLock<Zen>> {
-        match self.store.entry((sym.clone(), freq)) {
-            Entry::Occupied(o) => o.get().clone(),
-            Entry::Vacant(v) => v
-                .insert(Rc::new(RwLock::new(Zen::new(
+        self.store
+            .entry((sym.clone(), freq))
+            .or_insert_with(|| {
+                Rc::new(RwLock::new(Zen::new(
                     sym.clone(),
                     freq,
                     self.setting.clone(),
-                ))))
-                .clone(),
-        }
+                )))
+            })
+            .clone()
     }
 
     pub async fn process(&self, sym: &Contract, dt: OffsetDateTime) {
@@ -177,23 +274,6 @@ impl Store {
             }
             Some(())
         });
-    }
-}
-
-struct BarReplayer {
-    data: HashMap<(Contract, Freq), VecDeque<Bar>>,
-}
-
-impl BarReplayer {
-    pub fn new() -> Self {
-        Self {
-            data: Default::default(),
-        }
-    }
-
-    pub fn advance(contract: Contract, dt: &OffsetDateTime) -> Vec<Bar> {
-        for freq in vec![Freq::F1, Freq::F3, Freq::F5, Freq::F15, Freq::F60, Freq::D] {}
-        vec![]
     }
 }
 
@@ -363,13 +443,16 @@ impl ZenManager {
                 } else {
                     None
                 },
-                timedelta_to_duration(Duration::seconds(
-                    if keep_up {
-                        OffsetDateTime::now_utc().unix_timestamp()
-                    } else {
-                        to
-                    } - from,
-                )),
+                timedelta_to_duration(
+                    Duration::seconds(
+                        if keep_up {
+                            OffsetDateTime::now_utc().unix_timestamp()
+                        } else {
+                            to
+                        } - from,
+                    )
+                    .max(Duration::days(1)),
+                ),
                 to_barsize(freq),
                 Some(WhatToShow::Trades),
                 true,
