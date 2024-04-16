@@ -86,6 +86,17 @@ export const NavBar = () => {
                 <a className="normal-case text-xl">Terminal</a>
             </div>
             <div className="navbar-end">
+                <input
+                    type="checkbox"
+                    id="scales"
+                    onChange={(ev) => {
+                        (globalThis as any).zenUpdate = ev.target.checked;
+                        console.log("zen update", (globalThis as any).zenUpdate);
+                    }}
+                    name="scales"
+                    defaultChecked={true}
+                />
+                <label htmlFor="scales">Update Zen</label>
                 <FullscreenButton></FullscreenButton>
                 <button className="btn-sm btn-ghost btn-circle">
                     <svg

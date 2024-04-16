@@ -24,6 +24,7 @@ import { macd_xd } from "./custom_indicator";
 import { useRecoilState } from "recoil";
 import { replayState, symbolState } from "@/app/store/dashboard";
 import { DataFeedWrapper } from "./datafeed";
+import { LocalStorageDrawingsPerSymbolSaveLoadAdapter } from "./adapter";
 
 export const TVChartContainer = (
     props: Partial<ChartingLibraryWidgetOptions> & { model_view: ModelView; standalone: boolean }
@@ -67,7 +68,11 @@ export const TVChartContainer = (
             custom_indicators_getter: (pineJs: PineJS) => {
                 return Promise.resolve([macd_xd(pineJs)]);
             },
-            enabled_features: ["hide_left_toolbar_by_default", "pre_post_market_sessions"],
+            enabled_features: [
+                "hide_left_toolbar_by_default",
+                "pre_post_market_sessions",
+                "saveload_separate_drawings_storage",
+            ],
             charts_storage_url: props.charts_storage_url,
             charts_storage_api_version: props.charts_storage_api_version,
             client_id: props.client_id,
@@ -75,6 +80,7 @@ export const TVChartContainer = (
             fullscreen: props.fullscreen,
             autosize: props.autosize,
             symbol_search_request_delay: 6000,
+            save_load_adapter: new LocalStorageDrawingsPerSymbolSaveLoadAdapter(),
             //theme: "Dark",
             timezone: "Asia/Chongqing",
             overrides: {

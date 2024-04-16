@@ -19,3 +19,8 @@ export const replayState = atom({
     key: "replayState",
     default: 0,
 });
+
+export const zenControl = atom({
+    key: "enable",
+    default: true,
+});

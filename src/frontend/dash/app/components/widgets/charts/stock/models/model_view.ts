@@ -107,7 +107,8 @@ export class ModelView {
     }, 400);
 
     draw_zen() {
-        if (this.chart == undefined) {
+        let update = (globalThis as any).zenUpdate ?? true;
+        if (!update || this.chart == undefined) {
             return;
         }
         let Datafeed = (globalThis as any).datafeed as DataFeedWrapper;
