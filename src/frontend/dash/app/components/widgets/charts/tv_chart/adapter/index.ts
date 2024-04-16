@@ -39,7 +39,7 @@ type LayoutDrawings = Record<string, LineToolState>;
 type SavedDrawings = Record<string, LayoutDrawings>;
 
 export class LocalStorageSaveLoadAdapter implements IExternalSaveLoadAdapter {
-    private _charts: SavedChartData[] = [];
+    private _charts: Record<string, SavedChartData> = {};
     private _studyTemplates: StudyTemplateData[] = [];
     private _drawingTemplates: DrawingTemplate[] = [];
     private _chartTemplates: SavedChartTemplate[] = [];
@@ -47,7 +47,7 @@ export class LocalStorageSaveLoadAdapter implements IExternalSaveLoadAdapter {
     protected _drawings: SavedDrawings = {};
 
     public constructor() {
-        this._charts = this._getFromLocalStorage<SavedChartData[]>(storageKeys.charts) ?? [];
+        this._charts = this._getFromLocalStorage<Record<string, SavedChartData>>(storageKeys.charts) ?? {};
         this._studyTemplates = this._getFromLocalStorage<StudyTemplateData[]>(storageKeys.studyTemplates) ?? [];
         this._drawingTemplates = this._getFromLocalStorage<DrawingTemplate[]>(storageKeys.drawingTemplates) ?? [];
         this._chartTemplates = this._getFromLocalStorage<SavedChartTemplate[]>(storageKeys.chartTemplates) ?? [];
@@ -61,23 +61,18 @@ export class LocalStorageSaveLoadAdapter implements IExternalSaveLoadAdapter {
     }
 
     public getAllCharts(): Promise<ChartMetaInfo[]> {
-        return Promise.resolve(this._charts);
+        return Promise.resolve(Object.values(this._charts));
     }
 
     public removeChart(id: string | number) {
-        for (var i = 0; i < this._charts.length; ++i) {
-            if (this._charts[i].id === id) {
-                this._charts.splice(i, 1);
-                this._isDirty = true;
-                return Promise.resolve();
-            }
-        }
-        return Promise.reject(new Error("The chart does not exist"));
+        delete this._charts[id.toString()];
+        this._isDirty = true;
+        return Promise.resolve();
     }
 
     public saveChart(chartData: ChartData): Promise<string> {
         if (!chartData.id) {
-            chartData.id = this._generateUniqueChartId();
+            chartData.id = chartData.name;
         } else {
             this.removeChart(chartData.id);
         }
@@ -86,16 +81,17 @@ export class LocalStorageSaveLoadAdapter implements IExternalSaveLoadAdapter {
             id: chartData.id,
             timestamp: Math.round(Date.now() / 1000),
         };
-        this._charts.push(savedChartData);
+
+        this._charts[chartData.id] = savedChartData;
         this._isDirty = true;
+        console.log("save chart", this._charts);
+
         return Promise.resolve(savedChartData.id);
     }
 
     public getChartContent(id: string | number): Promise<string> {
-        for (var i = 0; i < this._charts.length; ++i) {
-            if (this._charts[i].id === id) {
-                return Promise.resolve(this._charts[i].content);
-            }
+        if (this._charts[id.toString()]) {
+            return Promise.resolve(this._charts[id.toString()]?.content ?? "");
         }
         return Promise.reject(new Error("The chart does not exist"));
     }
@@ -252,16 +248,6 @@ export class LocalStorageSaveLoadAdapter implements IExternalSaveLoadAdapter {
         };
     }
 
-    private _generateUniqueChartId(): string {
-        const existingIds = this._charts.map((i) => i.id);
-        while (true) {
-            const uid = Math.random().toString(16).slice(2);
-            if (!existingIds.includes(uid)) {
-                return uid;
-            }
-        }
-    }
-
     protected _getFromLocalStorage<T extends unknown>(key: string): T {
         const dataFromStorage = window.localStorage.getItem(key);
         return JSON.parse(dataFromStorage || "null");
@@ -273,6 +259,8 @@ export class LocalStorageSaveLoadAdapter implements IExternalSaveLoadAdapter {
     }
 
     protected _saveAllToLocalStorage(): void {
+        console.log("charts", this._charts);
+
         this._saveToLocalStorage(storageKeys.charts, this._charts);
         this._saveToLocalStorage(storageKeys.studyTemplates, this._studyTemplates);
         this._saveToLocalStorage(storageKeys.drawingTemplates, this._drawingTemplates);
@@ -307,14 +295,18 @@ export class LocalStorageDrawingsPerSymbolSaveLoadAdapter extends LocalStorageSa
         if (!drawings) return;
 
         for (let [key, state] of drawings) {
-            const symbolCheckKey = `${layoutId}/${chartId}/${key}`;
+            const symbolCheckKey = `${chartId}/${key}`; //`${layoutId}/${chartId}/${key}`;
             const symbol = state?.symbol ?? this._drawingSourceSymbols[symbolCheckKey];
+
+            console.log("saving", symbolCheckKey, symbol, state);
+
             if (!this._drawings[symbol]) this._drawings[symbol] = {};
             if (state === null) {
+                console.log("delete", symbol, key);
                 delete this._drawings[symbol][key];
                 delete this._drawingSourceSymbols[symbolCheckKey];
             } else {
-                if ((state.state as any)?.userEditEnabled == false) {
+                if ((state.state as any)?.userEditEnabled != null && (state.state as any)?.userEditEnabled == false) {
                     continue;
                 }
                 this._drawings[symbol][key] = state;

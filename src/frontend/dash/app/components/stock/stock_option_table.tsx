@@ -22,7 +22,7 @@ export const StockOptionTable = () => {
                     updater(response.data);
                 })
                 .catch(function (error) {
-                    console.log(error);
+                    //console.log(error);
                 });
         }, 3000);
         return () => {
