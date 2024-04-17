@@ -222,6 +222,9 @@ export class ModelView {
                         if (bc.type == "area") {
                             color = bc.direction == "down" ? "rgba(255, 20, 147, 1)" : "rgba(0, 206, 9, 1)";
                         }
+                        if (bc.bi_count == 3) {
+                            color = bc.direction == "down" ? "rgba(72, 138, 161, 0.6)" : "rgba(182, 138, 161, 1)";
+                        }
                         let bc_id = chart.createMultipointShape(
                             [
                                 { price: bc.macd_a_val, time: bc.macd_a_dt },

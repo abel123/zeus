@@ -32,6 +32,7 @@ pub(crate) struct BeichiInfo {
     macd_a_val: f32,
     macd_b_dt: i64,
     macd_b_val: f32,
+    bi_count: usize,
 }
 pub(crate) struct MacdArea {
     dindex: usize,
@@ -283,36 +284,35 @@ impl MacdArea {
                     let macd_a = bi_max_fn(bi_first);
                     let macd_b = bi_max_fn(bi_last);
 
-                    if n > 3 {
-                        self.beichi_tracker.push(BeichiInfo {
-                            direction: Direction::Up,
-                            start: Range {
-                                left_dt: bi_first.fx_a.dt.unix_timestamp(),
-                                right_dt: bi_first.fx_b.dt.unix_timestamp(),
-                            },
-                            end: Range {
-                                left_dt: bi_last.fx_a.dt.unix_timestamp(),
-                                right_dt: bi_last.fx_b.dt.unix_timestamp(),
-                            },
-                            high: bi_first.high().max(bi_last_high),
-                            low: bi_first.low().min(bi_last_low),
-                            r#type: if score == 100 {
-                                "area_with_diff".to_string()
-                            } else {
-                                "area".to_string()
-                            },
-                            macd_a_dt: macd_a
-                                .as_ref()
-                                .map(|x| x.borrow().dt.unix_timestamp())
-                                .unwrap_or(0),
-                            macd_a_val: macd_a.map(|x| x.borrow().macd_4_9_9.2).unwrap_or(0.0),
-                            macd_b_dt: macd_b
-                                .as_ref()
-                                .map(|x| x.borrow().dt.unix_timestamp())
-                                .unwrap_or(0),
-                            macd_b_val: macd_b.map(|x| x.borrow().macd_4_9_9.2).unwrap_or(0.0),
-                        });
-                    }
+                    self.beichi_tracker.push(BeichiInfo {
+                        direction: Direction::Up,
+                        start: Range {
+                            left_dt: bi_first.fx_a.dt.unix_timestamp(),
+                            right_dt: bi_first.fx_b.dt.unix_timestamp(),
+                        },
+                        end: Range {
+                            left_dt: bi_last.fx_a.dt.unix_timestamp(),
+                            right_dt: bi_last.fx_b.dt.unix_timestamp(),
+                        },
+                        high: bi_first.high().max(bi_last_high),
+                        low: bi_first.low().min(bi_last_low),
+                        r#type: if score == 100 {
+                            "area_with_diff".to_string()
+                        } else {
+                            "area".to_string()
+                        },
+                        macd_a_dt: macd_a
+                            .as_ref()
+                            .map(|x| x.borrow().dt.unix_timestamp())
+                            .unwrap_or(0),
+                        macd_a_val: macd_a.map(|x| x.borrow().macd_4_9_9.2).unwrap_or(0.0),
+                        macd_b_dt: macd_b
+                            .as_ref()
+                            .map(|x| x.borrow().dt.unix_timestamp())
+                            .unwrap_or(0),
+                        macd_b_val: macd_b.map(|x| x.borrow().macd_4_9_9.2).unwrap_or(0.0),
+                        bi_count: n,
+                    });
                 }
                 let signal = Signal {
                     key: (
@@ -331,7 +331,7 @@ impl MacdArea {
                     result.push(signal.clone());
                 }
                 if !use_fake {
-                    Notify::notify_signal(bi_last.fx_b.dt, signal);
+                    Notify::notify_signal(&czsc.symbol, bi_last.fx_b.dt, signal);
                 }
             }
 
@@ -363,36 +363,35 @@ impl MacdArea {
                     let macd_a = bi_min_fn(bi_first);
                     let macd_b = bi_min_fn(bi_last);
 
-                    if n > 3 {
-                        self.beichi_tracker.push(BeichiInfo {
-                            direction: Direction::Down,
-                            start: Range {
-                                left_dt: bi_first.fx_a.dt.unix_timestamp(),
-                                right_dt: bi_first.fx_b.dt.unix_timestamp(),
-                            },
-                            end: Range {
-                                left_dt: bi_last.fx_a.dt.unix_timestamp(),
-                                right_dt: bi_last.fx_b.dt.unix_timestamp(),
-                            },
-                            high: bi_first.high().max(bi_last_high),
-                            low: bi_first.low().min(bi_last_low),
-                            r#type: if score == 100 {
-                                "area_with_diff".to_string()
-                            } else {
-                                "area".to_string()
-                            },
-                            macd_a_dt: macd_a
-                                .as_ref()
-                                .map(|x| x.borrow().dt.unix_timestamp())
-                                .unwrap_or(0),
-                            macd_a_val: macd_a.map(|x| x.borrow().macd_4_9_9.2).unwrap_or(0.0),
-                            macd_b_dt: macd_b
-                                .as_ref()
-                                .map(|x| x.borrow().dt.unix_timestamp())
-                                .unwrap_or(0),
-                            macd_b_val: macd_b.map(|x| x.borrow().macd_4_9_9.2).unwrap_or(0.0),
-                        });
-                    }
+                    self.beichi_tracker.push(BeichiInfo {
+                        direction: Direction::Down,
+                        start: Range {
+                            left_dt: bi_first.fx_a.dt.unix_timestamp(),
+                            right_dt: bi_first.fx_b.dt.unix_timestamp(),
+                        },
+                        end: Range {
+                            left_dt: bi_last.fx_a.dt.unix_timestamp(),
+                            right_dt: bi_last.fx_b.dt.unix_timestamp(),
+                        },
+                        high: bi_first.high().max(bi_last_high),
+                        low: bi_first.low().min(bi_last_low),
+                        r#type: if score == 100 {
+                            "area_with_diff".to_string()
+                        } else {
+                            "area".to_string()
+                        },
+                        macd_a_dt: macd_a
+                            .as_ref()
+                            .map(|x| x.borrow().dt.unix_timestamp())
+                            .unwrap_or(0),
+                        macd_a_val: macd_a.map(|x| x.borrow().macd_4_9_9.2).unwrap_or(0.0),
+                        macd_b_dt: macd_b
+                            .as_ref()
+                            .map(|x| x.borrow().dt.unix_timestamp())
+                            .unwrap_or(0),
+                        macd_b_val: macd_b.map(|x| x.borrow().macd_4_9_9.2).unwrap_or(0.0),
+                        bi_count: n,
+                    });
                 }
                 let signal = Signal {
                     key: (
@@ -411,7 +410,7 @@ impl MacdArea {
                     result.push(signal.clone());
                 }
                 if !use_fake {
-                    Notify::notify_signal(bi_last.fx_b.dt, signal);
+                    Notify::notify_signal(&czsc.symbol, bi_last.fx_b.dt, signal);
                 }
             }
         }

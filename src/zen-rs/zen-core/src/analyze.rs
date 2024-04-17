@@ -21,7 +21,7 @@ pub struct CZSC {
     //未完成笔的无包含K线序列
     pub bars_ubi: Vec<Rc<NewBar>>,
     pub bi_list: Vec<BI>,
-    symbol: Symbol,
+    pub symbol: Symbol,
     pub freq: Freq,
     settings: Settings,
     macd_calc: MACD,

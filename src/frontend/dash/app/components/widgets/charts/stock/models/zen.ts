@@ -35,6 +35,7 @@ export interface Beichi {
     high: number;
     low: number;
     type: string;
+    bi_count: number;
 }
 
 export interface Start {

@@ -1,15 +1,17 @@
 use cached::proc_macro::cached;
 use notify_rust::Notification;
 use time::{format_description, Duration, OffsetDateTime};
+use tws_rs::contracts::Contract;
+use zen_core::objects::chan::Symbol;
 use zen_core::objects::trade::{Event, Factor, Signal};
 
 pub struct Notify {}
 
 impl Notify {
-    pub fn notify_signal(dt: OffsetDateTime, signal: Signal) {
+    pub fn notify_signal(symbol: &Symbol, dt: OffsetDateTime, signal: Signal) {
         let format = format_description::parse("[year]-[month]-[day] [hour]:[minute]").unwrap();
         notify(
-            signal.key(),
+            format!("{} - {}", symbol, signal.key()),
             Some(dt.format(&format).unwrap()),
             signal.value(),
             dt,
@@ -17,10 +19,10 @@ impl Notify {
         );
     }
 
-    pub fn notify_event(dt: OffsetDateTime, event: &Event, factor: &Factor) {
+    pub fn notify_event(contract: &Contract, dt: OffsetDateTime, event: &Event, factor: &Factor) {
         let format = format_description::parse("[year]-[month]-[day] [hour]:[minute]").unwrap();
         notify(
-            event.name.clone(),
+            format!("{} - {}", contract.symbol, event.name.clone()),
             Some(dt.format(&format).unwrap()),
             factor
                 .signals_all

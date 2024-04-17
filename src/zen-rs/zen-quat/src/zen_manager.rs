@@ -221,7 +221,7 @@ impl Store {
             .get(&freq)
             .unwrap();
 
-            if false{//offset.is_some() {
+            if false { //offset.is_some() {
             } else {
                 // append
                 zen.czsc.update(cache.pop_front().unwrap());
@@ -268,7 +268,7 @@ impl Store {
                 //debug!("event: {:?}", event);
                 if let Some((ev, factor)) = event {
                     if ev.enable_notify {
-                        Notify::notify_event(dt, ev, factor);
+                        Notify::notify_event(sym, dt, ev, factor);
                     }
                 }
             }
