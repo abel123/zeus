@@ -232,7 +232,7 @@ async fn search_symbol(
                     };
                     if *strike > last_price as f64 - 10.0
                         && *strike < last_price as f64 + 10.0
-                        && (*strike * 100.0) as i64 % gap == 0
+                        && ((*strike * 100.0) as i64 % 100 == 0 || (*strike * 100.0) as i64 % 250 == 0)
                     {
                         let option = Contract::option(
                             params[0].trading_class.as_str(),

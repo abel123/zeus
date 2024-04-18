@@ -153,8 +153,12 @@ export const macd_xd = (PineJS: PineJS) => {
             this.last_hist = -1;
             this.last_low = -1;
             this.last_high = 1;
+            this.last_time = -1;
+
             this.main = function (ctx: IContext, inputCallback) {
                 let period = PineJS.Std.period(ctx);
+                let time = PineJS.Std.time(ctx);
+
                 this._context = ctx;
 
                 this._input = inputCallback;
@@ -213,7 +217,7 @@ export const macd_xd = (PineJS: PineJS) => {
                     } else {
                         color = col_fall_above;
                         if ((period === "1" || period == "3") && high > this.last_high && src != "volume") {
-                            color = col_above_beichi;
+                            //color = col_above_beichi;
                         }
                     }
                 } else {
@@ -222,7 +226,7 @@ export const macd_xd = (PineJS: PineJS) => {
                         color = col_grow_below;
                         if ((period === "1" || period == "3") && src != "volume" && low < this.last_low) {
                             //价向下
-                            color = col_below_beichi;
+                            //color = col_below_beichi;
                         }
                     } else {
                         color = col_fall_below;
@@ -231,9 +235,13 @@ export const macd_xd = (PineJS: PineJS) => {
 
                 //console.log("params", fast_length, slow_length, src, signal_length, sma_source, sma_signal);
                 //console.log("value", macd.get(0), signal, hist, this.last_hist, color);
-                this.last_hist = hist;
-                this.last_low = low;
-                this.last_high = high;
+                if (time != this.last_time) {
+                    this.last_hist = hist;
+                    this.last_low = low;
+                    this.last_high = high;
+                    this.last_time = time;
+                }
+
                 return [hist, macd.get(0), signal, color];
             };
         },

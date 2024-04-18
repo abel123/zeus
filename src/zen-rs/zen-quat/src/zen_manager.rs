@@ -497,7 +497,13 @@ impl ZenManager {
                     {
 
                         let mut zen = zen.write().await;
-                        zen.update(e.to_bar(freq));
+                        let signals = zen.update(e.to_bar(freq));
+                        {
+                            self.store
+                                .borrow_mut()
+                                .signal_tracker
+                                .insert((contract.clone(), freq), signals)
+                        };
                     }
                         self.store.borrow_mut().process(contract, e.date).await;
                         }
