@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [[bin]]
 name = "event_watcher"
-path = "src/bin/event_watcher.rs"
+path = "src/bin/db_saver.rs"
 
 [dependencies]
 tracing = { version = "0.1.40" }

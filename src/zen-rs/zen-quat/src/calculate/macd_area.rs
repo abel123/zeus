@@ -88,7 +88,7 @@ impl MacdArea {
         }
         const LEFT_RIGHT: i32 = 2;
         const LEFT: i32 = 1;
-        if !use_fake && czsc.bars_ubi.len() as i32 - LEFT_RIGHT > 4 {
+        if !use_fake && czsc.bars_ubi.len() as i32 - LEFT > 4 {
             return vec![];
         }
         if use_fake && czsc.bars_ubi.len() as i32 - LEFT < 4 {
@@ -259,7 +259,7 @@ impl MacdArea {
             if bi_first.direction == Direction::Up
                 && (bi_first.low() - min_low).abs() < f32::EPSILON
                 && (bi_last_high - max_high).abs() < f32::EPSILON
-                && (dif_zero < 0.00001 || dif_zero.abs() < diff_threshold * bi_first_diff)
+                && (dif_zero < 0.00001 || dif_zero.abs() < (diff_threshold * bi_first_diff).abs())
                 && (bi_first_diff > 0.0 && bi_last_diff > 0.0)
             {
                 let score = if bi_first_diff > bi_last_diff && bi_last_diff > 0.0 {
@@ -325,6 +325,7 @@ impl MacdArea {
                         },
                     ),
                     value: ("顶".to_string(), format!("{}笔", n), "other".to_string()),
+                    dt: Some(bi_last.fx_b.dt),
                     score,
                 };
                 if n > 3 {
@@ -338,7 +339,7 @@ impl MacdArea {
             if bi_first.direction == Direction::Down
                 && (bi_first.high() - max_high).abs() < f32::EPSILON
                 && (bi_last_low - min_low).abs() < f32::EPSILON
-                && (dif_zero > -0.00001 || dif_zero.abs() < diff_threshold * bi_first_diff)
+                && (dif_zero > -0.00001 || dif_zero.abs() < (diff_threshold * bi_first_diff).abs())
                 && (bi_first_diff < 0.0 && bi_last_diff < 0.0)
             {
                 let score = if bi_first_diff < bi_last_diff && bi_last_diff < 0.0 {
@@ -404,6 +405,7 @@ impl MacdArea {
                         },
                     ),
                     value: ("底".to_string(), format!("{}笔", n), "other".to_string()),
+                    dt: Some(bi_last.fx_b.dt),
                     score,
                 };
                 if n > 3 {

@@ -182,7 +182,7 @@ async fn search_symbol(
         if rs.is_err() {
             return Err(error::ErrorInternalServerError(rs.unwrap_err()));
         }
-        let zen = z.borrow().get_czsc(&contract, Freq::D);
+        let zen = z.borrow().get_czsc(&contract, Freq::F60);
         let zen = zen.read().await;
         let last_price = zen
             .czsc
@@ -226,13 +226,13 @@ async fn search_symbol(
             for strike in &params[0].strikes {
                 for right in ["P", "C"] {
                     let gap = if params[0].trading_class == "TSLA" {
-                        250
+                        100
                     } else {
                         100
                     };
                     if *strike > last_price as f64 - 10.0
                         && *strike < last_price as f64 + 10.0
-                        && ((*strike * 100.0) as i64 % 100 == 0 || (*strike * 100.0) as i64 % 250 == 0)
+                        && ((*strike * 100.0) as i64 % gap == 0)
                     {
                         let option = Contract::option(
                             params[0].trading_class.as_str(),

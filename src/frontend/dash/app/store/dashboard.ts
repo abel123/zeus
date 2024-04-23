@@ -6,7 +6,7 @@ import { syncEffect } from "recoil-sync";
 
 export const symbolState = atom({
     key: "symbolState", // unique ID (with respect to other atoms/selectors)
-    default: "TSLA", // default value (aka initial value)
+    default: "SPY", // default value (aka initial value)
     effects: [syncEffect({ refine: string() })],
 });
 
@@ -18,9 +18,4 @@ export const optionState = atom({
 export const replayState = atom({
     key: "replayState",
     default: 0,
-});
-
-export const zenControl = atom({
-    key: "enable",
-    default: true,
 });

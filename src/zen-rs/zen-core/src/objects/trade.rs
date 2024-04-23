@@ -16,6 +16,8 @@ pub struct Signal {
     #[serde(serialize_with = "Signal::ser_key_val")]
     #[serde(deserialize_with = "Signal::deser_key_val")]
     pub value: (String, String, String),
+    #[serde(skip)]
+    pub dt: Option<OffsetDateTime>,
     pub score: u32,
 }
 
@@ -24,6 +26,7 @@ impl Default for Signal {
         Self {
             key: ("".to_string(), "other".to_string(), "other".to_string()),
             value: ("".to_string(), "other".to_string(), "other".to_string()),
+            dt: None,
             score: 0,
         }
     }
@@ -275,7 +278,7 @@ pub struct Event {
 pub struct Matcher(Vec<Event>);
 
 impl Matcher {
-    pub fn is_match(&self, signals: Vec<Signal>) -> Option<(&Event, &Factor)> {
+    pub fn is_match(&self, signals: Vec<Signal>) -> Option<(&Event, &Factor, OffsetDateTime)> {
         let mut k_v: HashMap<String, Signal> = HashMap::new();
 
         for s in signals {
@@ -294,6 +297,7 @@ impl Matcher {
                 continue;
             }
 
+            let mut dt = OffsetDateTime::now_utc();
             let mut br = false;
             if let Some(signals_all) = &event.signals_all {
                 for s in signals_all {
@@ -302,6 +306,7 @@ impl Matcher {
                             br = true;
                             break;
                         }
+                        dt = v.dt.unwrap_or(dt);
                     } else {
                         br = true;
                         break;
@@ -318,6 +323,7 @@ impl Matcher {
                     if let Some(v) = k_v.get(&s.key()) {
                         if s.is_match(v) {
                             any = true;
+                            dt = v.dt.unwrap_or(dt);
                             break;
                         }
                     }
@@ -340,7 +346,7 @@ impl Matcher {
             if br {
                 continue;
             }
-            return Some((event, factor_matched.unwrap()));
+            return Some((event, factor_matched.unwrap(), dt));
         }
         return None;
     }
@@ -368,6 +374,7 @@ mod tests {
                 signals_all: vec![Signal {
                     key: ("k1".to_string(), "k2".to_string(), "k3".to_string()),
                     value: ("v1".to_string(), "v2".to_string(), "v3".to_string()),
+                    dt: None,
                     score: 70,
                 }],
                 signals_any: None,

@@ -252,7 +252,7 @@ impl Store {
             .clone()
     }
 
-    pub async fn process(&self, sym: &Contract, dt: OffsetDateTime) {
+    pub async fn process(&self, sym: &Contract) {
         let mut signals = vec![];
         for x in &self.signal_tracker {
             if x.0 .0.symbol == sym.symbol {
@@ -266,7 +266,7 @@ impl Store {
             let event = m.is_match(signals);
             if event.is_some() {
                 //debug!("event: {:?}", event);
-                if let Some((ev, factor)) = event {
+                if let Some((ev, factor, dt)) = event {
                     if ev.enable_notify {
                         Notify::notify_event(sym, dt, ev, factor);
                     }
@@ -482,10 +482,7 @@ impl ZenManager {
         };
 
         {
-            self.store
-                .borrow()
-                .process(contract, OffsetDateTime::now_utc())
-                .await
+            self.store.borrow().process(contract).await
         };
         sender.send(()).unwrap();
 
@@ -505,7 +502,7 @@ impl ZenManager {
                                 .insert((contract.clone(), freq), signals)
                         };
                     }
-                        self.store.borrow_mut().process(contract, e.date).await;
+                        self.store.borrow_mut().process(contract).await;
                         }
                 _ = cloned_token.cancelled() => {
                     break;

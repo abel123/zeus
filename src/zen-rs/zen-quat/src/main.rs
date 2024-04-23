@@ -22,6 +22,7 @@ use crate::db::establish_connection;
 use crate::zen_manager::ZenManager;
 
 mod api;
+mod broker;
 mod calculate;
 mod db;
 mod schema;
