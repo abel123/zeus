@@ -16,10 +16,10 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 
+use crate::broker::ib::IB;
 use tws_rs::Error;
 
 use crate::db::establish_connection;
-use crate::zen_manager::ZenManager;
 
 mod api;
 mod broker;
@@ -27,7 +27,6 @@ mod calculate;
 mod db;
 mod schema;
 mod utils;
-mod zen_manager;
 
 fn main() -> std::io::Result<()> {
     let target = Box::new(File::create("./log/log.txt").expect("Can't create file"));
@@ -68,7 +67,7 @@ fn main() -> std::io::Result<()> {
             App::new()
                 .wrap(Logger::new("%a  %r %s %b  %T"))
                 .wrap(cors)
-                .data_factory(|| async { Ok::<_, Error>(Rc::new(RefCell::new(ZenManager::new()))) })
+                .data_factory(|| async { Ok::<_, Error>(Rc::new(RefCell::new(IB::new()))) })
                 .data_factory(|| async {
                     let conn = establish_connection();
                     let conn = LoggingConnection::new(conn);

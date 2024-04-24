@@ -29,11 +29,11 @@ use crate::api::params::{
     OptionPriceRequest, SearchRequest, SearchSymbolResultItem, SymbolRequest, ZenBiDetail,
     ZenRequest, ZenResponse,
 };
+use crate::broker::ib::{IBZenMgr, IB};
 use crate::db::establish_connection;
 use crate::db::models::Symbol;
 use crate::schema::symbols::dsl::symbols;
 use crate::schema::symbols::{exchange, screener, symbol, type_};
-use crate::zen_manager::{AppZenMgr, Store, ZenManager};
 
 mod params;
 
@@ -41,24 +41,21 @@ mod params;
 pub(super) async fn history(
     req: HttpRequest,
     web::Query(params): web::Query<HistoryRequest>,
-    z: web::Data<AppZenMgr>,
+    z: web::Data<IBZenMgr>,
 ) -> Result<impl Responder> {
     let mut symbol_ = params.symbol;
     if symbol_.contains(':') {
         symbol_ = symbol_.split(":").collect::<Vec<&str>>()[1].to_string();
     }
     let contract = Contract::stock(symbol_.as_str());
-    let freq = ZenManager::freq_map()
-        .get(&params.resolution)
-        .unwrap()
-        .clone();
+    let freq = IB::freq_map().get(&params.resolution).unwrap().clone();
 
     let backtest = req
         .headers()
         .get("Realtime")
         .map(|x| x.to_str().unwrap() == "false")
         .unwrap_or(false);
-    let rs = ZenManager::try_subscribe(
+    let rs = IB::try_subscribe(
         z.get_ref().clone(),
         &contract,
         freq,
@@ -135,7 +132,7 @@ pub(super) async fn history(
 #[get("/datafeed/udf/search")]
 async fn search_symbol(
     web::Query(params): web::Query<SearchRequest>,
-    z: web::Data<AppZenMgr>,
+    z: web::Data<IBZenMgr>,
     conn: web::Data<RefCell<LoggingConnection<SqliteConnection>>>,
 ) -> Result<impl Responder> {
     use crate::schema::symbols::dsl::*;
@@ -168,7 +165,7 @@ async fn search_symbol(
         .collect();
     if params.query.contains("TSLA ") || params.query.contains("SPY ") {
         let contract = Contract::stock(params.query.split(" ").next().unwrap());
-        let rs = ZenManager::try_subscribe(
+        let rs = IB::try_subscribe(
             z.get_ref().clone(),
             &contract,
             Freq::D,
@@ -182,14 +179,16 @@ async fn search_symbol(
         if rs.is_err() {
             return Err(error::ErrorInternalServerError(rs.unwrap_err()));
         }
-        let zen = z.borrow().get_czsc(&contract, Freq::F60);
-        let zen = zen.read().await;
-        let last_price = zen
-            .czsc
-            .bars_raw
-            .last()
-            .map(|x| x.borrow().close)
-            .unwrap_or(0.0);
+
+        let last_price = {
+            let zen = z.borrow().get_czsc(&contract, Freq::F60);
+            let zen = zen.read().await;
+            zen.czsc
+                .bars_raw
+                .last()
+                .map(|x| x.borrow().close)
+                .unwrap_or(0.0)
+        };
         info!("last_price {}", last_price);
 
         let client = &z.borrow().client.read().await.clone();
@@ -392,7 +391,7 @@ pub(crate) async fn config() -> Result<impl Responder> {
 pub(crate) async fn zen_element(
     req: HttpRequest,
     Json(params): Json<ZenRequest>,
-    z: web::Data<AppZenMgr>,
+    z: web::Data<IBZenMgr>,
 ) -> Result<impl Responder> {
     //debug!("zen_element {:?}", params);
     let mut symbol_ = params.symbol;
@@ -400,16 +399,13 @@ pub(crate) async fn zen_element(
         symbol_ = symbol_.split(":").collect::<Vec<&str>>()[1].to_string();
     }
     let contract = Contract::stock(symbol_.as_str());
-    let freq = ZenManager::freq_map()
-        .get(&params.resolution)
-        .unwrap()
-        .clone();
+    let freq = IB::freq_map().get(&params.resolution).unwrap().clone();
     let backtest = req
         .headers()
         .get("Realtime")
         .map(|x| x.to_str().unwrap() == "false")
         .unwrap_or(false);
-    let rs = ZenManager::try_subscribe(
+    let rs = IB::try_subscribe(
         z.get_ref().clone(),
         &contract,
         freq,
@@ -505,7 +501,7 @@ pub(crate) async fn zen_element(
 #[post("/ma/option_price")]
 async fn option_price(
     web::Json(params): web::Json<OptionPriceRequest>,
-    z: web::Data<AppZenMgr>,
+    z: web::Data<IBZenMgr>,
 ) -> Result<impl Responder> {
     if params.option.is_empty() {
         return Err(error::ErrorInternalServerError("option empty"));
@@ -557,10 +553,7 @@ async fn option_price(
     }
     for interval in &params.intervals {
         for ma in &params.ma {
-            let freq = ZenManager::freq_map()
-                .get(&interval.to_string())
-                .unwrap()
-                .clone();
+            let freq = IB::freq_map().get(&interval.to_string()).unwrap().clone();
             let contract = Contract::stock(params.symbol.as_str());
             let zen = z.borrow().get_czsc(&contract, freq);
             let zen = zen.read().await;
