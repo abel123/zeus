@@ -12,6 +12,7 @@ pub trait Broker {
         freq: Freq,
         from: i64,
         to: i64,
+        cout_back: isize,
         non_realtime: bool,
     ) -> Result<(), Error>;
     fn get_czsc(&self, contract: &Contract, freq: Freq) -> Rc<RwLock<Zen>>;

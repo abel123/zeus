@@ -21,6 +21,7 @@ use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info, warn};
 
+use crate::broker::r#trait::Broker;
 use crate::broker::zen::{Store, Zen};
 use crate::calculate::macd_area::MacdArea;
 use crate::calculate::r#trait::Processor;
@@ -45,6 +46,23 @@ pub(crate) struct IB {
 
 pub(crate) type IBZenMgr = Rc<RefCell<IB>>;
 
+impl Broker for IB {
+    async fn try_subscribe(
+        &mut self,
+        contract: &Contract,
+        freq: Freq,
+        from: i64,
+        to: i64,
+        cout_back: isize,
+        non_realtime: bool,
+    ) -> Result<(), Error> {
+        todo!()
+    }
+
+    fn get_czsc(&mut self, contract: &Contract, freq: Freq) -> Rc<RwLock<Zen>> {
+        todo!()
+    }
+}
 impl IB {
     pub fn new() -> Self {
         Self {

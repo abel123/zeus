@@ -18,3 +18,18 @@ pub struct Symbol {
     pub logoid: Option<String>,
     pub desc: Option<String>,
 }
+
+#[derive(Queryable, Debug, Selectable, Identifiable)]
+#[diesel(primary_key(symbol, freq, dt))]
+#[diesel(table_name = crate::schema::bar_history)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+pub struct BarHistory {
+    pub symbol: Option<String>,
+    pub freq: Option<String>,
+    pub dt: i32,
+    pub high: Option<f32>,
+    pub low: Option<f32>,
+    pub open: Option<f32>,
+    pub close: Option<f32>,
+    pub volume: Option<i32>,
+}

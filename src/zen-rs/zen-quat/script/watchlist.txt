@@ -1,0 +1,123 @@
+QQQ	纳指100ETF-Invesco QQQ Trust	美股	
+.IXIC	纳斯达克综合指数	美股	
+.SPX	标普500指数	美股	
+.VIX	标普500波动率指数	美股	
+SPY	SPDR 标普500指数ETF	美股	
+00700	腾讯控股	港股	
+09966	康宁杰瑞制药-B	港股	
+01548	金斯瑞生物科技	港股	
+02269	药明生物	港股	
+09626	哔哩哔哩-W	港股	
+800700	恒生科技指数	港股	
+03690	美团-W	港股	
+09988	阿里巴巴-SW	港股	
+03968	招商银行	港股	
+800000	恒生指数	港股	
+09633	农夫山泉	港股	
+01801	信达生物	港股	
+601088	中国神华	沪深	
+002241	歌尔股份	沪深	
+002475	立讯精密	沪深	
+300433	蓝思科技	沪深	
+600600	青岛啤酒	沪深	
+600276	恒瑞医药	沪深	
+000001	平安银行	沪深	
+600031	三一重工	沪深	
+000338	潍柴动力	沪深	
+600887	伊利股份	沪深	
+601939	建设银行	沪深	
+002142	宁波银行	沪深	
+002352	顺丰控股	沪深	
+600486	扬农化工	沪深	
+600585	海螺水泥	沪深	
+600036	招商银行	沪深	
+600309	万华化学	沪深	
+000001	上证指数	沪深	
+PFE	辉瑞	美股	
+TSLA	特斯拉	美股	
+YINN	3倍做多富时中国ETF-Direxion	美股	
+U	Unity Software	美股	
+FUTU	富途控股	美股	
+LI	理想汽车	美股	
+SE	Sea	美股	
+IWY	iShares安硕罗素领先200成长型ETF	美股	
+YANG	3倍做空富时中国ETF-Direxion	美股	
+AMD	美国超微公司	美股	
+GOOGL	谷歌-A	美股	
+MSFT	微软	美股	
+BGNE	百济神州	美股	
+VNM	越南ETF-VanEck	美股	
+SNAP	Snap Inc	美股	
+AMZN	亚马逊	美股	
+NVDA	英伟达	美股	
+NFLX	奈飞	美股	
+BILI	哔哩哔哩	美股	
+XBI	SPDR标普生物科技ETF	美股	
+TLT	20+年以上美国国债ETF-iShares	美股	
+SQ	Block	美股	
+SHOP	Shopify	美股	
+META	Meta Platforms	美股	
+MARA	Marathon Digital	美股	
+TWLO	Twilio	美股	
+PATH	UiPath	美股	
+PDD	拼多多	美股	
+TMO	赛默飞世尔	美股	
+DHR	丹纳赫	美股	
+PYPL	PayPal	美股	
+EWW	墨西哥投资指数ETF-iShares MSCI	美股	
+TAL	好未来	美股	
+VRTX	福泰制药	美股	
+REGN	再生元制药公司	美股	
+MRK	默沙东	美股	
+ABNB	爱彼迎	美股	
+ADBE	Adobe	美股	
+ANSS	安斯科技	美股	
+KO	可口可乐	美股	
+CCL	嘉年华邮轮	美股	
+BK2551	ARK ETF合集	美股	
+CRM	赛富时	美股	
+UBER	优步	美股	
+ROKU	Roku Inc	美股	
+BA	波音	美股	
+DIS	迪士尼	美股	
+XLE	能源指数ETF-SPDR	美股	
+SQQQ	3倍做空纳指ETF-ProShares	美股	
+TEAM	Atlassian	美股	
+.DJI	道琼斯指数	美股	
+FCX	麦克莫兰銅金	美股	
+BKNG	Booking Holdings	美股	
+TTD	The Trade Desk	美股	
+TWST	Twist Bioscience	美股	
+ATAT	亚朵	美股	
+GRAB	Grab Holdings	美股	
+AZN	阿斯利康	美股	
+ARM	Arm Holdings	美股	
+QCOM	高通	美股	
+.RUT	罗素2000指数	美股	
+DNA	Ginkgo Bioworks	美股	
+NTNX	Nutanix	美股	
+AAPL	苹果	美股	
+IBB	生物科技指数ETF-iShares	美股	
+LULU	Lululemon Athletica	美股	
+MSTR	MicroStrategy	美股	
+KVYO	Klaviyo	美股	
+TSM	台积电	美股	
+WB	微博	美股	
+UVXY	ProShares Ultra VIX短期期货ETF	美股	
+COIN	Coinbase	美股	
+FXY	日元ETF-CurrencyShares	美股	
+KWEB	KraneShares中国海外互联网ETF	美股	
+CRSP	CRISPR Therapeutics	美股	
+FXI	中国大盘股ETF-iShares	美股	
+BABA	阿里巴巴	美股	
+IWM	iShares罗素2000指数ETF	美股	
+SNOW	Snowflake	美股	
+USDindex	美元指数	外汇	
+USDJPY	美元/日元	外汇	
+JP3Y	日本3年期国债收益率	债券	
+JP10Y	日本10年期国债收益率	债券	
+CN2Y	中国2年期国债收益率	债券	
+CN10Y	中国10年期国债收益率	债券	
+US10Y	美国10年期国债收益率	债券	
+US2Y	美国2年期国债收益率	债券	
+.FTXIN9	富时中国A50指数	中国	

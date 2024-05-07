@@ -1,0 +1,58 @@
+[tool.poetry]
+name = "zeus"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.13"
+efinance = "^0.5.0"
+moomoo-api = "^7.4.3610"
+sanic = {extras = ["ext"], version = "^23.6.0"}
+python-socketio = "^5.9.0"
+sanic-ext = "^23.6.0"
+mayim = {extras = ["sqlite"], version = "^1.1.0"}
+pydantic = "^2.4.2"
+mypy-extensions = "^1.0.0"
+ib-insync = "^0.9.86"
+talipp = "^1.9.1"
+finplot = "^1.9.3"
+notebook = "^7.0.6"
+requests = ">=2.24.0"
+pyecharts = ">=1.9.1"
+tqdm = "^4.66.1"
+pandas = ">=1.1.0"
+numpy = ">=1.26.0"
+tushare = "^1.2.89"
+python-docx = ">=0.8.11"
+matplotlib = "^3.8.1"
+seaborn = "^0.13.0"
+deprecated = ">=1.2.12"
+scikit-learn = ">=0.24.1"
+dill = "^0.3.7"
+openpyxl = "^3.1.2"
+pyarrow = "^14.0.0"
+loguru = ">=0.6.0"
+click = "^8.1.7"
+pytest = "^7.4.3"
+tenacity = ">=8.1.0"
+requests-toolbelt = ">=0.10.1"
+plotly = ">=5.11.0"
+parse = ">=1.19.0"
+lightgbm = ">=4.0.0"
+streamlit = "^1.28.1"
+redis = "^5.0.1"
+oss2 = "^2.18.3"
+rubicon-objc = "^0.4.7"
+desktop-notifier = "^3.5.6"
+ta-lib = "^0.4.28"
+pytz = "^2023.3.post1"
+asyncache = "^0.3.1"
+shelved-cache = "^0.3.1"
+httpx = "^0.27.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

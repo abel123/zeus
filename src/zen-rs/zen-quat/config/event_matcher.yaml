@@ -134,39 +134,39 @@
       score: 70
   factors:
     - signals_all:
-        - key: F3_D1-MACD面积背驰_BS
+        - key: F3_D1-MACD面积背驰_推笔
           value: 底_5笔_other
           score: 70
     - signals_all:
-        - key: F3_D1-MACD面积背驰_BS
+        - key: F3_D1-MACD面积背驰_推笔
           value: 底_7笔_other
           score: 70
     - signals_all:
-        - key: F3_D1-MACD面积背驰_BS
+        - key: F3_D1-MACD面积背驰_推笔
           value: 底_9笔_other
           score: 70
     - signals_all:
-        - key: F5_D1-MACD面积背驰_BS
+        - key: F5_D1-MACD面积背驰_推笔
           value: 底_5笔_other
           score: 70
     - signals_all:
-        - key: F5_D1-MACD面积背驰_BS
+        - key: F5_D1-MACD面积背驰_推笔
           value: 底_7笔_other
           score: 70
     - signals_all:
-        - key: F5_D1-MACD面积背驰_BS
+        - key: F5_D1-MACD面积背驰_推笔
           value: 底_9笔_other
           score: 70
     - signals_all:
-        - key: F15_D1-MACD面积背驰_BS
+        - key: F15_D1-MACD面积背驰_推笔
           value: 底_5笔_other
           score: 70
     - signals_all:
-        - key: F15_D1-MACD面积背驰_BS
+        - key: F15_D1-MACD面积背驰_推笔
           value: 底_7笔_other
           score: 70
     - signals_all:
-        - key: F15_D1-MACD面积背驰_BS
+        - key: F15_D1-MACD面积背驰_推笔
           value: 底_9笔_other
           score: 70
 
@@ -185,27 +185,27 @@
       score: 70
   factors:
     - signals_all:
-        - key: F5_D1-MACD面积背驰_BS
+        - key: F5_D1-MACD面积背驰_推笔
           value: 底_5笔_other
           score: 70
     - signals_all:
-        - key: F5_D1-MACD面积背驰_BS
+        - key: F5_D1-MACD面积背驰_推笔
           value: 底_7笔_other
           score: 70
     - signals_all:
-        - key: F5_D1-MACD面积背驰_BS
+        - key: F5_D1-MACD面积背驰_推笔
           value: 底_9笔_other
           score: 70
     - signals_all:
-        - key: F15_D1-MACD面积背驰_BS
+        - key: F15_D1-MACD面积背驰_推笔
           value: 底_5笔_other
           score: 70
     - signals_all:
-        - key: F15_D1-MACD面积背驰_BS
+        - key: F15_D1-MACD面积背驰_推笔
           value: 底_7笔_other
           score: 70
     - signals_all:
-        - key: F15_D1-MACD面积背驰_BS
+        - key: F15_D1-MACD面积背驰_推笔
           value: 底_9笔_other
           score: 70
 
@@ -225,15 +225,15 @@
       score: 70
   factors:
     - signals_all:
-        - key: F15_D1-MACD面积背驰_BS
+        - key: F15_D1-MACD面积背驰_推笔
           value: 底_5笔_other
           score: 70
     - signals_all:
-        - key: F15_D1-MACD面积背驰_BS
+        - key: F15_D1-MACD面积背驰_推笔
           value: 底_7笔_other
           score: 70
     - signals_all:
-        - key: F15_D1-MACD面积背驰_BS
+        - key: F15_D1-MACD面积背驰_推笔
           value: 底_9笔_other
           score: 70
 - name: F1小背驰-大推笔
@@ -251,39 +251,39 @@
       score: 70
   factors:
     - signals_all:
-        - key: F3_D1-MACD面积背驰_BS
+        - key: F3_D1-MACD面积背驰_推笔
           value: 顶_5笔_other
           score: 70
     - signals_all:
-        - key: F3_D1-MACD面积背驰_BS
+        - key: F3_D1-MACD面积背驰_推笔
           value: 顶_7笔_other
           score: 70
     - signals_all:
-        - key: F3_D1-MACD面积背驰_BS
+        - key: F3_D1-MACD面积背驰_推笔
           value: 顶_9笔_other
           score: 70
     - signals_all:
-        - key: F5_D1-MACD面积背驰_BS
+        - key: F5_D1-MACD面积背驰_推笔
           value: 顶_5笔_other
           score: 70
     - signals_all:
-        - key: F5_D1-MACD面积背驰_BS
+        - key: F5_D1-MACD面积背驰_推笔
           value: 顶_7笔_other
           score: 70
     - signals_all:
-        - key: F5_D1-MACD面积背驰_BS
+        - key: F5_D1-MACD面积背驰_推笔
           value: 顶_9笔_other
           score: 70
     - signals_all:
-        - key: F15_D1-MACD面积背驰_BS
+        - key: F15_D1-MACD面积背驰_推笔
           value: 顶_5笔_other
           score: 70
     - signals_all:
-        - key: F15_D1-MACD面积背驰_BS
+        - key: F15_D1-MACD面积背驰_推笔
           value: 顶_7笔_other
           score: 70
     - signals_all:
-        - key: F15_D1-MACD面积背驰_BS
+        - key: F15_D1-MACD面积背驰_推笔
           value: 顶_9笔_other
           score: 70
 
@@ -302,27 +302,27 @@
       score: 70
   factors:
     - signals_all:
-        - key: F5_D1-MACD面积背驰_BS
+        - key: F5_D1-MACD面积背驰_推笔
           value: 顶_5笔_other
           score: 70
     - signals_all:
-        - key: F5_D1-MACD面积背驰_BS
+        - key: F5_D1-MACD面积背驰_推笔
           value: 顶_7笔_other
           score: 70
     - signals_all:
-        - key: F5_D1-MACD面积背驰_BS
+        - key: F5_D1-MACD面积背驰_推笔
           value: 顶_9笔_other
           score: 70
     - signals_all:
-        - key: F15_D1-MACD面积背驰_BS
+        - key: F15_D1-MACD面积背驰_推笔
           value: 顶_5笔_other
           score: 70
     - signals_all:
-        - key: F15_D1-MACD面积背驰_BS
+        - key: F15_D1-MACD面积背驰_推笔
           value: 顶_7笔_other
           score: 70
     - signals_all:
-        - key: F15_D1-MACD面积背驰_BS
+        - key: F15_D1-MACD面积背驰_推笔
           value: 顶_9笔_other
           score: 70
 
@@ -342,15 +342,15 @@
       score: 70
   factors:
     - signals_all:
-        - key: F15_D1-MACD面积背驰_BS
+        - key: F15_D1-MACD面积背驰_推笔
           value: 顶_5笔_other
           score: 70
     - signals_all:
-        - key: F15_D1-MACD面积背驰_BS
+        - key: F15_D1-MACD面积背驰_推笔
           value: 顶_7笔_other
           score: 70
     - signals_all:
-        - key: F15_D1-MACD面积背驰_BS
+        - key: F15_D1-MACD面积背驰_推笔
           value: 顶_9笔_other
           score: 70
 - name: F1小顶背-大顶背

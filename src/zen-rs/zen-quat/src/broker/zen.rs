@@ -98,7 +98,6 @@ pub(crate) struct Store {
     store: HashMap<(Contract, Freq), Rc<RwLock<Zen>>>,
     pub(crate) signal_tracker: HashMap<(Contract, Freq), Vec<Signal>>,
     setting: Settings,
-    cache_data: HashMap<(Contract, Freq), VecDeque<Bar>>,
 }
 
 impl Store {
@@ -107,7 +106,6 @@ impl Store {
             store: Default::default(),
             signal_tracker: Default::default(),
             setting: Settings::new().expect("config init error"),
-            cache_data: Default::default(),
         }
     }
 

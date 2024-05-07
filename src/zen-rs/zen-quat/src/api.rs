@@ -50,7 +50,7 @@ pub(super) async fn history(
     let contract = Contract::stock(symbol_.as_str());
     let freq = IB::freq_map().get(&params.resolution).unwrap().clone();
 
-    let backtest = req
+    let use_local = req
         .headers()
         .get("Realtime")
         .map(|x| x.to_str().unwrap() == "false")
@@ -61,7 +61,7 @@ pub(super) async fn history(
         freq,
         params.from,
         params.to,
-        backtest,
+        use_local,
     )
     .await;
     if rs.is_err() {
@@ -221,11 +221,11 @@ async fn search_symbol(
             .collect::<Vec<_>>();
         expirations.sort();
 
-        for expiration in expirations.iter().take(2) {
+        for expiration in expirations.iter().take(1) {
             for strike in &params[0].strikes {
                 for right in ["P", "C"] {
                     let gap = if params[0].trading_class == "TSLA" {
-                        100
+                        250
                     } else {
                         100
                     };
