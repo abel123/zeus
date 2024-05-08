@@ -7,7 +7,7 @@ use zen_core::objects::enums::Freq;
 
 pub trait Broker {
     async fn try_subscribe(
-        &mut self,
+        &self,
         contract: &Contract,
         freq: Freq,
         from: i64,

@@ -44,11 +44,9 @@ pub(crate) struct IB {
     pub store: Rc<RefCell<Store>>,
 }
 
-pub(crate) type IBZenMgr = Rc<RefCell<IB>>;
-
 impl Broker for IB {
     async fn try_subscribe(
-        &mut self,
+        &self,
         contract: &Contract,
         freq: Freq,
         from: i64,
@@ -59,7 +57,7 @@ impl Broker for IB {
         todo!()
     }
 
-    fn get_czsc(&mut self, contract: &Contract, freq: Freq) -> Rc<RwLock<Zen>> {
+    fn get_czsc(&self, contract: &Contract, freq: Freq) -> Rc<RwLock<Zen>> {
         todo!()
     }
 }

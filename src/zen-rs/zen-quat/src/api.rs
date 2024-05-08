@@ -14,6 +14,7 @@ use diesel_logger::LoggingConnection;
 use time::{format_description, OffsetDateTime};
 use tokio::sync::oneshot::channel;
 use tokio::task::spawn_local;
+use tokio::time::timeout;
 use tracing::{debug, info};
 
 use tws_rs::client::market_data::historical::cancel_historical_data;
@@ -29,7 +30,8 @@ use crate::api::params::{
     OptionPriceRequest, SearchRequest, SearchSymbolResultItem, SymbolRequest, ZenBiDetail,
     ZenRequest, ZenResponse,
 };
-use crate::broker::ib::{IBZenMgr, IB};
+use crate::broker::ib::IB;
+use crate::broker::mixed::{Mixed, MixedBroker};
 use crate::db::establish_connection;
 use crate::db::models::Symbol;
 use crate::schema::symbols::dsl::symbols;
@@ -41,7 +43,7 @@ mod params;
 pub(super) async fn history(
     req: HttpRequest,
     web::Query(params): web::Query<HistoryRequest>,
-    z: web::Data<IBZenMgr>,
+    z: web::Data<MixedBroker>,
 ) -> Result<impl Responder> {
     let mut symbol_ = params.symbol;
     if symbol_.contains(':') {
@@ -55,15 +57,19 @@ pub(super) async fn history(
         .get("Realtime")
         .map(|x| x.to_str().unwrap() == "false")
         .unwrap_or(false);
-    let rs = IB::try_subscribe(
-        z.get_ref().clone(),
-        &contract,
-        freq,
-        params.from,
-        params.to,
-        use_local,
-    )
-    .await;
+    let rs = z
+        .get_ref()
+        .borrow()
+        .try_subscribe(
+            use_local,
+            &contract,
+            freq,
+            params.from,
+            params.to,
+            params.countback as isize,
+            false,
+        )
+        .await;
     if rs.is_err() {
         return Ok(Json(HistoryResponse {
             s: "error".to_string(),
@@ -82,7 +88,7 @@ pub(super) async fn history(
 
     let (mut o, mut c, mut h, mut l) = (vec![], vec![], vec![], vec![]);
     let (mut t, mut v) = (vec![], vec![]);
-    let zen = z.borrow().get_czsc(&contract, freq);
+    let zen = z.borrow().get_czsc(use_local, &contract, freq);
     let zen = zen.read().await;
     if params.countback > 0 {
         for (idx, bar) in zen.czsc.bars_raw.iter().enumerate() {
@@ -131,8 +137,9 @@ pub(super) async fn history(
 
 #[get("/datafeed/udf/search")]
 async fn search_symbol(
+    req: HttpRequest,
     web::Query(params): web::Query<SearchRequest>,
-    z: web::Data<IBZenMgr>,
+    z: web::Data<MixedBroker>,
     conn: web::Data<RefCell<LoggingConnection<SqliteConnection>>>,
 ) -> Result<impl Responder> {
     use crate::schema::symbols::dsl::*;
@@ -163,25 +170,36 @@ async fn search_symbol(
             }
         })
         .collect();
-    if params.query.contains("TSLA ") || params.query.contains("SPY ") {
+
+    let use_local = req
+        .headers()
+        .get("Realtime")
+        .map(|x| x.to_str().unwrap() == "false")
+        .unwrap_or(false);
+
+    if (params.query.contains("TSLA ") || params.query.contains("SPY ")) && !use_local {
         let contract = Contract::stock(params.query.split(" ").next().unwrap());
-        let rs = IB::try_subscribe(
-            z.get_ref().clone(),
-            &contract,
-            Freq::D,
-            OffsetDateTime::now_utc()
-                .sub(Duration::from_secs(60 * 60))
-                .unix_timestamp(),
-            OffsetDateTime::now_utc().unix_timestamp(),
-            true,
-        )
-        .await;
+        let rs = z
+            .get_ref()
+            .borrow()
+            .try_subscribe(
+                false,
+                &contract,
+                Freq::D,
+                OffsetDateTime::now_utc()
+                    .sub(Duration::from_secs(60 * 60))
+                    .unix_timestamp(),
+                OffsetDateTime::now_utc().unix_timestamp(),
+                100,
+                false,
+            )
+            .await;
         if rs.is_err() {
             return Err(error::ErrorInternalServerError(rs.unwrap_err()));
         }
 
         let last_price = {
-            let zen = z.borrow().get_czsc(&contract, Freq::F60);
+            let zen = z.borrow().get_czsc(false, &contract, Freq::F60);
             let zen = zen.read().await;
             zen.czsc
                 .bars_raw
@@ -191,22 +209,26 @@ async fn search_symbol(
         };
         info!("last_price {}", last_price);
 
-        let client = &z.borrow().client.read().await.clone();
+        let client = &z.borrow().ib.borrow().client.read().await.clone();
         let client = client.borrow();
         let client_ref = client.as_ref().unwrap();
         let contracts = contract_details(client_ref, &contract).await.unwrap();
 
-        let params = sec_def_opt(
-            client_ref,
-            &ReqSecDefOptParams {
-                underlying_symbol: contracts[0].contract.symbol.clone(),
-                fut_fop_exchange: "".to_string(),
-                underlying_sec_type: contracts[0].contract.security_type.to_string(),
-                underlying_con_id: contracts[0].contract.contract_id,
-            },
+        let params = timeout(
+            Duration::from_secs(4),
+            sec_def_opt(
+                client_ref,
+                &ReqSecDefOptParams {
+                    underlying_symbol: contracts[0].contract.symbol.clone(),
+                    fut_fop_exchange: "".to_string(),
+                    underlying_sec_type: contracts[0].contract.security_type.to_string(),
+                    underlying_con_id: contracts[0].contract.contract_id,
+                },
+            ),
         )
         .await
-        .unwrap();
+        .unwrap()
+        .unwrap_or(vec![]);
         let params = params
             .iter()
             .filter(|x| x.exchange == "SMART")
@@ -391,7 +413,7 @@ pub(crate) async fn config() -> Result<impl Responder> {
 pub(crate) async fn zen_element(
     req: HttpRequest,
     Json(params): Json<ZenRequest>,
-    z: web::Data<IBZenMgr>,
+    z: web::Data<MixedBroker>,
 ) -> Result<impl Responder> {
     //debug!("zen_element {:?}", params);
     let mut symbol_ = params.symbol;
@@ -400,21 +422,17 @@ pub(crate) async fn zen_element(
     }
     let contract = Contract::stock(symbol_.as_str());
     let freq = IB::freq_map().get(&params.resolution).unwrap().clone();
-    let backtest = req
+    let use_local = req
         .headers()
         .get("Realtime")
         .map(|x| x.to_str().unwrap() == "false")
         .unwrap_or(false);
-    let rs = IB::try_subscribe(
-        z.get_ref().clone(),
-        &contract,
-        freq,
-        params.from,
-        params.to,
-        backtest,
-    )
-    .await;
-    let zen = z.borrow().get_czsc(&contract, freq);
+    let rs = z
+        .get_ref()
+        .borrow()
+        .try_subscribe(use_local, &contract, freq, params.from, params.to, 0, false)
+        .await;
+    let zen = z.borrow().get_czsc(use_local, &contract, freq);
     let zen = zen.read().await;
     if rs.is_err() {
         return Err(error::ErrorInternalServerError(rs.unwrap_err()));
@@ -501,16 +519,16 @@ pub(crate) async fn zen_element(
 #[post("/ma/option_price")]
 async fn option_price(
     web::Json(params): web::Json<OptionPriceRequest>,
-    z: web::Data<IBZenMgr>,
+    z: web::Data<MixedBroker>,
 ) -> Result<impl Responder> {
     if params.option.is_empty() {
         return Err(error::ErrorInternalServerError("option empty"));
     }
     let mut result = vec![];
     {
-        z.borrow().connect().await;
+        z.borrow().ib.borrow_mut().connect().await;
     }
-    let client = &z.borrow().client.read().await.clone();
+    let client = &z.borrow().ib.borrow().client.read().await.clone();
     let client = client.borrow();
     let client_ref = client.as_ref().unwrap();
 
@@ -555,7 +573,7 @@ async fn option_price(
         for ma in &params.ma {
             let freq = IB::freq_map().get(&interval.to_string()).unwrap().clone();
             let contract = Contract::stock(params.symbol.as_str());
-            let zen = z.borrow().get_czsc(&contract, freq);
+            let zen = z.borrow().get_czsc(false, &contract, freq);
             let zen = zen.read().await;
             let sma = zen.sma_tracker.store.get(ma);
 

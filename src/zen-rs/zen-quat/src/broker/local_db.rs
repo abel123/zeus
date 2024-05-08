@@ -1,8 +1,9 @@
 use crate::broker::r#trait::Broker;
 use crate::broker::zen::{Store, Zen};
 use crate::db::establish_connection;
-use crate::db::models::{BarHistory, Symbol};
+use crate::db::models::BarHistory;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper, SqliteConnection};
+use diesel_logger::LoggingConnection;
 use std::cell::RefCell;
 use std::rc::Rc;
 use time::OffsetDateTime;
@@ -14,21 +15,21 @@ use zen_core::Bar;
 
 pub struct LocalDB {
     store: Rc<RefCell<Store>>,
-    conn: SqliteConnection,
+    conn: RefCell<LoggingConnection<SqliteConnection>>,
 }
 
 impl LocalDB {
     pub fn new() -> Self {
         Self {
             store: Rc::new(RefCell::new(Store::new())),
-            conn: establish_connection(),
+            conn: RefCell::new(LoggingConnection::new(establish_connection())),
         }
     }
 }
 
 impl Broker for LocalDB {
     async fn try_subscribe(
-        &mut self,
+        &self,
         contract: &Contract,
         freq: Freq,
         from: i64,
@@ -36,19 +37,18 @@ impl Broker for LocalDB {
         cout_back: isize,
         _: bool,
     ) -> Result<(), Error> {
-        let subscribe = {
+        let subscribed = {
             let zen = { self.get_czsc(contract, freq.clone()) };
             let zen = zen.read().await;
-            let x = zen.need_subscribe(from, to, true);
-            x
+            zen.subscribed
         };
-        if !subscribe {
+        if subscribed {
             return Ok(());
         }
 
         let mut zen = { self.get_czsc(contract, freq) };
         let mut zen = zen.write().await;
-        if !zen.need_subscribe(from, to, true) {
+        if zen.subscribed {
             return Ok(());
         }
         zen.reset();
@@ -58,26 +58,16 @@ impl Broker for LocalDB {
             use crate::schema::bar_history::dsl::*;
             let contract = contract.clone();
 
-            let bars = if cout_back > 0 {
-                bar_history
-                    .filter(symbol.eq(contract.symbol.clone()))
-                    .filter(dt.le(to as i32))
-                    .limit(cout_back as i64)
-                    .order(dt.asc())
-                    .select(BarHistory::as_select())
-                    .load(&mut self.conn)
-                    .expect("TODO: panic message")
-            } else {
-                bar_history
-                    .filter(symbol.eq(contract.symbol.clone()))
-                    .filter(dt.le(to as i32))
-                    .filter(dt.gt(from as i32))
-                    .order(dt.asc())
-                    .select(BarHistory::as_select())
-                    .load(&mut self.conn)
-                    .expect("TODO: panic message")
-            };
-            for bar in &bars {
+            let bars = bar_history
+                .filter(symbol.eq(contract.symbol.clone()))
+                .filter(freq.eq(freq_bak.as_str()))
+                .order(dt.desc())
+                .limit(1500)
+                .select(BarHistory::as_select())
+                .load(&mut *self.conn.borrow_mut())
+                .expect("TODO: panic message");
+
+            for bar in bars.iter().rev() {
                 let signals = zen.update(Bar {
                     id: 0,
                     dt: OffsetDateTime::from_unix_timestamp(bar.dt as i64).unwrap(),

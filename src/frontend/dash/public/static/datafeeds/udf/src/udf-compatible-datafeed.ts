@@ -11,7 +11,7 @@ export class UDFCompatibleDatafeed extends UDFCompatibleDatafeedBase {
     ) {
         console.log("new datafeed udf");
         let requester = new Requester();
-        if (updateFrequency < 0) {
+        if ((updateFrequency < 0 || (globalThis as any).use_local) ?? false) {
             requester = new Requester({ Realtime: "false" });
         }
         const quotesProvider = new QuotesProvider(datafeedURL, requester);

@@ -99,6 +99,18 @@ export class ModelView {
                 console.log("range change");
                 self.debounced_draw_zen();
             });
+            setTimeout(() => {
+                self.debounced_draw_zen();
+            }, 1000);
+            setTimeout(() => {
+                self.debounced_draw_zen();
+            }, 3000);
+            setTimeout(() => {
+                self.debounced_draw_zen();
+            }, 5000);
+            setTimeout(() => {
+                self.debounced_draw_zen();
+            }, 7000);
         }
     }
 
@@ -113,13 +125,8 @@ export class ModelView {
         }
         let Datafeed = (globalThis as any).datafeed as DataFeedWrapper;
 
-        let replay = Datafeed.state == State.Replay;
-
         let chart = this.chart;
         let range = chart.getVisibleRange();
-        if (replay && Datafeed.replay_time != null) {
-            range.to = Math.min(range.to, Datafeed.replay_time);
-        }
         let symbol = chart.symbolExt();
         console.log("symbol", symbol);
         let resolution = chart.resolution();
@@ -128,12 +135,12 @@ export class ModelView {
         }
 
         let headers = {};
-        if (replay) {
+        if ((globalThis as any).use_local) {
             headers = { Realtime: "false" };
         }
         axios
             .post<Zen>(
-                "http://127.0.0.1:8080/zen/elements",
+                "http://192.168.31.180:8080/zen/elements",
                 {
                     from: range.from,
                     to: range.to,

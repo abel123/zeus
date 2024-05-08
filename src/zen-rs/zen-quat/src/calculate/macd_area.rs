@@ -97,7 +97,7 @@ impl MacdArea {
         let mut result = vec![];
 
         let extra_offset = if use_fake { 1 } else { 0 };
-        for n in vec![3, 5, 7, 9] {
+        for n in vec![9, 7, 5, 3] {
             let n = n - extra_offset;
             let len = czsc.bi_list.len();
             if len < dindex + n || n == 2 {
@@ -334,6 +334,7 @@ impl MacdArea {
                 if !use_fake {
                     Notify::notify_signal(&czsc.symbol, bi_last.fx_b.dt, signal);
                 }
+                break;
             }
 
             if bi_first.direction == Direction::Down
@@ -414,6 +415,7 @@ impl MacdArea {
                 if !use_fake {
                     Notify::notify_signal(&czsc.symbol, bi_last.fx_b.dt, signal);
                 }
+                break;
             }
         }
         return result;

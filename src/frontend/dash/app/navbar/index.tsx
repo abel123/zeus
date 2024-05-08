@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { FullscreenButton } from "../components/widgets/button/fullscreen";
 import { useRecoilState } from "recoil";

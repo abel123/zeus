@@ -57,7 +57,8 @@ def reqHistoricalData(
 for line in f.readlines():
     if line.startswith("."):
         continue
-    symbol, _, exchange = line.split()[:3]
+    symbol = line.split()[0]
+    exchange = line.split()[-1]
     if exchange == "美股":
         with sqlite3.connect("tradingview.db", isolation_level=None) as con:
             # con.set_trace_callback(lambda x: logger.debug(x))

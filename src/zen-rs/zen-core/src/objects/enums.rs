@@ -67,7 +67,7 @@ pub enum Freq {
 }
 
 impl Freq {
-    fn as_str(&self) -> &'static str {
+    pub fn as_str(&self) -> &'static str {
         match self {
             Freq::Tick => "Tick",
             Freq::F1 => "F1",

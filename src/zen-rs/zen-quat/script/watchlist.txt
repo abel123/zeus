@@ -2,7 +2,7 @@ QQQ	纳指100ETF-Invesco QQQ Trust	美股
 .IXIC	纳斯达克综合指数	美股	
 .SPX	标普500指数	美股	
 .VIX	标普500波动率指数	美股	
-SPY	SPDR 标普500指数ETF	美股	
+SPY	SPDR 标普500指数ETF	美股
 00700	腾讯控股	港股	
 09966	康宁杰瑞制药-B	港股	
 01548	金斯瑞生物科技	港股	
