@@ -526,7 +526,7 @@ async fn option_price(
     }
     let mut result = vec![];
     {
-        z.borrow().ib.borrow_mut().connect().await;
+        z.get_ref().borrow().ib.borrow().connect().await;
     }
     let client = &z.borrow().ib.borrow().client.read().await.clone();
     let client = client.borrow();

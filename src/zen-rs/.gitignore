@@ -2,3 +2,4 @@ rust-ibapi/
 zen-quat/log/
 
 zen-quat/tradingview.db
+zen-quat/data/**jpg

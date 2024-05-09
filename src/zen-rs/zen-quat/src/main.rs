@@ -26,6 +26,7 @@ mod api;
 mod broker;
 mod calculate;
 mod db;
+pub(crate) mod pkg;
 mod schema;
 mod utils;
 
