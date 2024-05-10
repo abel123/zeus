@@ -6,12 +6,12 @@ from ib_insync import *
 # def get_tsla_option_list() -> List[Contract]:
 # if True:
 ib = IB()
-ib.connect("127.0.0.1", 4001, clientId=12)
+ib.connect("127.0.0.1", 14001, clientId=12)
 
-tsla = Stock("TSLA", "SMART", "USD")
+tsla = Stock("600036", "SEHKNTL", "CNH")
 ib.qualifyContracts(tsla)
 ib.reqMarketDataType(4)
-his = ib.reqHistoricalData(tsla, datetime.now(), "2 D", "1 hour", "TRADES", True, 2)
+his = ib.reqHistoricalData(tsla, None, "2 D", "1 min", "TRADES", True, 2, True)
 spxValue = his[-1].close
 spxValue
 

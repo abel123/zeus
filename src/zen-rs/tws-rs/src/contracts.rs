@@ -169,6 +169,43 @@ impl Contract {
         }
     }
 
+    pub fn auto_stock(symbol: &str) -> Contract {
+        let exchange_ = symbol.split(":").collect::<Vec<&str>>()[0].to_string();
+        let symbol = if symbol.contains(":") {
+            symbol
+                .split(":")
+                .collect::<Vec<&str>>()
+                .last()
+                .unwrap()
+                .to_string()
+        } else {
+            symbol.to_string()
+        };
+        if exchange_ == "SZSE" {
+            return Contract {
+                symbol: symbol.to_string(),
+                security_type: SecurityType::Stock,
+                currency: "CNH".to_string(),
+                exchange: "SEHKSZSE".to_string(),
+                ..Default::default()
+            };
+        } else if exchange_ == "SSE" {
+            return Contract {
+                symbol: symbol.to_string(),
+                security_type: SecurityType::Stock,
+                currency: "CNH".to_string(),
+                exchange: "SEHKNTL".to_string(),
+                ..Default::default()
+            };
+        }
+        Contract {
+            symbol: symbol.to_string(),
+            security_type: SecurityType::Stock,
+            currency: "USD".to_string(),
+            exchange: "SMART".to_string(),
+            ..Default::default()
+        }
+    }
     pub fn option(
         symbol: &str,
         last_trade_date_or_contract_month: &str,

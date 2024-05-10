@@ -11,6 +11,8 @@ ib-insync = "^0.9.86"
 loguru = "^0.7.2"
 ratelimiter = "^1.2.0.post0"
 pyrate-limiter = "^3.6.1"
+pytz = "^2024.1"
+sanic = "^23.12.1"
 
 
 [build-system]

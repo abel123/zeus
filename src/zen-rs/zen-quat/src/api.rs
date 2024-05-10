@@ -46,10 +46,7 @@ pub(super) async fn history(
     z: web::Data<MixedBroker>,
 ) -> Result<impl Responder> {
     let mut symbol_ = params.symbol;
-    if symbol_.contains(':') {
-        symbol_ = symbol_.split(":").collect::<Vec<&str>>()[1].to_string();
-    }
-    let contract = Contract::stock(symbol_.as_str());
+    let contract = Contract::auto_stock(symbol_.as_str());
     let freq = IB::freq_map().get(&params.resolution).unwrap().clone();
 
     let use_local = req
@@ -145,7 +142,7 @@ async fn search_symbol(
     use crate::schema::symbols::dsl::*;
 
     let results = symbols
-        .filter(screener.eq(params.exchange))
+        .filter(screener.eq(params.exchange.clone()))
         .filter(
             symbol
                 .like(format!("{}%", params.query))
@@ -367,6 +364,9 @@ pub(crate) async fn resolve_symbol(
             }
         })
         .collect();
+    if syms.is_empty() {
+        return Err(error::ErrorInternalServerError(""));
+    }
     Ok(Json(syms.into_iter().next().unwrap()))
 }
 
@@ -417,10 +417,7 @@ pub(crate) async fn zen_element(
 ) -> Result<impl Responder> {
     //debug!("zen_element {:?}", params);
     let mut symbol_ = params.symbol;
-    if symbol_.contains(':') {
-        symbol_ = symbol_.split(":").collect::<Vec<&str>>()[1].to_string();
-    }
-    let contract = Contract::stock(symbol_.as_str());
+    let contract = Contract::auto_stock(symbol_.as_str());
     let freq = IB::freq_map().get(&params.resolution).unwrap().clone();
     let use_local = req
         .headers()
@@ -572,7 +569,7 @@ async fn option_price(
     for interval in &params.intervals {
         for ma in &params.ma {
             let freq = IB::freq_map().get(&interval.to_string()).unwrap().clone();
-            let contract = Contract::stock(params.symbol.as_str());
+            let contract = Contract::auto_stock(params.symbol.as_str());
             let zen = z.borrow().get_czsc(false, &contract, freq);
             let zen = zen.read().await;
             let sma = zen.sma_tracker.store.get(ma);

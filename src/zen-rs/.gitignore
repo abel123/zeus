@@ -3,3 +3,5 @@ zen-quat/log/
 
 zen-quat/tradingview.db
 zen-quat/data/**jpg
+zen-quat/data/**pdf
+zen-quat/**pdf

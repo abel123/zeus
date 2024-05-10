@@ -6,10 +6,14 @@ import Head from "next/head";
 import { RecoilRoot } from "recoil";
 import { RecoilURLSyncJSONNext } from "recoil-sync-next";
 import { DataFeedWrapper } from "@/app/components/widgets/charts/tv_chart/datafeed";
+import { usePathname } from "next/navigation";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     (globalThis as any).datafeed =
         (globalThis as any).datafeed ?? new DataFeedWrapper("http://192.168.31.180:8080/datafeed/udf", 5 * 1000);
+
+    const pathname = usePathname();
+
     return (
         <html lang="en">
             <Head>
@@ -19,9 +23,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <body>
                 <RecoilRoot>
                     <RecoilURLSyncJSONNext location={{ part: "queryParams" }}>
-                        <div id="nav_bar">
-                            <NavBar />
-                        </div>
+                        {pathname != "/local" && (
+                            <div id="nav_bar">
+                                <NavBar />
+                            </div>
+                        )}
                         <div className="h-screen" id="content">
                             {children}
                         </div>
