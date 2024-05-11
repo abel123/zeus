@@ -7,9 +7,12 @@ use diesel::{
     Connection, ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper, SqliteConnection,
 };
 use diesel_logger::LoggingConnection;
+use futures_util::future::join_all;
 use futures_util::StreamExt;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
+use std::rc::Rc;
 use std::time::Duration;
 use time::OffsetDateTime;
 use tokio::sync::mpsc::channel;
@@ -32,7 +35,6 @@ pub fn load_local_db(watchlist: String, db_file: String) -> Result<()> {
         .build()?;
     let localset = LocalSet::new();
     let res = localset.block_on(&rt, async {
-        let mut db = SqliteConnection::establish(&db_file).expect("db exist");
         //LoggingConnection::new(SqliteConnection::establish(&db_file).expect("db exist"));
 
         let sem = Semaphore::new(1);
@@ -46,9 +48,11 @@ pub fn load_local_db(watchlist: String, db_file: String) -> Result<()> {
             client.blocking_process(callback).await?;
             Ok::<(), Error>(())
         });
-        let client = client_ref;
+        let client = Rc::new(client_ref);
 
         let ct = fs::read_to_string(watchlist)?;
+        let mut handles = vec![];
+
         for line in ct.lines() {
             let contract = parse_contract(line);
             if contract.is_none() {
@@ -57,108 +61,127 @@ pub fn load_local_db(watchlist: String, db_file: String) -> Result<()> {
             let contract = contract.unwrap();
             debug!("crawling {}-{}", contract.exchange, contract.symbol);
 
-            for (bar_size, (duration, mfreq)) in HashMap::from([
-                (BarSize::Min3, (TWSDuration::days(8), Freq::F3)),
-                (BarSize::Min5, (TWSDuration::months(1), Freq::F5)),
-                (BarSize::Min15, (TWSDuration::months(2), Freq::F15)),
-                (BarSize::Hour, (TWSDuration::months(7), Freq::F60)),
-                (BarSize::Day, (TWSDuration::years(4), Freq::D)),
-                (BarSize::Week, (TWSDuration::years(10), Freq::W)),
-            ]) {
-                for _ in 0..2 {
-                    let bars = {
-                        use crate::schema::bar_history::dsl::*;
-                        bar_history
-                            .filter(symbol.eq(contract.symbol.clone()))
-                            .filter(freq.eq(mfreq.as_str()))
-                            .order(dt.desc())
-                            .limit(2)
-                            .select(BarHistory::as_select())
-                            .load(&mut db)
-                            .expect("TODO: panic message")
-                    };
-                    let last_bar = bars.last();
-                    debug!("last bar {:?}", last_bar);
-                    let duration = if last_bar.is_some() {
-                        timedelta_to_duration(
-                            time::Duration::seconds(
-                                OffsetDateTime::now_utc().unix_timestamp()
-                                    - (last_bar.unwrap().dt as i64),
+            let db_file = db_file.clone();
+            let client = client.clone();
+            handles.push(spawn_local(async move {
+                for (bar_size, (duration, mfreq)) in HashMap::from([
+                    (BarSize::Min3, (TWSDuration::days(8), Freq::F3)),
+                    (BarSize::Min5, (TWSDuration::months(1), Freq::F5)),
+                    (BarSize::Min15, (TWSDuration::months(2), Freq::F15)),
+                    (BarSize::Hour, (TWSDuration::months(7), Freq::F60)),
+                    (BarSize::Day, (TWSDuration::years(4), Freq::D)),
+                    (BarSize::Week, (TWSDuration::years(10), Freq::W)),
+                ]) {
+                    for _ in 0..2 {
+                        let bars = {
+                            use crate::schema::bar_history::dsl::*;
+                            let mut db =
+                                SqliteConnection::establish(&db_file.clone()).expect("db exist");
+
+                            bar_history
+                                .filter(symbol.eq(contract.symbol.clone()))
+                                .filter(freq.eq(mfreq.as_str()))
+                                .order(dt.desc())
+                                .limit(2)
+                                .select(BarHistory::as_select())
+                                .load(&mut db)
+                                .expect("TODO: panic message")
+                        };
+                        let last_bar = bars.last();
+                        debug!("last bar {:?}", last_bar);
+                        let duration = if last_bar.is_some() {
+                            timedelta_to_duration(
+                                time::Duration::seconds(
+                                    OffsetDateTime::now_utc().unix_timestamp()
+                                        - (last_bar.unwrap().dt as i64),
+                                )
+                                .max(time::Duration::days(1)),
                             )
-                            .max(time::Duration::days(1)),
+                        } else {
+                            duration
+                        };
+                        let res = timeout(
+                            Duration::from_secs(60),
+                            historical_data(
+                                client.as_ref(),
+                                &contract,
+                                Option::from(OffsetDateTime::now_utc()),
+                                duration,
+                                bar_size,
+                                Some(WhatToShow::Trades),
+                                true,
+                                false,
+                            ),
                         )
-                    } else {
-                        duration
-                    };
-                    let res = timeout(
-                        Duration::from_secs(30),
-                        historical_data(
-                            &client,
-                            &contract,
-                            Option::from(OffsetDateTime::now_utc()),
-                            duration,
-                            bar_size,
-                            Some(WhatToShow::Trades),
-                            true,
-                            false,
-                        ),
-                    )
-                    .await
-                    .map_err(|e| Error::Simple(e.to_string()));
-                    if let Ok(Ok((bars, _))) = res {
-                        if last_bar.is_some() {
-                            let mut ok = false;
-                            let last_bar = last_bar.unwrap();
-                            for bar in &bars.bars {
-                                if (bar.date.unix_timestamp() as i32) < last_bar.dt {
-                                    continue;
-                                } else if (bar.date.unix_timestamp() as i32) == last_bar.dt {
-                                    if Some(bar.open as f32) == last_bar.open
-                                        && Some(bar.close as f32) == last_bar.close
-                                    {
-                                        ok = true;
+                        .await
+                        .map_err(|e| Error::Simple(e.to_string()));
+                        if let Ok(Ok((bars, _))) = res {
+                            let mut db =
+                                SqliteConnection::establish(&db_file.clone()).expect("db exist");
+
+                            if last_bar.is_some() {
+                                let mut ok = false;
+                                let last_bar = last_bar.unwrap();
+                                for bar in &bars.bars {
+                                    if (bar.date.unix_timestamp() as i32) < last_bar.dt {
+                                        continue;
+                                    } else if (bar.date.unix_timestamp() as i32) == last_bar.dt {
+                                        if Some(bar.open as f32) == last_bar.open
+                                            && Some(bar.close as f32) == last_bar.close
+                                        {
+                                            ok = true;
+                                        }
+                                    } else {
+                                        break;
                                     }
-                                } else {
-                                    break;
+                                }
+                                if !ok {
+                                    use crate::schema::bar_history::dsl::*;
+                                    let _ = diesel::delete(
+                                        bar_history
+                                            .filter(symbol.eq(contract.symbol.clone()))
+                                            .filter(freq.eq(mfreq.as_str())),
+                                    )
+                                    .execute(&mut db);
                                 }
                             }
-                            if !ok {
-                                use crate::schema::bar_history::dsl::*;
-                                let _ = diesel::delete(
-                                    bar_history
-                                        .filter(symbol.eq(contract.symbol.clone()))
-                                        .filter(freq.eq(mfreq.as_str())),
-                                )
-                                .execute(&mut db);
-                            }
+                            use crate::schema::bar_history::dsl::*;
+                            let vals = bars
+                                .bars
+                                .iter()
+                                .map(|x| {
+                                    (
+                                        symbol.eq(contract.symbol.clone()),
+                                        freq.eq(mfreq.as_str().to_string()),
+                                        dt.eq(x.date.unix_timestamp() as i32),
+                                        high.eq(x.high as f32),
+                                        low.eq(x.low as f32),
+                                        open.eq(x.open as f32),
+                                        close.eq(x.close as f32),
+                                        volume.eq(x.volume as i32),
+                                    )
+                                })
+                                .collect::<Vec<_>>();
+                            diesel::insert_or_ignore_into(bar_history)
+                                .values(vals)
+                                .execute(&mut db)
+                                .map_err(|e| Error::Simple(e.to_string()))
+                                .expect("sss");
+                            break;
                         }
-                        use crate::schema::bar_history::dsl::*;
-                        let vals = bars
-                            .bars
-                            .iter()
-                            .map(|x| {
-                                (
-                                    symbol.eq(contract.symbol.clone()),
-                                    freq.eq(mfreq.as_str().to_string()),
-                                    dt.eq(x.date.unix_timestamp() as i32),
-                                    high.eq(x.high as f32),
-                                    low.eq(x.low as f32),
-                                    open.eq(x.open as f32),
-                                    close.eq(x.close as f32),
-                                    volume.eq(x.volume as i32),
-                                )
-                            })
-                            .collect::<Vec<_>>();
-                        diesel::insert_or_ignore_into(bar_history)
-                            .values(vals)
-                            .execute(&mut db)
-                            .map_err(|e| Error::Simple(e.to_string()))?;
-                        break;
                     }
                 }
+            }));
+            if handles.len() > 5 {
+                let hs = handles.drain(0..);
+                join_all(hs).await;
             }
         }
 
+        if handles.len() > 0 {
+            let hs = handles.drain(0..);
+            join_all(hs).await;
+        }
         Ok::<(), Error>(())
     });
     if res.is_err() {

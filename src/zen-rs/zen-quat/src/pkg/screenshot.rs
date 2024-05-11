@@ -18,6 +18,9 @@ pub fn parse_contract(line: &str) -> Option<Contract> {
         if !['0', '6', '3'].contains(&symbol.to_string().chars().next().unwrap_or(' ')) {
             return None;
         }
+        if ['0', '3'].contains(&symbol.to_string().chars().next().unwrap_or(' ')) {
+            return Some(Contract::auto_stock(format!("SZSE:{}", symbol).as_str()));
+        }
         return Some(Contract::auto_stock(format!("SSE:{}", symbol).as_str()));
     }
 
