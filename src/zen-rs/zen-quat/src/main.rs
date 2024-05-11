@@ -1,26 +1,19 @@
-use std::cell::RefCell;
+use chrono::Local;
 use std::fs::File;
 use std::io::Write;
-use std::rc::Rc;
+use std::path::PathBuf;
 
-use actix_cors::Cors;
-use actix_web::middleware::Logger;
-use actix_web::{rt, App, HttpServer};
-use chrono::Local;
-use diesel_logger::LoggingConnection;
-use futures_util::StreamExt;
+use clap::{Parser, Subcommand};
 use log::LevelFilter;
 use notify_rust::{get_bundle_identifier_or_default, set_application};
+use tracing::debug;
+use tracing::field::debug;
 use tracing_subscriber::fmt::time::ChronoLocal;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 
-use crate::broker::ib::IB;
-use crate::broker::mixed::Mixed;
-use tws_rs::Error;
-
-use crate::db::establish_connection;
+use crate::pkg::load_db::load_local_db;
+use crate::pkg::screenshot::screenshot;
+use crate::serve::serve;
 
 mod api;
 mod broker;
@@ -28,9 +21,54 @@ mod calculate;
 mod db;
 pub(crate) mod pkg;
 mod schema;
+mod serve;
 mod utils;
 
-fn main() -> std::io::Result<()> {
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    Serve {},
+    Screenshot {
+        #[arg(
+            short,
+            long,
+            value_name = "WATCHLIST",
+            default_value_t = String::from("./script/watchlist.txt")
+        )]
+        watchlist: String,
+        #[arg(
+        short,
+        long,
+        value_name = "OUTDIR",
+        default_value_t = String::from("./data")
+        )]
+        outdir: String,
+    },
+    UpdateLocal {
+        #[arg(
+        short,
+        long,
+        value_name = "WATCHLIST",
+        default_value_t = String::from("./script/watchlist.txt")
+        )]
+        watchlist: String,
+        #[arg(
+        short,
+        long,
+        value_name = "DB_FILE",
+        default_value_t = String::from("./tradingview.db")
+        )]
+        db_file: String,
+    },
+}
+
+fn main() {
     let target = Box::new(File::create("./log/log.txt").expect("Can't create file"));
 
     let safari_id = get_bundle_identifier_or_default("iTerm 2");
@@ -59,32 +97,32 @@ fn main() -> std::io::Result<()> {
     )
     .expect("logger init");
 
-    rt::System::new().block_on(
-        HttpServer::new(|| {
-            let cors = Cors::default()
-                .allow_any_origin()
-                .allow_any_header()
-                .allow_any_method()
-                .max_age(3600);
-            App::new()
-                .wrap(Logger::new("%a  %r %s %b  %T"))
-                .wrap(cors)
-                .data_factory(|| async { Ok::<_, Error>(Rc::new(RefCell::new(Mixed::new()))) })
-                .data_factory(|| async {
-                    let conn = establish_connection();
-                    let conn = LoggingConnection::new(conn);
+    let cli = Cli::parse();
 
-                    Ok::<_, Error>(RefCell::new(conn))
-                })
-                .service(api::history)
-                .service(api::search_symbol)
-                .service(api::resolve_symbol)
-                .service(api::zen_element)
-                .service(api::config)
-                .service(api::option_price)
-        })
-        .workers(1)
-        .bind(("0.0.0.0", 8080))?
-        .run(),
-    )
+    // You can check for the existence of subcommands, and if found use their
+    // matches just as you would the top level cmd
+    match &cli.command {
+        Some(Commands::Screenshot { watchlist, outdir }) => {
+            debug!("watchlist path {:?}", watchlist);
+            let res = screenshot(watchlist.clone(), outdir.clone());
+            if res.is_err() {
+                debug!("err {:?}", res.err())
+            }
+        }
+        Some(Commands::UpdateLocal { watchlist, db_file }) => {
+            let res = load_local_db(watchlist.clone(), db_file.clone());
+            if res.is_err() {
+                debug!("err {:?}", res.err())
+            }
+        }
+        Some(Commands::Serve {}) => {
+            let res = serve();
+            if res.is_err() {
+                debug!("err {:?}", res.err())
+            }
+        }
+        None => {}
+    }
+
+    // Continued program logic goes here...
 }
