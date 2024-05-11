@@ -1,12 +1,16 @@
 use chrono::Local;
+use std::fs::File;
+use std::io::Write;
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 use log::LevelFilter;
+use notify_rust::{get_bundle_identifier_or_default, set_application};
 use tracing::debug;
 use tracing::field::debug;
 use tracing_subscriber::fmt::time::ChronoLocal;
 use tracing_subscriber::EnvFilter;
+use zen_quat::pkg::load_db::load_local_db;
 
 use zen_quat::pkg::screenshot::screenshot;
 #[derive(Parser)]
@@ -18,9 +22,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// does testing things
     Screenshot {
-        /// Sets a custom config file
         #[arg(
             short,
             long,
@@ -36,9 +38,50 @@ enum Commands {
         )]
         outdir: String,
     },
+    UpdateLocal {
+        #[arg(
+        short,
+        long,
+        value_name = "WATCHLIST",
+        default_value_t = String::from("./script/watchlist.txt")
+        )]
+        watchlist: String,
+        #[arg(
+        short,
+        long,
+        value_name = "DB_FILE",
+        default_value_t = String::from("./tradingview.db")
+        )]
+        db_file: String,
+    },
 }
 
 fn main() {
+    let target = Box::new(File::create("./log/log_cli.txt").expect("Can't create file"));
+
+    let safari_id = get_bundle_identifier_or_default("iTerm 2");
+    set_application(&safari_id).expect("panic");
+
+    env_logger::Builder::new()
+        .target(env_logger::Target::Pipe(target))
+        .filter(None, LevelFilter::Debug)
+        .format(|buf, record| {
+            debug!(
+                "[{}:{}] {}",
+                Local::now().format("%Y-%m-%d %H:%M:%S%.3f"),
+                record.level(),
+                record.args()
+            );
+            writeln!(
+                buf,
+                "[{}:{}] {}",
+                Local::now().format("%Y-%m-%d %H:%M:%S%.3f"),
+                record.level(),
+                record.args()
+            )
+        })
+        .init();
+
     tracing::subscriber::set_global_default(
         tracing_subscriber::fmt()
             .with_line_number(true)
@@ -56,6 +99,12 @@ fn main() {
         Some(Commands::Screenshot { watchlist, outdir }) => {
             debug!("watchlist path {:?}", watchlist);
             let res = screenshot(watchlist.clone(), outdir.clone());
+            if res.is_err() {
+                debug!("err {:?}", res.err())
+            }
+        }
+        Some(Commands::UpdateLocal { watchlist, db_file }) => {
+            let res = load_local_db(watchlist.clone(), db_file.clone());
             if res.is_err() {
                 debug!("err {:?}", res.err())
             }

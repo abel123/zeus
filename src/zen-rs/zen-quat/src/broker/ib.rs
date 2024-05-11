@@ -337,7 +337,7 @@ fn to_barsize(freq: Freq) -> BarSize {
     }
 }
 
-fn timedelta_to_duration(duration: Duration) -> TWSDuration {
+pub fn timedelta_to_duration(duration: Duration) -> TWSDuration {
     if duration.as_seconds_f32() >= Duration::days(360).as_seconds_f32() {
         return TWSDuration::years(
             (duration.as_seconds_f32() / Duration::days(365).as_seconds_f32()).ceil() as i32,

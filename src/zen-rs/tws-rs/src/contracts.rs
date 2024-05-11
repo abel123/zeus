@@ -181,22 +181,34 @@ impl Contract {
         } else {
             symbol.to_string()
         };
-        if exchange_ == "SZSE" {
-            return Contract {
-                symbol: symbol.to_string(),
-                security_type: SecurityType::Stock,
-                currency: "CNH".to_string(),
-                exchange: "SEHKSZSE".to_string(),
-                ..Default::default()
-            };
-        } else if exchange_ == "SSE" {
-            return Contract {
-                symbol: symbol.to_string(),
-                security_type: SecurityType::Stock,
-                currency: "CNH".to_string(),
-                exchange: "SEHKNTL".to_string(),
-                ..Default::default()
-            };
+        if exchange_ == "SZSE" || exchange_ == "SSE" {
+            if symbol.starts_with("0") {
+                return Contract {
+                    symbol: symbol.to_string(),
+                    security_type: SecurityType::Stock,
+                    currency: "CNH".to_string(),
+                    exchange: "SEHKSZSE".to_string(),
+                    ..Default::default()
+                };
+            }
+            if symbol.starts_with("6") {
+                return Contract {
+                    symbol: symbol.to_string(),
+                    security_type: SecurityType::Stock,
+                    currency: "CNH".to_string(),
+                    exchange: "SEHKNTL".to_string(),
+                    ..Default::default()
+                };
+            }
+            if symbol.starts_with("3") {
+                return Contract {
+                    symbol: symbol.to_string(),
+                    security_type: SecurityType::Stock,
+                    currency: "CNH".to_string(),
+                    exchange: "CHINEXT".to_string(),
+                    ..Default::default()
+                };
+            }
         }
         Contract {
             symbol: symbol.to_string(),

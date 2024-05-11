@@ -63,7 +63,7 @@ impl Bar {
         }
     }
 }
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Debug, Copy, Hash, Eq, PartialEq)]
 pub enum BarSize {
     Sec,
     Sec5,
