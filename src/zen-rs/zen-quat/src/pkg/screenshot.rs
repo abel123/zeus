@@ -29,6 +29,7 @@ pub fn parse_contract(line: &str) -> Option<Contract> {
 pub fn screenshot(path: String, outdir: String) -> Result<()> {
     let ct = fs::read_to_string(path)?;
     let options = LaunchOptions::default_builder()
+        .enable_gpu(false)
         .window_size(Some((3840, 2160)))
         .build()
         .expect("Couldn't find appropriate Chrome binary.");
@@ -49,7 +50,15 @@ pub fn screenshot(path: String, outdir: String) -> Result<()> {
                 .navigate_to(
                     format!(
                         "http://localhost:3000/local?symbolState=\"{}\"",
-                        contract.symbol
+                        if contract.currency == "CNH" {
+                            if contract.symbol.starts_with("6") {
+                                format!("SSE:{}", contract.symbol)
+                            } else {
+                                format!("SZSE:{}", contract.symbol)
+                            }
+                        } else {
+                            contract.symbol.clone()
+                        }
                     )
                     .as_str(),
                 )?
@@ -60,7 +69,7 @@ pub fn screenshot(path: String, outdir: String) -> Result<()> {
                     "./{}/{:03}-{}.jpg",
                     outdir.trim_end_matches("/"),
                     idx,
-                    contract.symbol
+                    contract.symbol.clone()
                 ),
                 jpeg_data,
             )?;

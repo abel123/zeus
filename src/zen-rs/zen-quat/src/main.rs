@@ -123,6 +123,4 @@ fn main() {
         }
         None => {}
     }
-
-    // Continued program logic goes here...
 }

@@ -6,7 +6,7 @@ use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper, SqliteC
 use diesel_logger::LoggingConnection;
 use std::cell::RefCell;
 use std::rc::Rc;
-use time::OffsetDateTime;
+use time::{Duration, OffsetDateTime};
 use tokio::sync::RwLock;
 use tws_rs::contracts::Contract;
 use tws_rs::Error;
@@ -40,7 +40,7 @@ impl Broker for LocalDB {
         let subscribed = {
             let zen = { self.get_czsc(contract, freq.clone()) };
             let zen = zen.read().await;
-            zen.subscribed
+            zen.subscribed && zen.last_time > OffsetDateTime::now_utc() - Duration::minutes(10)
         };
         if subscribed {
             return Ok(());
@@ -48,7 +48,7 @@ impl Broker for LocalDB {
 
         let mut zen = { self.get_czsc(contract, freq) };
         let mut zen = zen.write().await;
-        if zen.subscribed {
+        if zen.subscribed && zen.last_time > OffsetDateTime::now_utc() - Duration::minutes(10) {
             return Ok(());
         }
         zen.reset();

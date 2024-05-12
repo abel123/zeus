@@ -108,9 +108,6 @@ export class ModelView {
             setTimeout(() => {
                 self.debounced_draw_zen();
             }, 5000);
-            setTimeout(() => {
-                self.debounced_draw_zen();
-            }, 7000);
         }
     }
 

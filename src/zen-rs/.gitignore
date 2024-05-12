@@ -2,6 +2,7 @@ rust-ibapi/
 zen-quat/log/
 
 zen-quat/tradingview.db
-zen-quat/data/**jpg
+zen-quat/data/china_stock/**jpg
+zen-quat/data/us_stock/**jpg
 zen-quat/data/**pdf
 zen-quat/**pdf

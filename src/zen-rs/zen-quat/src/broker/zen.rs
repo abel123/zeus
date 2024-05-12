@@ -4,6 +4,7 @@ use crate::calculate::sma_tracker::SMATracker;
 use crate::utils::notify::Notify;
 use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
+use time::OffsetDateTime;
 use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
 use tracing::debug;
@@ -17,6 +18,7 @@ pub(crate) struct Zen {
     pub czsc: CZSC,
     pub(crate) contract: Contract,
     pub(crate) freq: Freq,
+    pub(crate) last_time: OffsetDateTime,
     pub subscribed: bool,
     pub realtime: bool,
     setting: Settings,
@@ -37,6 +39,7 @@ impl Zen {
             czsc: CZSC::new(sym.symbol.clone(), freq, setting.clone()),
             contract: sym,
             freq,
+            last_time: OffsetDateTime::now_utc(),
             subscribed: false,
             realtime: false,
             setting,
@@ -57,6 +60,7 @@ impl Zen {
         );
         self.subscribed = false;
         self.realtime = false;
+        self.last_time = OffsetDateTime::now_utc();
         self.token = None;
         self.bc_processor.beichi_tracker.clear();
         self.sma_tracker = SMATracker::new(vec![15, 30, 60, 120, 200]);
