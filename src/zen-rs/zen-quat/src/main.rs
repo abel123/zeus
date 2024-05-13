@@ -65,6 +65,9 @@ enum Commands {
         default_value_t = String::from("./tradingview.db")
         )]
         db_file: String,
+
+        #[arg(short, long, value_name = "VERIFY", default_value_t = false)]
+        check_only: bool,
     },
 }
 
@@ -109,8 +112,12 @@ fn main() {
                 debug!("err {:?}", res.err())
             }
         }
-        Some(Commands::UpdateLocal { watchlist, db_file }) => {
-            let res = load_local_db(watchlist.clone(), db_file.clone());
+        Some(Commands::UpdateLocal {
+            watchlist,
+            db_file,
+            check_only,
+        }) => {
+            let res = load_local_db(watchlist.clone(), db_file.clone(), *check_only);
             if res.is_err() {
                 debug!("err {:?}", res.err())
             }

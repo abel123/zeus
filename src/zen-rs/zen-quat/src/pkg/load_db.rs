@@ -9,6 +9,7 @@ use diesel::{
 use diesel_logger::LoggingConnection;
 use futures_util::future::join_all;
 use futures_util::StreamExt;
+use rand::random;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
@@ -18,18 +19,18 @@ use time::OffsetDateTime;
 use tokio::sync::mpsc::channel;
 use tokio::sync::Semaphore;
 use tokio::task::{spawn_local, LocalSet};
-use tokio::time::timeout;
+use tokio::time::{sleep, timeout};
 use tracing::field::debug;
 use tracing::{debug, error, info};
 use tracing_subscriber::filter::FilterExt;
 use tws_rs::client::market_data::historical::{
     historical_data, BarSize, HistoricalData, TWSDuration, WhatToShow,
 };
-use tws_rs::contracts::Contract;
+use tws_rs::contracts::{contract_details_no_cache, Contract};
 use tws_rs::{Client, Error};
 use zen_core::objects::enums::Freq;
 
-pub fn load_local_db(watchlist: String, db_file: String) -> Result<()> {
+pub fn load_local_db(watchlist: String, db_file: String, verify_only: bool) -> Result<()> {
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
@@ -39,7 +40,7 @@ pub fn load_local_db(watchlist: String, db_file: String) -> Result<()> {
 
         let sem = Semaphore::new(1);
 
-        let mut client = Client::new("127.0.0.1:14001", 33332);
+        let mut client = Client::new("127.0.0.1:14001", 33332 + rand::random::<i32>() % 100);
         info!("connecting to TWS");
         let client_ref = client.connect().await?;
 
@@ -60,6 +61,21 @@ pub fn load_local_db(watchlist: String, db_file: String) -> Result<()> {
             }
             let contract = contract.unwrap();
             debug!("crawling {}-{}", contract.exchange, contract.symbol);
+            if verify_only {
+                info!("checking {}-{}", contract.exchange, contract.symbol);
+                let res = timeout(
+                    Duration::from_secs(3),
+                    contract_details_no_cache(&client, &contract),
+                )
+                .await;
+                if res.is_err() {
+                    info!("unverified: {} {:?}", line, res);
+                } else {
+                    debug!("{}: {:?}", line, res);
+                }
+                sleep(Duration::from_millis(100)).await;
+                continue;
+            }
 
             let db_file = db_file.clone();
             let client = client.clone();

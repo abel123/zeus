@@ -159,7 +159,7 @@ impl MessageBus for TcpMessageBus {
         packet: &RequestMessage,
     ) -> Result<(), Error> {
         self.add_request(request_id, sender)?;
-        info!("-> {:?}", packet);
+        debug!("-> {:?}", packet);
 
         self.write_message(packet).await?;
 

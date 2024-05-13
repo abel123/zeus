@@ -191,6 +191,15 @@ impl Contract {
                     ..Default::default()
                 };
             }
+            if symbol.starts_with("688") {
+                return Contract {
+                    symbol: symbol.to_string(),
+                    security_type: SecurityType::Stock,
+                    currency: "CNH".to_string(),
+                    exchange: "SEHKSTAR".to_string(),
+                    ..Default::default()
+                };
+            }
             if symbol.starts_with("6") {
                 return Contract {
                     symbol: symbol.to_string(),

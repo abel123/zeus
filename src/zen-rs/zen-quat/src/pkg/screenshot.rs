@@ -30,15 +30,19 @@ pub fn screenshot(path: String, outdir: String) -> Result<()> {
     let ct = fs::read_to_string(path)?;
     let options = LaunchOptions::default_builder()
         .enable_gpu(false)
+        .sandbox(false)
         .window_size(Some((3840, 2160)))
         .build()
         .expect("Couldn't find appropriate Chrome binary.");
-    let browser = Browser::new(options)?;
+    let mut browser = Browser::new(options.clone())?;
 
     for (idx, line) in ct.lines().enumerate() {
         let contract = parse_contract(line);
         if contract.is_none() {
             continue;
+        }
+        if idx % 10 == 0 {
+            browser = Browser::new(options.clone())?;
         }
         let contract = contract.unwrap();
 
@@ -63,10 +67,10 @@ pub fn screenshot(path: String, outdir: String) -> Result<()> {
                     .as_str(),
                 )?
                 .wait_until_navigated()?
-                .capture_screenshot(CaptureScreenshotFormatOption::Jpeg, Some(75), None, true)?;
+                .capture_screenshot(CaptureScreenshotFormatOption::Png, None, None, true)?;
             fs::write(
                 format!(
-                    "./{}/{:03}-{}.jpg",
+                    "./{}/{:03}-{}.png",
                     outdir.trim_end_matches("/"),
                     idx,
                     contract.symbol.clone()

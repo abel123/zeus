@@ -3995,6 +3995,7 @@ dependencies = [
  "log",
  "lru",
  "notify-rust",
+ "rand",
  "serde",
  "state",
  "talipp",
