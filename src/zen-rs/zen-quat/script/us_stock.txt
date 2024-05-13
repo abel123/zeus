@@ -1,84 +1,373 @@
 代码	名称	市场	
-QQQ	纳指100ETF-Invesco QQQ Trust	美股	
-.IXIC	纳斯达克综合指数	美股	
-.SPX	标普500指数	美股	
-.VIX	标普500波动率指数	美股	
-SPY	SPDR 标普500指数ETF	美股	
-TSLA	特斯拉	美股	
-PFE	辉瑞	美股	
-YINN	3倍做多富时中国ETF-Direxion	美股	
-U	Unity Software	美股	
-FUTU	富途控股	美股	
-LI	理想汽车	美股	
-SE	Sea	美股	
-IWY	iShares安硕罗素领先200成长型ETF	美股	
-YANG	3倍做空富时中国ETF-Direxion	美股	
-AMD	美国超微公司	美股	
-GOOGL	谷歌-A	美股	
-MSFT	微软	美股	
-BGNE	百济神州	美股	
-VNM	越南ETF-VanEck	美股	
-SNAP	Snap Inc	美股	
-AMZN	亚马逊	美股	
-NVDA	英伟达	美股	
-NFLX	奈飞	美股	
-BILI	哔哩哔哩	美股	
-XBI	SPDR标普生物科技ETF	美股	
-TLT	20+年以上美国国债ETF-iShares	美股	
-SQ	Block	美股	
-SHOP	Shopify	美股	
-META	Meta Platforms	美股	
-MARA	Marathon Digital	美股	
-TWLO	Twilio	美股	
-PATH	UiPath	美股	
-PDD	拼多多	美股	
-TMO	赛默飞世尔	美股	
-DHR	丹纳赫	美股	
-PYPL	PayPal	美股	
-EWW	墨西哥投资指数ETF-iShares MSCI	美股	
-TAL	好未来	美股	
-VRTX	福泰制药	美股	
-REGN	再生元制药公司	美股	
-MRK	默沙东	美股	
-ABNB	爱彼迎	美股	
-ADBE	Adobe	美股	
-ANSS	安斯科技	美股	
-KO	可口可乐	美股	
-CCL	嘉年华邮轮	美股	
-CRM	赛富时	美股	
-UBER	优步	美股	
-ROKU	Roku Inc	美股	
-BA	波音	美股	
-DIS	迪士尼	美股	
-XLE	能源指数ETF-SPDR	美股	
-SQQQ	3倍做空纳指ETF-ProShares	美股	
-TEAM	Atlassian	美股	
-.DJI	道琼斯指数	美股	
-FCX	麦克莫兰銅金	美股	
-BKNG	Booking Holdings	美股	
-TTD	The Trade Desk	美股	
-TWST	Twist Bioscience	美股	
-ATAT	亚朵	美股	
-GRAB	Grab Holdings	美股	
-AZN	阿斯利康	美股	
-ARM	Arm Holdings	美股	
-QCOM	高通	美股	
-.RUT	罗素2000指数	美股	
-DNA	Ginkgo Bioworks	美股	
-NTNX	Nutanix	美股	
-AAPL	苹果	美股	
-IBB	生物科技指数ETF-iShares	美股	
-LULU	Lululemon Athletica	美股	
-MSTR	MicroStrategy	美股	
-KVYO	Klaviyo	美股	
-TSM	台积电	美股	
-WB	微博	美股	
-UVXY	ProShares Ultra VIX短期期货ETF	美股	
-COIN	Coinbase	美股	
-FXY	日元ETF-CurrencyShares	美股	
-KWEB	KraneShares中国海外互联网ETF	美股	
-CRSP	CRISPR Therapeutics	美股	
-FXI	中国大盘股ETF-iShares	美股	
-BABA	阿里巴巴	美股	
-IWM	iShares罗素2000指数ETF	美股	
-SNOW	Snowflake	美股	
+CTAS	信达思	美股
+EPAM	EPAM Systems	美股
+MMC	威达信	美股
+TER	泰瑞达	美股
+WMT	沃尔玛	美股
+DAL	达美航空	美股
+PLD	安博	美股
+ROST	罗斯百货	美股
+VKTX	Viking Therapeutics	美股
+CHTR	特许通讯	美股
+VRSK	Verisk分析	美股
+SNOW	Snowflake	美股
+WFC	富国银行	美股
+VST	Vistra Energy	美股
+LULU	Lululemon Athletica	美股
+LYB	利安德巴塞尔	美股
+DKNG	DraftKings	美股
+SQ	Block	美股
+DECK	Deckers Outdoor	美股
+ZK	极氪	美股
+ZS	Zscaler	美股
+CL	高露洁	美股
+COR	Cencora	美股
+MET	大都会人寿	美股
+EMR	艾默生电气	美股
+NEM	纽曼矿业	美股
+UBER	优步	美股
+U	Unity Software	美股
+AON	怡安保险	美股
+NRG	NRG Energy	美股
+HUM	哈门那	美股
+SHW	宣伟公司	美股
+MTCH	Match group	美股
+TJX	TJX公司	美股
+AMD	美国超微公司	美股
+DE	迪尔股份	美股
+ENPH	Enphase Energy	美股
+HLT	希尔顿酒店	美股
+MMM	3M	美股
+UNP	联合太平洋	美股
+EL	雅诗兰黛	美股
+ABT	雅培	美股
+PBR	巴西石油公司	美股
+LI	理想汽车	美股
+AAPL	苹果	美股
+GE	GE航天航空	美股
+ANET	Arista Networks	美股
+CRH	CRH水泥	美股
+VMC	火神材料	美股
+BDX	碧迪医疗	美股
+IR	英格索兰	美股
+EA	艺电	美股
+BP	英国石油	美股
+Z	Zillow-C	美股
+PYPL	PayPal	美股
+ORLY	奥莱利	美股
+COST	好市多	美股
+MAR	万豪酒店	美股
+RSG	共和废品处理	美股
+SHEL	壳牌	美股
+PM	菲利普莫里斯	美股
+LYV	Live Nation Entertainment	美股
+SYK	史赛克	美股
+GS	高盛	美股
+W	Wayfair	美股
+TSM	台积电	美股
+V	Visa	美股
+UPS	联合包裹	美股
+GD	通用动力	美股
+SAIA	Saia	美股
+ECL	艺康集团	美股
+AZN	阿斯利康	美股
+SE	Sea	美股
+ETN	伊顿	美股
+MCK	麦克森	美股
+TXN	德州仪器	美股
+GEV	GE Vernova LLC	美股
+CVX	雪佛龙	美股
+DG	美国达乐公司	美股
+CSX	CSX运输	美股
+PLTR	Palantir	美股
+MDB	MongoDB	美股
+TSLA	特斯拉	美股
+MTD	梅特勒-托利多	美股
+NSC	诺福克南方	美股
+CAH	卡地纳健康	美股
+COF	第一资本信贷	美股
+WELL	Welltower	美股
+ORCL	甲骨文	美股
+GM	通用汽车	美股
+OXY	西方石油	美股
+TTD	The Trade Desk	美股
+AZO	汽车地带	美股
+NVDA	英伟达	美股
+BRK.B	伯克希尔-B	美股
+JPM	摩根大通	美股
+TWLO	Twilio	美股
+TEVA	梯瓦制药	美股
+KVUE	Kenvue	美股
+NIO	蔚来	美股
+NEE	新纪元能源	美股
+AMZN	亚马逊	美股
+EQIX	易昆尼克斯	美股
+MLM	马丁-玛丽埃塔材料	美股
+MSFT	微软	美股
+SRE	桑普拉能源	美股
+LMT	洛克希德马丁	美股
+CTSH	高知特	美股
+APH	安诺电子	美股
+ADBE	Adobe	美股
+ICE	洲际交易所	美股
+WSM	Williams-Sonoma	美股
+INTU	财捷	美股
+ODFL	Old Dominion Freight Line	美股
+AME	阿美特克	美股
+PEG	公务集团	美股
+WBD	Warner Bros Discovery	美股
+NCLH	挪威邮轮	美股
+XOM	埃克森美孚	美股
+HWM	Howmet Aerospace	美股
+AFRM	Affirm Holdings	美股
+LIN	Linde	美股
+QCOM	高通	美股
+META	Meta Platforms	美股
+NTAP	美国网存	美股
+JNJ	强生	美股
+VALE	淡水河谷	美股
+EXAS	精密科学	美股
+GOOG	谷歌-C	美股
+CME	芝加哥商品交易所	美股
+ASML	阿斯麦	美股
+MU	美光科技	美股
+NOC	诺斯罗普格鲁曼	美股
+EBAY	eBay	美股
+MNST	怪物饮料	美股
+MCHP	微芯科技	美股
+RIVN	Rivian Automotive	美股
+SPGI	标普全球	美股
+ETSY	Etsy Inc	美股
+LLY	礼来	美股
+LRCX	泛林集团	美股
+CRWD	CrowdStrike	美股
+DELL	戴尔科技	美股
+ADM	Archer Daniels Midland	美股
+VICI	VICI Properties	美股
+PARA	派拉蒙环球-B	美股
+YUM	Yum! Brands	美股
+ADSK	欧特克	美股
+BLDR	Builders FirstSource	美股
+CMG	奇波雷墨西哥烧烤	美股
+LEN	莱纳建筑	美股
+NXPI	恩智浦	美股
+HES	赫斯	美股
+CVS	西维斯健康	美股
+PCG	太平洋煤电	美股
+FI	费哲金融服务	美股
+DXCM	德康医疗	美股
+AMGN	安进	美股
+HCA	HCA医疗	美股
+PEP	百事可乐	美股
+PG	宝洁	美股
+TFC	Truist Financial	美股
+LUV	西南航空	美股
+SOFI	SoFi Technologies	美股
+SNAP	Snap Inc	美股
+NFLX	奈飞	美股
+SHOP	Shopify	美股
+FICO	Fair Isaac	美股
+VRTX	福泰制药	美股
+XPO	XPO	美股
+GEHC	GE HealthCare Technologies	美股
+CSCO	思科	美股
+ET	Energy Transfer	美股
+MRK	默沙东	美股
+COP	康菲石油	美股
+SPG	西蒙地产	美股
+TDG	TransDigm	美股
+HUBS	HubSpot	美股
+AXP	美国运通	美股
+ALL	好事达	美股
+ELV	Elevance Health	美股
+AIG	美国国际集团	美股
+TSN	泰森食品	美股
+BAX	百特国际	美股
+WYNN	永利度假村	美股
+DLR	数字房地产信托公司	美股
+MSTR	MicroStrategy	美股
+MCD	麦当劳	美股
+ADI	亚德诺	美股
+BX	黑石	美股
+CPNG	Coupang	美股
+BAC	美国银行	美股
+SWKS	思佳讯	美股
+CCI	冠城国际	美股
+CEG	Constellation Energy	美股
+VRT	Vertiv Holdings	美股
+ARM	Arm Holdings	美股
+PANW	Palo Alto Networks	美股
+KR	克罗格	美股
+WDAY	Workday	美股
+NUE	纽柯钢铁	美股
+GOLD	巴里克黄金	美股
+TMUS	T-Mobile US	美股
+MCO	穆迪	美股
+MPC	马拉松原油	美股
+ROK	罗克韦尔自动化	美股
+CRM	赛富时	美股
+CMCSA	康卡斯特	美股
+USB	美国合众银行	美股
+WMB	威廉姆斯	美股
+F	福特汽车	美股
+PINS	Pinterest	美股
+GOOGL	谷歌-A	美股
+MRNA	Moderna	美股
+TMO	赛默飞世尔	美股
+RDDT	Reddit	美股
+DRI	达登饭店	美股
+AEP	美国电力	美股
+K	家乐氏	美股
+TOST	Toast	美股
+INTC	英特尔	美股
+DVN	戴文能源	美股
+FANG	Diamondback Energy	美股
+PODD	银休特	美股
+KLAC	科磊	美股
+MSI	摩托罗拉解决方案	美股
+KKR	KKR & Co	美股
+KHC	卡夫亨氏	美股
+BMY	施贵宝	美股
+NU	Nu Holdings	美股
+DUK	杜克能源	美股
+APTV	Aptiv PLC	美股
+GPN	环汇有限公司	美股
+REGN	再生元制药公司	美股
+PGR	前进保险	美股
+FIS	繁德信息技术	美股
+PH	派克汉尼汾	美股
+CNC	康西哥	美股
+AAL	美国航空	美股
+AAON	艾伦建材	美股
+EQT	EQT能源	美股
+BA	波音	美股
+HSY	好时	美股
+ADP	自动数据处理	美股
+CB	安达保险	美股
+ABBV	艾伯维公司	美股
+MDT	美敦力	美股
+APO	阿波罗全球管理	美股
+GME	游戏驿站	美股
+BIIB	渤健公司	美股
+ALB	美国雅保	美股
+AVGO	博通	美股
+FDX	联邦快递	美股
+DPZ	达美乐比萨	美股
+QRVO	Qorvo	美股
+CARR	开利全球	美股
+SLB	斯伦贝谢	美股
+JD	京东	美股
+RCL	皇家加勒比邮轮	美股
+NET	Cloudflare	美股
+COIN	Coinbase	美股
+IDXX	爱德士	美股
+DDOG	Datadog	美股
+ISRG	直觉外科公司	美股
+BABA	阿里巴巴	美股
+XEL	埃克西尔能源	美股
+DIS	迪士尼	美股
+EXC	爱克斯龙电力	美股
+ON	安森美半导体	美股
+PSX	Phillips 66	美股
+NOW	ServiceNow	美股
+HON	霍尼韦尔	美股
+MDLZ	亿滋	美股
+TD	多伦多道明银行	美股
+MS	摩根士丹利	美股
+LYFT	Lyft Inc	美股
+GL	Globe Life	美股
+HD	家得宝	美股
+FSLR	第一太阳能	美股
+ULTA	Ulta美容	美股
+APP	Applovin	美股
+DLTR	美元树公司	美股
+O	Realty Income	美股
+TEL	泰科电子	美股
+PDD	拼多多	美股
+WDC	西部数据	美股
+TGT	塔吉特	美股
+DJT	特朗普媒体科技集团	美股
+CMI	康明斯	美股
+MA	万事达	美股
+CELH	Celsius Holdings	美股
+EXPE	Expedia	美股
+FTNT	飞塔信息	美股
+JCI	江森自控	美股
+LVS	金沙集团	美股
+DASH	DoorDash	美股
+MPWR	Monolithic Power Systems	美股
+WAT	沃特世	美股
+AMAT	应用材料	美股
+PWR	广达服务	美股
+VZ	Verizon	美股
+FAST	快扣	美股
+KMB	金佰利	美股
+NVO	诺和诺德	美股
+ABNB	爱彼迎	美股
+AMT	美国电塔	美股
+DUOL	多邻国	美股
+BLK	贝莱德	美股
+MSCI	MSCI Inc	美股
+RBLX	Roblox	美股
+FCX	麦克莫兰銅金	美股
+MO	奥驰亚	美股
+DOW	陶氏化学	美股
+CTVA	Corteva	美股
+TT	Trane技术	美股
+NKE	耐克	美股
+UNH	联合健康	美股
+DHR	丹纳赫	美股
+ZTS	Zoetis	美股
+SBUX	星巴克	美股
+IFF	国际香料香精	美股
+TEAM	Atlassian	美股
+EOG	EOG能源	美股
+LOW	劳氏	美股
+VLO	瓦莱罗能源	美股
+A	安捷伦科技	美股
+SWK	美国史丹利公司	美股
+MRVL	迈威尔科技	美股
+TCOM	携程网	美股
+KMI	金德尔摩根	美股
+CCL	嘉年华邮轮	美股
+MRO	马拉松石油	美股
+IP	国际纸业	美股
+SPOT	Spotify Technology	美股
+BKNG	Booking Holdings	美股
+CROX	卡骆驰	美股
+GILD	吉利德科学	美股
+SCHW	嘉信理财	美股
+PCAR	帕卡	美股
+ALAB	Astera Labs	美股
+PFE	辉瑞	美股
+LNG	Cheniere Energy	美股
+MELI	MercadoLibre	美股
+AKAM	阿克迈	美股
+URI	联合租赁	美股
+CAT	卡特彼勒	美股
+AWK	美国水务	美股
+RTX	雷神技术	美股
+C	花旗集团	美股
+T	AT&T	美股
+ACN	埃森哲	美股
+ILMN	Illumina	美股
+BIDU	百度	美股
+SNPS	新思科技	美股
+CDNS	铿腾电子	美股
+WM	美国废物管理	美股
+DHI	霍顿房屋	美股
+ROP	儒博实业	美股
+APD	Air Products & Chemicals	美股
+BSX	波士顿科学	美股
+HOOD	Robinhood	美股
+CI	信诺	美股
+IQV	艾昆纬	美股
+TSCO	拖拉机供应公司	美股
+IBM	IBM Corp	美股
+KO	可口可乐	美股
+UAL	联合大陆航空	美股
+SO	美国南方公司	美股
+APA	阿帕奇石油	美股
+SMCI	超微电脑	美股
+CVNA	Carvana	美股
+BRK.A	伯克希尔-A	美股

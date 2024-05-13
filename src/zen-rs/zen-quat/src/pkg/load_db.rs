@@ -54,12 +54,13 @@ pub fn load_local_db(watchlist: String, db_file: String, verify_only: bool) -> R
         let ct = fs::read_to_string(watchlist)?;
         let mut handles = vec![];
 
-        for line in ct.lines() {
+        for (idx, line) in ct.lines().enumerate() {
             let contract = parse_contract(line);
             if contract.is_none() {
                 continue;
             }
             let contract = contract.unwrap();
+            debug!("line {}-{}", idx, line);
             debug!("crawling {}-{}", contract.exchange, contract.symbol);
             if verify_only {
                 info!("checking {}-{}", contract.exchange, contract.symbol);
@@ -98,18 +99,22 @@ pub fn load_local_db(watchlist: String, db_file: String, verify_only: bool) -> R
                                 .filter(symbol.eq(contract.symbol.clone()))
                                 .filter(freq.eq(mfreq.as_str()))
                                 .order(dt.desc())
-                                .limit(2)
+                                .limit(3)
                                 .select(BarHistory::as_select())
                                 .load(&mut db)
                                 .expect("TODO: panic message")
                         };
-                        let last_bar = bars.last();
+                        let last_bar = if bars.len() < 2 {
+                            bars.last()
+                        } else {
+                            bars.get(bars.len() - 2)
+                        };
                         debug!("last bar {:?}", last_bar);
                         let duration = if last_bar.is_some() {
                             timedelta_to_duration(
                                 time::Duration::seconds(
                                     OffsetDateTime::now_utc().unix_timestamp()
-                                        - (last_bar.unwrap().dt as i64),
+                                        - (bars.last().unwrap().dt as i64),
                                 )
                                 .max(time::Duration::days(1)),
                             )
@@ -159,6 +164,7 @@ pub fn load_local_db(watchlist: String, db_file: String, verify_only: bool) -> R
                                             .filter(freq.eq(mfreq.as_str())),
                                     )
                                     .execute(&mut db);
+                                    continue;
                                 }
                             }
                             use crate::schema::bar_history::dsl::*;
@@ -216,7 +222,7 @@ pub fn timedelta_to_duration(duration: time::Duration) -> TWSDuration {
             (duration.as_seconds_f32() / time::Duration::days(30).as_seconds_f32()).ceil() as i32,
         );
     } else if duration.as_seconds_f32() >= time::Duration::days(7).as_seconds_f32() {
-        return TWSDuration::months(
+        return TWSDuration::weeks(
             (duration.as_seconds_f32() / time::Duration::days(7).as_seconds_f32()).ceil() as i32,
         );
     } else if duration.as_seconds_f32() >= time::Duration::days(1).as_seconds_f32() {
