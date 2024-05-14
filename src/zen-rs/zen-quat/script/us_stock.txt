@@ -93,7 +93,6 @@ OXY	西方石油	美股
 TTD	The Trade Desk	美股
 AZO	汽车地带	美股
 NVDA	英伟达	美股
-BRK.B	伯克希尔-B	美股
 JPM	摩根大通	美股
 TWLO	Twilio	美股
 TEVA	梯瓦制药	美股
@@ -370,4 +369,3 @@ SO	美国南方公司	美股
 APA	阿帕奇石油	美股
 SMCI	超微电脑	美股
 CVNA	Carvana	美股
-BRK.A	伯克希尔-A	美股

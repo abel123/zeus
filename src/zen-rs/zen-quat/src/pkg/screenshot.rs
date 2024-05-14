@@ -67,10 +67,10 @@ pub fn screenshot(path: String, outdir: String) -> Result<()> {
                     .as_str(),
                 )?
                 .wait_until_navigated()?
-                .capture_screenshot(CaptureScreenshotFormatOption::Png, None, None, true)?;
+                .capture_screenshot(CaptureScreenshotFormatOption::Jpeg, Some(75), None, true)?;
             fs::write(
                 format!(
-                    "./{}/{:03}-{}.png",
+                    "./{}/{:03}-{}.jpg",
                     outdir.trim_end_matches("/"),
                     idx,
                     contract.symbol.clone()
