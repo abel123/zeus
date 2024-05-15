@@ -2,6 +2,7 @@ use anyhow::Result;
 use headless_chrome::{protocol::cdp::Page::CaptureScreenshotFormatOption, Browser, LaunchOptions};
 use std::fs;
 use std::mem::forget;
+use std::path::Path;
 use tracing::{debug, error};
 use tws_rs::contracts::Contract;
 
@@ -41,13 +42,25 @@ pub fn screenshot(path: String, outdir: String) -> Result<()> {
         if contract.is_none() {
             continue;
         }
+
+        let contract = contract.unwrap();
+
+        let file = format!(
+            "./{}/{:03}-{}.jpg",
+            outdir.trim_end_matches("/"),
+            idx,
+            contract.symbol.clone()
+        );
+        if Path::new(file.as_str()).exists() {
+            continue;
+        }
+
         if idx % 10 == 0 {
             browser = Browser::new(options.clone())?;
         }
-        let contract = contract.unwrap();
 
         let res = || -> Result<()> {
-            debug!("crawling {}-{}", contract.exchange, contract.symbol);
+            debug!("crawling {} {}-{}", idx, contract.exchange, contract.symbol);
 
             let tab = browser.new_tab()?;
             let jpeg_data = tab
@@ -68,15 +81,7 @@ pub fn screenshot(path: String, outdir: String) -> Result<()> {
                 )?
                 .wait_until_navigated()?
                 .capture_screenshot(CaptureScreenshotFormatOption::Jpeg, Some(75), None, true)?;
-            fs::write(
-                format!(
-                    "./{}/{:03}-{}.jpg",
-                    outdir.trim_end_matches("/"),
-                    idx,
-                    contract.symbol.clone()
-                ),
-                jpeg_data,
-            )?;
+            fs::write(file, jpeg_data)?;
             tab.close(true)?;
             Ok(())
         }();
