@@ -12,4 +12,5 @@ for page in doc:
 
 print(select)
 doc.select(select)
-doc.save(name[:-4] + "_extract.pdf")
+doc.save(name[:-4] + "_extract.pdf", garbage=4,
+         clean=True)
