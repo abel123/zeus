@@ -12,7 +12,7 @@ with sqlite3.connect("tradingview.db") as con:
 # Delete all rows
 with sqlite3.connect("tradingview.db") as con:
     db = con.cursor()
-    db.execute("DELETE FROM symbols")
+    db.execute("DELETE FROM symbols WHERE screener = 'america'")
     con.commit()
 
 SCREENER = {

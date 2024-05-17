@@ -27,6 +27,12 @@ for d in data.values:
     )
 
 print(rows[:5])
+
+with sqlite3.connect("tradingview.db") as con:
+    db = con.cursor()
+    db.execute("DELETE FROM symbols WHERE screener != 'america'")
+    con.commit()
+
 with sqlite3.connect("tradingview.db") as con:
     con.executemany("INSERT INTO symbols VALUES (?, ?, ?, ?, ?, ?, ?)", rows)
 
