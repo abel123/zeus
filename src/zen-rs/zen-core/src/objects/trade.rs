@@ -192,6 +192,30 @@ impl<'a> ZS<'a> {
         }
         true
     }
+
+    pub fn min_diff(&self) -> f32 {
+        let mut diff = f32::MAX;
+        for b in self.bis {
+            for e in &b.fx_b.elements {
+                for bar in &e.raw_bars {
+                    diff = diff.min(bar.borrow().macd_4_9_9.0);
+                }
+            }
+        }
+        diff
+    }
+
+    pub fn max_diff(&self) -> f32 {
+        let mut diff = f32::MIN;
+        for b in self.bis {
+            for e in &b.fx_b.elements {
+                for bar in &e.raw_bars {
+                    diff = diff.max(bar.borrow().macd_4_9_9.0);
+                }
+            }
+        }
+        diff
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug)]

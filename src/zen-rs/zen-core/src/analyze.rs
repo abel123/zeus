@@ -56,6 +56,45 @@ impl CZSC {
     pub fn end(&self) -> Option<OffsetDateTime> {
         return self.bars_raw.last().map(|e| e.borrow().dt);
     }
+
+    pub fn fake_bi_high(&self) -> f32 {
+        self.bars_ubi[1]
+            .high
+            .max(self.bars_ubi.last().map(|x| x.high).unwrap_or(0.0f32))
+    }
+
+    pub fn fake_bi_low(&self) -> f32 {
+        self.bars_ubi[1]
+            .low
+            .min(self.bars_ubi.last().map(|x| x.low).unwrap_or(1e10f32))
+    }
+
+    pub fn fake_max_high(&self) -> Option<f32> {
+        self.bars_ubi
+            .iter()
+            .skip(1)
+            .map(|x| x.high)
+            .max_by(|a, b| a.partial_cmp(b).unwrap())
+    }
+
+    pub fn fake_min_low(&self) -> Option<f32> {
+        self.bars_ubi
+            .iter()
+            .skip(1)
+            .map(|x| x.low)
+            .min_by(|a, b| a.partial_cmp(b).unwrap())
+    }
+
+    pub fn fake_bi_diff(&self) -> f32 {
+        self.bars_ubi
+            .last()
+            .unwrap()
+            .raw_bars
+            .last()
+            .map(|x| x.borrow().macd_4_9_9.0)
+            .unwrap_or(0.0f32)
+    }
+
     pub fn update(&mut self, mut bar_: Bar) -> bool {
         let (last_bar, new_bar) =
             if self.bars_raw.len() == 0 || bar_.dt != self.bars_raw.last().unwrap().borrow().dt {

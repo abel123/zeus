@@ -65,6 +65,20 @@ impl NewBar {
     pub fn new() -> Self {
         NewBar::default()
     }
+
+    pub fn positive_dea_sum(&self) -> f32 {
+        self.raw_bars
+            .iter()
+            .map(|e| e.borrow().macd_4_9_9.2.max(0.0))
+            .sum()
+    }
+
+    pub fn negative_dea_sum(&self) -> f32 {
+        self.raw_bars
+            .iter()
+            .map(|e| e.borrow().macd_4_9_9.2.min(0.0))
+            .sum()
+    }
 }
 
 #[derive(Debug)]
@@ -104,5 +118,46 @@ impl BI {
 
     pub fn iter(&self) -> impl Iterator<Item = &Rc<NewBar>> {
         self.bars.get(1..self.bars.len() - 1).unwrap().iter()
+    }
+
+    pub fn diff(&self) -> f32 {
+        self.bars
+            .iter()
+            .rev()
+            .skip(1)
+            .next()
+            .unwrap()
+            .raw_bars
+            .last()
+            .map(|x| x.borrow().macd_4_9_9.0)
+            .unwrap_or(0.0f32)
+    }
+
+    pub fn max_diff_bar(&self) -> Option<Rc<RefCell<Bar>>> {
+        let mut bar = None;
+        let mut max = f32::MIN;
+        for n in self.iter() {
+            for b in &n.raw_bars {
+                if b.borrow().macd_4_9_9.2 > max {
+                    bar = Some(b.clone());
+                    max = b.borrow().macd_4_9_9.2;
+                }
+            }
+        }
+        bar
+    }
+
+    pub fn min_diff_bar(&self) -> Option<Rc<RefCell<Bar>>> {
+        let mut bar = None;
+        let mut min = f32::MAX;
+        for n in self.iter() {
+            for b in &n.raw_bars {
+                if b.borrow().macd_4_9_9.2 < min {
+                    bar = Some(b.clone());
+                    min = b.borrow().macd_4_9_9.2;
+                }
+            }
+        }
+        bar
     }
 }

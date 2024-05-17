@@ -28,7 +28,7 @@
 
 #### 多个合一起看，才能真正理解
 
-1. https://www.youtube.com/watch?v=K2OiWFYyP7Y&ab_channel=LEI
+1. 量价时空的均线交易系统 https://www.youtube.com/watch?v=K2OiWFYyP7Y&ab_channel=LEI
 2. 缠论
 3. 波浪理论 https://www.youtube.com/@wooinvest/
 

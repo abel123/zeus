@@ -130,76 +130,28 @@ impl MacdArea {
             let mut bi_last_low = bi_last.low();
             let mut bi_last_high = bi_last.high();
 
-            let bi_first_diff = bi_first
-                .bars
-                .iter()
-                .rev()
-                .skip(1)
-                .next()
-                .unwrap()
-                .raw_bars
-                .last()
-                .map(|x| x.borrow().macd_4_9_9.0)
-                .unwrap_or(0.0f32);
+            let bi_first_diff = bi_first.diff();
+            let mut bi_last_diff = bi_last.diff();
 
-            let mut bi_last_diff = bi_last
-                .bars
-                .iter()
-                .rev()
-                .skip(1)
-                .next()
-                .unwrap()
-                .raw_bars
-                .last()
-                .map(|x| x.borrow().macd_4_9_9.0)
-                .unwrap_or(0.0f32);
             if use_fake {
-                let high = czsc.bars_ubi[1]
-                    .high
-                    .max(czsc.bars_ubi.last().map(|x| x.high).unwrap_or(0.0f32));
-                max_high = max_high.max(high);
-                let low = czsc.bars_ubi[1]
-                    .low
-                    .min(czsc.bars_ubi.last().map(|x| x.low).unwrap_or(1e10f32));
-                min_low = min_low.min(low);
-                bi_last_low = low;
-                bi_last_high = high;
-                let all_high = czsc
-                    .bars_ubi
-                    .iter()
-                    .skip(1)
-                    .map(|x| x.high)
-                    .max_by(|a, b| a.partial_cmp(b).unwrap());
-                let all_low = czsc
-                    .bars_ubi
-                    .iter()
-                    .skip(1)
-                    .map(|x| x.low)
-                    .min_by(|a, b| a.partial_cmp(b).unwrap());
-                if high != all_high.unwrap_or(-1.0) || low != all_low.unwrap_or(-1.0) {
+                bi_last_low = czsc.fake_bi_low();
+                bi_last_high = czsc.fake_bi_high();
+
+                min_low = min_low.min(bi_last_low);
+
+                if bi_last_high != czsc.fake_max_high().unwrap_or(-1.0)
+                    || bi_last_low != czsc.fake_min_low().unwrap_or(-1.0)
+                {
                     continue;
                 }
-                bi_last_diff = czsc
-                    .bars_ubi
-                    .last()
-                    .unwrap()
-                    .raw_bars
-                    .last()
-                    .map(|x| x.borrow().macd_4_9_9.0)
-                    .unwrap_or(0.0f32);
+                bi_last_diff = czsc.fake_bi_diff();
             }
 
             let summer = |x: &Rc<NewBar>| -> f32 {
                 if bi_first.direction == Direction::Up {
-                    x.raw_bars
-                        .iter()
-                        .map(|e| e.borrow().macd_4_9_9.2.max(0.0))
-                        .sum()
+                    x.positive_dea_sum()
                 } else {
-                    x.raw_bars
-                        .iter()
-                        .map(|e| e.borrow().macd_4_9_9.2.min(0.0))
-                        .sum()
+                    x.negative_dea_sum()
                 }
             };
             let first_macd_area: f32 = bi_first.iter().map(summer).sum();
@@ -210,25 +162,9 @@ impl MacdArea {
             };
 
             let dif_zero = if bi_first.direction == Direction::Up {
-                let mut diff = f32::MAX;
-                for b in zs.bis {
-                    for e in &b.fx_b.elements {
-                        for bar in &e.raw_bars {
-                            diff = diff.min(bar.borrow().macd_4_9_9.0);
-                        }
-                    }
-                }
-                diff
+                zs.min_diff()
             } else {
-                let mut diff = f32::MIN;
-                for b in zs.bis {
-                    for e in &b.fx_b.elements {
-                        for bar in &e.raw_bars {
-                            diff = diff.max(bar.borrow().macd_4_9_9.0);
-                        }
-                    }
-                }
-                diff
+                zs.max_diff()
             };
 
             if false {
@@ -268,21 +204,8 @@ impl MacdArea {
                     80
                 };
                 if !use_fake {
-                    let bi_max_fn = |bi: &BI| {
-                        let mut bar = None;
-                        let mut max = f32::MIN;
-                        for n in bi.iter() {
-                            for b in &n.raw_bars {
-                                if b.borrow().macd_4_9_9.2 > max {
-                                    bar = Some(b.clone());
-                                    max = b.borrow().macd_4_9_9.2;
-                                }
-                            }
-                        }
-                        bar
-                    };
-                    let macd_a = bi_max_fn(bi_first);
-                    let macd_b = bi_max_fn(bi_last);
+                    let macd_a = bi_first.max_diff_bar();
+                    let macd_b = bi_last.max_diff_bar();
 
                     self.beichi_tracker.push(BeichiInfo {
                         direction: Direction::Up,
@@ -349,21 +272,8 @@ impl MacdArea {
                     80
                 };
                 if !use_fake {
-                    let bi_min_fn = |b: &BI| {
-                        let mut bar = None;
-                        let mut min = f32::MAX;
-                        for n in b.iter() {
-                            for b in &n.raw_bars {
-                                if b.borrow().macd_4_9_9.2 < min {
-                                    bar = Some(b.clone());
-                                    min = b.borrow().macd_4_9_9.2;
-                                }
-                            }
-                        }
-                        bar
-                    };
-                    let macd_a = bi_min_fn(bi_first);
-                    let macd_b = bi_min_fn(bi_last);
+                    let macd_a = bi_first.min_diff_bar();
+                    let macd_b = bi_last.min_diff_bar();
 
                     self.beichi_tracker.push(BeichiInfo {
                         direction: Direction::Down,
