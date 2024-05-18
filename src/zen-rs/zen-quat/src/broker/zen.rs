@@ -158,4 +158,6 @@ impl Store {
             Some(())
         });
     }
+
+    pub async fn offline_process(&self, sym: &Contract) {}
 }
