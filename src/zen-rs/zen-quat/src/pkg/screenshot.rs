@@ -30,7 +30,7 @@ pub fn parse_contract(line: &str) -> Option<Contract> {
 pub fn screenshot(path: String, outdir: String) -> Result<()> {
     let ct = fs::read_to_string(path)?;
     let options = LaunchOptions::default_builder()
-        .enable_gpu(false)
+        .enable_gpu(true)
         .sandbox(false)
         .window_size(Some((3840, 2160)))
         .build()

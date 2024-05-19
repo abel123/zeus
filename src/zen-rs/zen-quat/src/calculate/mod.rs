@@ -1,3 +1,3 @@
-pub mod macd_area;
-pub mod sma_tracker;
+pub mod beichi;
+pub mod others;
 pub mod r#trait;

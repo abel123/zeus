@@ -23,9 +23,7 @@ use tracing::{debug, error, info, warn};
 
 use crate::broker::r#trait::Broker;
 use crate::broker::zen::{Store, Zen};
-use crate::calculate::macd_area::MacdArea;
 use crate::calculate::r#trait::Processor;
-use crate::calculate::sma_tracker::SMATracker;
 use crate::db::models::Symbol;
 use crate::utils::notify::Notify;
 use tws_rs::client::market_data::historical;

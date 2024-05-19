@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::calculate::macd_area::BeichiInfo;
+use crate::calculate::others::macd_area::BeichiInfo;
 use serde::{Deserialize, Serialize};
 use zen_core::objects::enums::Freq;
 
