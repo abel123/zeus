@@ -1,13 +1,11 @@
 use chrono::Local;
 use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 use log::LevelFilter;
 use notify_rust::{get_bundle_identifier_or_default, set_application};
 use tracing::debug;
-use tracing::field::debug;
 use tracing_subscriber::fmt::time::ChronoLocal;
 use tracing_subscriber::EnvFilter;
 

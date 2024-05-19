@@ -46,7 +46,7 @@ impl Broker for LocalDB {
             return Ok(());
         }
 
-        let mut zen = { self.get_czsc(contract, freq) };
+        let zen = { self.get_czsc(contract, freq) };
         let mut zen = zen.write().await;
         if zen.subscribed && zen.last_time > OffsetDateTime::now_utc() - Duration::minutes(10) {
             return Ok(());

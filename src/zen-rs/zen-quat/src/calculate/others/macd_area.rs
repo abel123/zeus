@@ -1,18 +1,13 @@
 use crate::calculate::r#trait::Processor;
 use crate::utils::notify::Notify;
-use cached::proc_macro::cached;
-use lru::LruCache;
-use notify_rust::Notification;
 use serde::Serialize;
-use std::cell::RefCell;
-use std::num::NonZeroUsize;
 use std::rc::Rc;
-use time::{format_description, OffsetDateTime};
+use time::{OffsetDateTime};
 use tracing::debug;
-use zen_core::objects::chan::{NewBar, BI};
+use zen_core::objects::chan::{NewBar};
 use zen_core::objects::enums::Direction;
 use zen_core::objects::trade::{Signal, ZS};
-use zen_core::{Bar, CZSC};
+use zen_core::{CZSC};
 
 #[derive(Debug, Clone, Serialize, Eq, PartialEq)]
 pub(crate) struct Range {
@@ -121,7 +116,7 @@ impl MacdArea {
                 .map(|b| b.low())
                 .min_by(|a, b| a.partial_cmp(b).unwrap())
                 .unwrap();
-            let mut max_high = slice
+            let max_high = slice
                 .unwrap()
                 .iter()
                 .map(|b| b.high())

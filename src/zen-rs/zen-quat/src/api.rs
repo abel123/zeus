@@ -6,23 +6,18 @@ use std::string::ToString;
 use std::time::Duration;
 
 use actix_web::web::Json;
-use actix_web::{error, get, post, web, Error, HttpRequest, Responder, Result};
-use diesel::internal::derives::multiconnection::SelectStatementAccessor;
+use actix_web::{error, get, post, web, HttpRequest, Responder, Result};
 use diesel::prelude::*;
 use diesel::ExpressionMethods;
 use diesel_logger::LoggingConnection;
 use time::{format_description, OffsetDateTime};
-use tokio::sync::oneshot::channel;
-use tokio::task::spawn_local;
 use tokio::time::timeout;
 use tracing::{debug, info};
 
-use tws_rs::client::market_data::historical::cancel_historical_data;
 use tws_rs::client::market_data::realtime::{req_mkt_data, ReqMktDataParam};
 use tws_rs::contracts::{
     contract_details, sec_def_opt, Contract, ReqSecDefOptParams, SecurityType,
 };
-use zen_core::objects::enums::Freq::F1;
 use zen_core::objects::enums::{Direction, Freq};
 
 use crate::api::params::{
@@ -31,11 +26,10 @@ use crate::api::params::{
     ZenRequest, ZenResponse,
 };
 use crate::broker::ib::IB;
-use crate::broker::mixed::{Mixed, MixedBroker};
-use crate::db::establish_connection;
+use crate::broker::mixed::{MixedBroker};
 use crate::db::models::Symbol;
 use crate::schema::symbols::dsl::symbols;
-use crate::schema::symbols::{exchange, screener, symbol, type_};
+use crate::schema::symbols::{screener, symbol};
 
 mod params;
 
@@ -45,7 +39,7 @@ pub(super) async fn history(
     web::Query(params): web::Query<HistoryRequest>,
     z: web::Data<MixedBroker>,
 ) -> Result<impl Responder> {
-    let mut symbol_ = params.symbol;
+    let symbol_ = params.symbol;
     let contract = Contract::auto_stock(symbol_.as_str());
     let freq = IB::freq_map().get(&params.resolution).unwrap().clone();
 
@@ -95,7 +89,7 @@ pub(super) async fn history(
                 break;
             }
         }
-        for idx in max((index + 1 - (params.countback as isize)), 0)..(index + 1) {
+        for idx in max(index + 1 - (params.countback as isize), 0)..(index + 1) {
             let bar = &zen.czsc.bars_raw[idx as usize];
             o.push(bar.borrow().open);
             c.push(bar.borrow().close);
@@ -416,7 +410,7 @@ pub(crate) async fn zen_element(
     z: web::Data<MixedBroker>,
 ) -> Result<impl Responder> {
     //debug!("zen_element {:?}", params);
-    let mut symbol_ = params.symbol;
+    let symbol_ = params.symbol;
     let contract = Contract::auto_stock(symbol_.as_str());
     let freq = IB::freq_map().get(&params.resolution).unwrap().clone();
     let use_local = req

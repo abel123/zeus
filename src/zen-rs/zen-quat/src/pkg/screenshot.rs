@@ -1,7 +1,6 @@
 use anyhow::Result;
 use headless_chrome::{protocol::cdp::Page::CaptureScreenshotFormatOption, Browser, LaunchOptions};
 use std::fs;
-use std::mem::forget;
 use std::path::Path;
 use tracing::{debug, error};
 use tws_rs::contracts::Contract;

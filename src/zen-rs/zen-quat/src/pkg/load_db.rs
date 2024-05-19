@@ -1,32 +1,24 @@
 use crate::db::models::BarHistory;
 use crate::pkg::screenshot::parse_contract;
-use crate::schema::bar_history::dsl::bar_history;
-use crate::schema::bar_history::{dt, freq, symbol};
 use anyhow::Result;
 use diesel::{
     Connection, ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper, SqliteConnection,
 };
-use diesel_logger::LoggingConnection;
 use futures_util::future::join_all;
 use futures_util::StreamExt;
-use rand::random;
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
 use std::rc::Rc;
 use std::time::Duration;
 use time::OffsetDateTime;
-use tokio::sync::mpsc::channel;
 use tokio::sync::Semaphore;
 use tokio::task::{spawn_local, LocalSet};
 use tokio::time::{sleep, timeout};
-use tracing::field::debug;
 use tracing::{debug, error, info};
-use tracing_subscriber::filter::FilterExt;
 use tws_rs::client::market_data::historical::{
-    historical_data, BarSize, HistoricalData, TWSDuration, WhatToShow,
+    historical_data, BarSize, TWSDuration, WhatToShow,
 };
-use tws_rs::contracts::{contract_details_no_cache, Contract};
+use tws_rs::contracts::{contract_details_no_cache};
 use tws_rs::{Client, Error};
 use zen_core::objects::enums::Freq;
 

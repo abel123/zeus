@@ -2,7 +2,7 @@ use crate::calculate::others::macd_area::MacdArea;
 use crate::calculate::others::sma_tracker::SMATracker;
 use crate::calculate::r#trait::Processor;
 use crate::utils::notify::Notify;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap};
 use std::rc::Rc;
 use time::OffsetDateTime;
 use tokio::sync::RwLock;

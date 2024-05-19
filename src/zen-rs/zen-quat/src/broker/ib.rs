@@ -1,41 +1,27 @@
-use cached::CachedAsync;
 use std::cell::RefCell;
 use std::cmp::max;
-use std::collections::hash_map::Entry;
-use std::collections::{HashMap, VecDeque};
-use std::fs;
-use std::num::NonZeroUsize;
-use std::ops::Deref;
+use std::collections::{HashMap};
 use std::rc::Rc;
 
 use futures_util::StreamExt;
-use lru::LruCache;
-use notify_rust::Notification;
-use time::macros::offset;
-use time::{format_description, Duration, OffsetDateTime, UtcOffset};
+use time::{Duration, OffsetDateTime};
 use tokio::select;
 use tokio::sync::oneshot::{channel, Sender};
 use tokio::sync::RwLock;
 use tokio::task::spawn_local;
-use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 use crate::broker::r#trait::Broker;
 use crate::broker::zen::{Store, Zen};
 use crate::calculate::r#trait::Processor;
-use crate::db::models::Symbol;
-use crate::utils::notify::Notify;
 use tws_rs::client::market_data::historical;
 use tws_rs::client::market_data::historical::{
     cancel_historical_data, historical_data, BarSize, TWSDuration, WhatToShow,
 };
 use tws_rs::contracts::Contract;
-use tws_rs::messages::ResponseMessage;
 use tws_rs::{Client, ClientRef, Error};
 use zen_core::objects::enums::Freq;
-use zen_core::objects::trade::{Matcher, Signal};
-use zen_core::{Bar, Settings, CZSC};
 
 pub(crate) struct IB {
     pub client: RwLock<Rc<RefCell<Option<ClientRef>>>>,
@@ -77,7 +63,7 @@ impl IB {
         info!("connecting to TWS");
         let client_ref = client.connect().await?;
         info!("connected");
-        let mut store = self.store.clone();
+        let store = self.store.clone();
         spawn_local(async move {
             let callback = move |m| {
                 store.borrow_mut().onerror(m);
@@ -169,7 +155,7 @@ impl IB {
         let cloned_token = token.clone();
 
         let mut stream = {
-            let mut zen = { self.store.borrow_mut().get_czsc(contract, freq) };
+            let zen = { self.store.borrow_mut().get_czsc(contract, freq) };
             let mut zen = zen.write().await;
             if !zen.need_subscribe(from, to, replay) {
                 sender.send(()).unwrap();
@@ -211,7 +197,7 @@ impl IB {
                     to
                 } - from
             );
-            let (bars, mut stream) = historical_data(
+            let (bars, stream) = historical_data(
                 client,
                 &contract,
                 if !keep_up {
@@ -266,7 +252,7 @@ impl IB {
             select! {
                 Some(Ok(e)) = stream.next() =>{
                         let e: historical::Bar = e;
-                        let mut zen = {self.store.borrow_mut().get_czsc(contract, freq)};
+                        let zen = {self.store.borrow_mut().get_czsc(contract, freq)};
                     {
 
                         let mut zen = zen.write().await;
