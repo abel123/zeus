@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter, Write};
 
-use serde::ser::{SerializeTuple, SerializeTupleStruct};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_yaml::Error;
 use time::OffsetDateTime;

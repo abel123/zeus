@@ -1,13 +1,11 @@
 use std::cell::RefCell;
-use std::cmp::{max, min, Ordering};
+use std::cmp::{max};
 use std::fmt::Display;
-use std::ops::Deref;
 use std::rc::Rc;
 
 use talipp::indicator::macd::MACD;
 use talipp::indicator::Indicator;
 use time::OffsetDateTime;
-use tracing::field::debug;
 use tracing::{debug, error};
 
 use crate::objects::chan::{Bar, NewBar, Symbol, BI, FX};

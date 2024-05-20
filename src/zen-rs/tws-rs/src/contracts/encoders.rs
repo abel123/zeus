@@ -118,7 +118,7 @@ pub(crate) fn req_sec_def_opt(
 }
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
 
     #[test]
     fn request_market_rule() {

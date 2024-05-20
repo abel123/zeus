@@ -8,7 +8,7 @@ use tracing::error;
 
 use crate::client::ClientRef;
 use crate::messages::{encode_option_field, IncomingMessages, ToField};
-use crate::messages::{RequestMessage, ResponseMessage};
+use crate::messages::{RequestMessage};
 use crate::{server_versions, Error};
 
 mod decoders;

@@ -1,5 +1,4 @@
 use crate::indicator::Indicator;
-use log::debug;
 
 #[derive(Debug)]
 pub struct EMA {

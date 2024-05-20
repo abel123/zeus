@@ -1,14 +1,11 @@
-use std::collections::VecDeque;
 use std::fmt::Debug;
 
 use drop_stream::DropStream;
 use time::{Date, OffsetDateTime};
-use time_tz::Tz;
-use tokio::select;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::{Stream, StreamExt};
-use tracing::{error, warn};
+use tracing::{warn};
 use zen_core::objects;
 use zen_core::objects::enums::Freq;
 
@@ -17,7 +14,7 @@ use crate::client::transport::message_bus::Signal;
 use crate::client::ClientRef;
 use crate::contracts::Contract;
 use crate::messages::{
-    IncomingMessages, OutgoingMessages, RequestMessage, ResponseMessage, ToField,
+    IncomingMessages, OutgoingMessages, RequestMessage, ToField,
 };
 use crate::{server_versions, Error};
 
@@ -439,7 +436,7 @@ pub async fn cancel_historical_data(client: &ClientRef, request_id: i32) -> Resu
     message.push_field(&"1");
     message.push_field(&request_id);
 
-    let mut x = client.send(request_id, message).await?;
+    let x = client.send(request_id, message).await?;
 
     Ok(())
 }

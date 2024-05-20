@@ -1,14 +1,12 @@
 use crate::client::transport::message_bus::Signal;
 use crate::contracts::{Contract, TagValue};
-use crate::messages::{IncomingMessages, ResponseMessage};
+use crate::messages::{IncomingMessages};
 use crate::{ClientRef, Error};
 use cached::proc_macro::cached;
 use std::collections::HashSet;
-use std::rc::Rc;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::task::spawn_local;
-use tracing::debug;
 
 mod decoders;
 mod encoders;

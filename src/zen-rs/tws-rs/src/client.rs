@@ -1,4 +1,3 @@
-use std::cell::OnceCell;
 use std::io::Write;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::time::Duration;
@@ -281,7 +280,7 @@ fn encode_packet(message: &str) -> String {
 mod test {
     use std::time::Duration;
 
-    use tokio::task::{spawn_local, LocalSet};
+    use tokio::task::{LocalSet};
     use tokio::time::sleep;
     use tokio::time::Instant;
     use tracing::{info, warn};
