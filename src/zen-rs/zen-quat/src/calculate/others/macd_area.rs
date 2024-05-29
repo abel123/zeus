@@ -2,12 +2,12 @@ use crate::calculate::r#trait::Processor;
 use crate::utils::notify::Notify;
 use serde::Serialize;
 use std::rc::Rc;
-use time::{OffsetDateTime};
+use time::OffsetDateTime;
 use tracing::debug;
-use zen_core::objects::chan::{NewBar};
+use zen_core::objects::chan::NewBar;
 use zen_core::objects::enums::Direction;
 use zen_core::objects::trade::{Signal, ZS};
-use zen_core::{CZSC};
+use zen_core::CZSC;
 
 #[derive(Debug, Clone, Serialize, Eq, PartialEq)]
 pub(crate) struct Range {
@@ -162,7 +162,7 @@ impl MacdArea {
                 zs.max_diff()
             };
 
-            if false {
+            if false && bi_first.low() == 174.75 {
                 debug!(
                     "{:?} {}-{} => {}-{} : low {} {}, high {} {}, diff {} {} {}, area {} {}",
                     czsc.freq,

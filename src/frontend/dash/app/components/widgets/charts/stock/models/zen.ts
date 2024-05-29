@@ -25,16 +25,24 @@ export interface BiInfo {
 }
 
 export interface Beichi {
+    bc_type: string[];
     macd_a_dt: number;
     macd_a_val: number;
     macd_b_dt: number;
     macd_b_val: number;
     direction: string;
-    start: Start;
-    end: End;
+    type: string;
+    zs1: ZS;
+    zs2: ZS;
+    dt: number;
+    price: number;
+}
+
+export interface ZS {
+    left: number;
+    right: number;
     high: number;
     low: number;
-    type: string;
     bi_count: number;
 }
 

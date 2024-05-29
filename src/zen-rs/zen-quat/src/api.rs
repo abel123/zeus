@@ -26,7 +26,7 @@ use crate::api::params::{
     ZenRequest, ZenResponse,
 };
 use crate::broker::ib::IB;
-use crate::broker::mixed::{MixedBroker};
+use crate::broker::mixed::MixedBroker;
 use crate::db::models::Symbol;
 use crate::schema::symbols::dsl::symbols;
 use crate::schema::symbols::{screener, symbol};
@@ -498,8 +498,8 @@ pub(crate) async fn zen_element(
     }
 
     resp.beichi.push(vec![]);
-    for bc in &zen.bc_processor.beichi_tracker {
-        if bc.end.right_dt < params.from {
+    for bc in &zen.beichi_processor.beichi_tracker {
+        if bc.macd_b_dt < params.from {
             continue;
         }
         resp.beichi[0].push(bc.clone());

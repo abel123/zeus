@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 use std::cmp::max;
-use std::collections::{HashMap};
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use futures_util::StreamExt;
@@ -129,7 +129,7 @@ impl IB {
             });
             return recv
                 .await
-                .map_err(|e| Error::Simple("subscribe error".to_string()));
+                .map_err(|e| Error::Simple(format!("subscribe error {}", e)));
         }
         Ok(())
     }

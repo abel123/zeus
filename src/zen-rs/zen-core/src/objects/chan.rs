@@ -85,7 +85,7 @@ impl NewBar {
 pub struct FX {
     pub dt: OffsetDateTime,
     pub(crate) mark: Mark,
-    pub(crate) high: f32,
+    pub high: f32,
     pub(crate) low: f32,
     pub(crate) fx: f32,
     pub elements: Vec<Rc<NewBar>>,

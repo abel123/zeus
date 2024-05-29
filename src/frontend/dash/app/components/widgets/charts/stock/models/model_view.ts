@@ -16,7 +16,6 @@ export class ModelView {
     macd_indicator_id: (EntityId | null)[] = [];
     note_to_group = new Map<EntityId, ShapesGroupId>();
     beichi_to_note = new Map<string, EntityId>();
-    line_to_beichi = new Map<EntityId, Beichi>();
     macd_config: MacdConfig[] = [];
     hidden_extra_toolbar: boolean = false;
     constructor(macd_config: MacdConfig[]) {
@@ -156,7 +155,6 @@ export class ModelView {
                     } catch (error) {}
                 });
                 this.groupIds = [];
-                this.line_to_beichi.clear();
 
                 console.log("response", response.data);
 
@@ -223,11 +221,27 @@ export class ModelView {
                             return;
                         }
                         let color = bc.direction == "down" ? "rgba(255, 20, 147, 1)" : "rgba(0, 206, 9, 1)";
-                        if (bc.type == "area") {
+                        if (bc.bc_type.indexOf("Diff") == -1) {
                             color = bc.direction == "down" ? "rgba(255, 20, 147, 1)" : "rgba(0, 206, 9, 1)";
                         }
-                        if (bc.bi_count == 3) {
+                        if (bc.zs2.bi_count == 1) {
                             color = bc.direction == "down" ? "rgba(72, 138, 161, 0.6)" : "rgba(182, 138, 161, 1)";
+                        } else {
+                            let bc_id = chart.createMultipointShape(
+                                [
+                                    { price: bc.zs2.high, time: bc.zs2.left },
+                                    { price: bc.zs2.low, time: bc.zs2.right },
+                                ],
+                                {
+                                    shape: "rectangle",
+                                    overrides: {
+                                        backgroundColor: "rgba(200,200,200,0.15)",
+                                        color: "rgba(100,100,100,0.8)",
+                                        linewidth: 1.5,
+                                    },
+                                }
+                            );
+                            if (bc_id) chart.selection().add(bc_id);
                         }
                         let bc_id = chart.createMultipointShape(
                             [
@@ -237,10 +251,9 @@ export class ModelView {
                             {
                                 shape: "arrow",
                                 lock: true,
-                                text: JSON.stringify({ type: "beichi", data: bc }),
                                 overrides: {
                                     linestyle: 0,
-                                    linewidth: bc.type == "area" ? 1.5 : 2.3,
+                                    linewidth: bc.type.indexOf("Area") != -1 ? 1.5 : 2.3,
                                     linecolor: color,
                                 },
                                 ownerStudyId: this.macd_indicator_id[index] ?? undefined,
@@ -248,8 +261,33 @@ export class ModelView {
                             }
                         );
                         if (bc_id) {
-                            this.line_to_beichi.set(bc_id, bc);
                             chart.selection().add(bc_id);
+                        }
+
+                        if (["FirstBuy", "SecondBuy", "ThirdBuy"].indexOf(bc.type) != -1) {
+                            let bc_id = chart.createShape(
+                                { price: bc.price * 0.99, time: bc.dt },
+                                {
+                                    shape: "arrow_up",
+                                    overrides: {
+                                        arrowColor: "rgba(253, 45, 0, 1)",
+                                    },
+                                    zOrder: "bottom",
+                                }
+                            );
+                            if (bc_id) chart.selection().add(bc_id);
+                        } else if (bc.type != "None") {
+                            let bc_id = chart.createShape(
+                                { price: bc.price * 0.99, time: bc.dt },
+                                {
+                                    shape: "arrow_down",
+                                    overrides: {
+                                        arrowColor: "rgba(253, 45, 0, 1)",
+                                    },
+                                    zOrder: "bottom",
+                                }
+                            );
+                            if (bc_id) chart.selection().add(bc_id);
                         }
                     });
                 });
@@ -300,92 +338,5 @@ export class ModelView {
             });
     }
 
-    callback = (line_id: EntityId, event: DrawingEventType) => {
-        if (this.chart == undefined || this.macd_indicator_id.length == 0) {
-            return;
-        }
-        let chart = this.chart;
-        if (event == "remove") {
-            let group_id = this.note_to_group.get(line_id);
-            //console.log("line", line_id, "group", group_id);
-
-            if (group_id !== undefined) {
-                chart.shapesGroupController().removeGroup(group_id);
-                this.note_to_group.delete(line_id);
-                Array.from(this.beichi_to_note.entries())
-                    .filter((kv) => kv[1] == line_id)
-                    .map((kv) => {
-                        console.log("remove beichi line mapping", kv[0]);
-                        this.beichi_to_note.delete(kv[0]);
-                    });
-            }
-            return;
-        }
-        if (event != "click") {
-            return;
-        }
-        console.log("id ", line_id, " ", event);
-
-        let bc = this.line_to_beichi.get(line_id);
-        if (bc === undefined || this.beichi_to_note.get(JSON.stringify([bc.start, bc.end])) !== undefined) {
-            return;
-        }
-
-        try {
-            console.log(
-                "id ",
-                line_id,
-                " ",
-                event,
-                " bc ",
-                JSON.stringify([bc.start, bc.end]),
-                this.beichi_to_note.get(JSON.stringify([bc.start, bc.end]))?.toString()
-            );
-            chart.selection().clear();
-            [bc?.start.left_dt, bc?.start.right_dt, bc?.end.left_dt, bc?.end.right_dt].forEach((dt) => {
-                let id = chart.createShape(
-                    { time: dt },
-                    {
-                        shape: "vertical_line",
-                        overrides: {
-                            linestyle: 1,
-                            linewidth: 2,
-                            linecolor: bc?.direction == "down" ? "#ff1493" : "#00ce09",
-                            showTime: false,
-                        },
-                    }
-                );
-                if (id) {
-                    chart.selection().add(id);
-                }
-            });
-
-            let note_id = chart.createMultipointShape(
-                [
-                    {
-                        time: (bc?.start.right_dt + bc.end.left_dt) / 2,
-                        price: bc.low,
-                    },
-                ],
-                {
-                    shape: "note",
-                    text: ["macd_area", bc.macd_a_val.toFixed(2), bc.macd_b_val.toFixed(2)].join(" | "),
-                }
-            );
-
-            let groupID = chart.shapesGroupController().createGroupFromSelection();
-            chart.shapesGroupController().setGroupName(groupID, "beichi " + line_id);
-
-            if (note_id) {
-                this.note_to_group.set(note_id, groupID);
-                console.log("line", line_id, "note", note_id, "group", groupID, "bc", [bc.start, bc.end]);
-
-                if (bc != undefined) this.beichi_to_note.set(JSON.stringify([bc.start, bc.end]), note_id);
-            }
-        } catch (error) {
-            return;
-        }
-
-        chart.selection().clear();
-    };
+    callback = (line_id: EntityId, event: DrawingEventType) => {};
 }

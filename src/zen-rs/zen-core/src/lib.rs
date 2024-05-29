@@ -5,4 +5,3 @@ pub use settings::Settings;
 pub mod analyze;
 pub mod objects;
 pub mod settings;
-mod storage;

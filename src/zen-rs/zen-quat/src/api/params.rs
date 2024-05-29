@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::calculate::beichi::buy_sell_point::BSPoint;
 use crate::calculate::others::macd_area::BeichiInfo;
 use serde::{Deserialize, Serialize};
 use zen_core::objects::enums::Freq;
@@ -248,7 +249,7 @@ pub(super) struct BiInfo {
 #[derive(Serialize, Debug)]
 pub(super) struct ZenResponse {
     pub bi: BiInfo,
-    pub beichi: Vec<Vec<BeichiInfo>>,
+    pub beichi: Vec<Vec<BSPoint>>,
     pub bar_beichi: Vec<()>,
 }
 
