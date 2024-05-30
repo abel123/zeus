@@ -69,7 +69,7 @@ impl Zen {
     pub fn update(&mut self, bar: Bar) -> Vec<Signal> {
         let is_new = self.czsc.update(bar);
         //let signals = self.bc_processor.process(&self.czsc, is_new);
-        let signals = self.beichi_processor.process(&self.czsc, is_new);
+        let signals = self.beichi_processor.process(&mut self.czsc, is_new);
         self.sma_tracker.process(&self.czsc, is_new);
         return signals;
     }

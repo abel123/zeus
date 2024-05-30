@@ -68,7 +68,7 @@ impl BuySellPoint {
         }
     }
 
-    pub fn process(&mut self, czsc: &CZSC, is_new: bool) -> Vec<Signal> {
+    pub fn process(&mut self, czsc: &mut CZSC, is_new: bool) -> Vec<Signal> {
         let mut result = vec![];
         if czsc
             .bi_list
@@ -202,10 +202,25 @@ impl BuySellPoint {
         None
     }
 
-    pub fn calculate(&self, czsc: &CZSC, dindex: usize) -> Option<BSPoint> {
+    pub fn calculate(&self, czsc: &mut CZSC, dindex: usize) -> Option<BSPoint> {
         let mut result: Vec<BSPoint> = vec![];
 
         for fake in [false, true] {
+            if !fake && czsc.bi_list.len() > 3 {
+                if let Some(val) = czsc
+                    .bi_list
+                    .last_mut()
+                    .unwrap()
+                    .cache
+                    .get::<Option<BSPoint>>()
+                {
+                    if let Some(bs) = val {
+                        return Some(bs.clone());
+                    }
+                } else {
+                    continue;
+                }
+            }
             let zs2 = self.zs(czsc, dindex, fake);
             if zs2.is_none() {
                 continue;
@@ -341,6 +356,11 @@ impl BuySellPoint {
                     res.bc_type.push(BeichiType::Diff);
                 }
                 if !fake && res.r#type != PointType::None {
+                    czsc.bi_list
+                        .last_mut()
+                        .unwrap()
+                        .cache
+                        .insert(Some(res.clone()));
                     return Some(res);
                 } else {
                     result.push(res);
@@ -409,6 +429,11 @@ impl BuySellPoint {
                     res.bc_type.push(BeichiType::Diff);
                 }
                 if !fake && res.r#type != PointType::None {
+                    czsc.bi_list
+                        .last_mut()
+                        .unwrap()
+                        .cache
+                        .insert(Some(res.clone()));
                     return Some(res);
                 } else {
                     result.push(res);
@@ -418,6 +443,13 @@ impl BuySellPoint {
 
         if result.len() > 0 {
             //debug!("rest beichi {:?}", result);
+        }
+        if czsc.bi_list.len() > 0 {
+            czsc.bi_list
+                .last_mut()
+                .unwrap()
+                .cache
+                .insert::<Option<BSPoint>>(None);
         }
         // 非盘整背驰
         if let Some(bc) = result
