@@ -266,7 +266,7 @@ export class ModelView {
 
                         if (["FirstBuy", "SecondBuy", "ThirdBuy"].indexOf(bc.type) != -1) {
                             let bc_id = chart.createShape(
-                                { price: bc.price * 0.99, time: bc.dt },
+                                { price: bc.price * 0.9995, time: bc.dt },
                                 {
                                     shape: "arrow_up",
                                     overrides: {
@@ -278,11 +278,11 @@ export class ModelView {
                             if (bc_id) chart.selection().add(bc_id);
                         } else if (bc.type != "None") {
                             let bc_id = chart.createShape(
-                                { price: bc.price * 0.99, time: bc.dt },
+                                { price: bc.price * 1.005, time: bc.dt },
                                 {
                                     shape: "arrow_down",
                                     overrides: {
-                                        arrowColor: "rgba(253, 45, 0, 1)",
+                                        arrowColor: "rgba(0, 206, 9, 1)",
                                     },
                                     zOrder: "bottom",
                                 }

@@ -1,5 +1,4 @@
 use crate::calculate::beichi::buy_sell_point::BuySellPoint;
-use crate::calculate::others::macd_area::MacdArea;
 use crate::calculate::others::sma_tracker::SMATracker;
 use crate::calculate::r#trait::Processor;
 use crate::utils::notify::Notify;
@@ -25,7 +24,6 @@ pub(crate) struct Zen {
     setting: Settings,
     pub(crate) token: Option<CancellationToken>,
     pub(crate) request_id: i32,
-    pub(crate) bc_processor: MacdArea,
     pub(crate) beichi_processor: BuySellPoint,
     pub(crate) sma_tracker: SMATracker,
 }
@@ -47,7 +45,6 @@ impl Zen {
             setting,
             token: None,
             request_id: 0,
-            bc_processor: MacdArea::new(1),
             beichi_processor: BuySellPoint::new(),
             sma_tracker: SMATracker::new(vec![15, 30, 60, 120, 200]),
         }
@@ -65,15 +62,14 @@ impl Zen {
         self.realtime = false;
         self.last_time = OffsetDateTime::now_utc();
         self.token = None;
-        self.bc_processor.beichi_tracker.clear();
         self.beichi_processor.beichi_tracker.clear();
         self.sma_tracker = SMATracker::new(vec![15, 30, 60, 120, 200]);
     }
 
     pub fn update(&mut self, bar: Bar) -> Vec<Signal> {
         let is_new = self.czsc.update(bar);
-        let signals = self.bc_processor.process(&self.czsc, is_new);
-        self.beichi_processor.process(&self.czsc, is_new);
+        //let signals = self.bc_processor.process(&self.czsc, is_new);
+        let signals = self.beichi_processor.process(&self.czsc, is_new);
         self.sma_tracker.process(&self.czsc, is_new);
         return signals;
     }

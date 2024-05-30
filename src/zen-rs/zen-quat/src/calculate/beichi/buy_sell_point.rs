@@ -1,4 +1,4 @@
-use crate::calculate::others::macd_area::BeichiInfo;
+use crate::utils::notify::Notify;
 use serde::Serialize;
 use std::cmp::PartialEq;
 use std::ops::Sub;
@@ -8,7 +8,7 @@ use tracing::debug;
 use tws_rs::Error;
 use zen_core::objects::chan::NewBar;
 use zen_core::objects::enums::Direction;
-use zen_core::objects::trade::ZS;
+use zen_core::objects::trade::{Signal, ZS};
 use zen_core::CZSC;
 
 #[derive(Eq, PartialEq, Serialize, Debug, Clone)]
@@ -22,7 +22,7 @@ enum PointType {
     ThirdSell,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, Eq, PartialEq)]
 enum BeichiType {
     Area,
     Diff,
@@ -68,7 +68,8 @@ impl BuySellPoint {
         }
     }
 
-    pub fn process(&mut self, czsc: &CZSC, is_new: bool) {
+    pub fn process(&mut self, czsc: &CZSC, is_new: bool) -> Vec<Signal> {
+        let mut result = vec![];
         if czsc
             .bi_list
             .last()
@@ -82,7 +83,39 @@ impl BuySellPoint {
 
         let bs = self.calculate(czsc, 0);
         if bs.is_some() {
-            self.beichi_tracker.push(bs.unwrap());
+            let bs = bs.unwrap();
+            let signal = Signal {
+                key: (
+                    format!("{:?}", czsc.freq),
+                    format!("D{}-MACD面积背驰", 0 + 1),
+                    if bs.fake_bi {
+                        "推笔".to_string()
+                    } else {
+                        "BS".to_string()
+                    },
+                ),
+                value: (
+                    if bs.direction == Direction::Up {
+                        "顶"
+                    } else {
+                        "底"
+                    }
+                    .to_string(),
+                    format!("{}笔", bs.zs2.bi_count + 2),
+                    "other".to_string(),
+                ),
+                dt: Some(OffsetDateTime::from_unix_timestamp(bs.dt).unwrap()),
+                score: if bs.bc_type.contains(&BeichiType::Diff) {
+                    100
+                } else {
+                    80
+                },
+            };
+            if !bs.fake_bi {
+                Notify::notify_signal(&czsc.symbol, signal.dt.unwrap(), signal.clone());
+                result.push(signal);
+            }
+            self.beichi_tracker.push(bs);
         }
         czsc.bi_list
             .last()
@@ -95,6 +128,7 @@ impl BuySellPoint {
                 .split_off(self.beichi_tracker.len() - 100);
         }
         //debug!("tracker {:?}", self.beichi_tracker);
+        result
     }
 
     fn zs<'a>(&'a self, czsc: &'a CZSC, dindex: usize, use_fake: bool) -> Option<ZS> {
@@ -179,9 +213,6 @@ impl BuySellPoint {
             let zs2 = zs2.unwrap();
 
             let zs1 = self.zs(czsc, dindex + zs2.bis.len() + 1, fake);
-            let mut zs1_exist = zs1.is_some()
-                && zs1.as_ref().map(|z| z.zd()).unwrap_or(f32::MAX) > zs2.zg()
-                && zs1.as_ref().map(|z| z.bis.len()).unwrap_or(0) >= 3;
 
             let bi_first = czsc
                 .bi_list
@@ -191,8 +222,18 @@ impl BuySellPoint {
                 .next()
                 .unwrap();
             let bi_last = czsc.bi_list.iter().rev().skip(dindex).next().unwrap();
-
             let direction = bi_first.direction.clone();
+
+            let mut zs1_exist =
+                zs1.is_some() && zs1.as_ref().map(|z| z.bis.len()).unwrap_or(0) >= 3;
+            if direction == Direction::Down {
+                zs1_exist =
+                    zs1_exist && zs1.as_ref().map(|z| z.zd()).unwrap_or(f32::MAX) > zs2.zg();
+            } else {
+                zs1_exist =
+                    zs1_exist && zs1.as_ref().map(|z| z.zg()).unwrap_or(f32::MAX) < zs2.zd();
+            }
+
             let summer = |x: &Rc<NewBar>| -> f32 {
                 if direction == Direction::Up {
                     x.positive_dea_sum()
@@ -238,7 +279,7 @@ impl BuySellPoint {
 
             if direction == Direction::Up {
                 let macd_a = bi_first.max_diff_bar();
-                let macd_b = bi_last.max_diff_bar();
+                let macd_b = if !fake { bi_last.max_diff_bar() } else { None };
                 let mut res = BSPoint {
                     direction,
                     r#type: if !zs1_exist {
@@ -306,7 +347,7 @@ impl BuySellPoint {
                 }
             } else {
                 let macd_a = bi_first.min_diff_bar();
-                let macd_b = bi_last.min_diff_bar();
+                let macd_b = if !fake { bi_last.min_diff_bar() } else { None };
                 let mut res = BSPoint {
                     direction,
                     r#type: if !zs1_exist {

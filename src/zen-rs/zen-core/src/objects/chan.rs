@@ -1,3 +1,4 @@
+use anymap3::AnyMap;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -6,7 +7,7 @@ use time::OffsetDateTime;
 
 use super::enums::{Direction, Freq, Mark};
 
-pub type GenericCache = HashMap<String, String>; //Box<dyn std::any::Any>>;
+pub type GenericCache = AnyMap; //Box<dyn std::any::Any>>;
 
 pub type Symbol = String;
 
@@ -27,7 +28,7 @@ pub struct Bar {
 }
 
 // 去除包含关系后的K线元素
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct NewBar {
     pub(crate) id: usize,
     pub dt: OffsetDateTime,

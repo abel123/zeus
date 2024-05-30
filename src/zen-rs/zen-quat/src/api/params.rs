@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use crate::calculate::beichi::buy_sell_point::BSPoint;
-use crate::calculate::others::macd_area::BeichiInfo;
 use serde::{Deserialize, Serialize};
 use zen_core::objects::enums::Freq;
 

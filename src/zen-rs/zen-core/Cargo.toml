@@ -16,3 +16,4 @@ log = "0.4.20"
 talipp = { path = "../talipp" }
 serde_yaml = "0.9.32"
 tracing-test = "0.2.4"
+anymap3 = "1.0.0"
