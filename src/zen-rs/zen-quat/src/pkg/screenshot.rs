@@ -31,7 +31,7 @@ pub fn screenshot(path: String, outdir: String) -> Result<()> {
     let options = LaunchOptions::default_builder()
         .enable_gpu(true)
         .sandbox(false)
-        .window_size(Some((3840, 2160)))
+        .window_size(Some((1920, 1080)))
         .build()
         .expect("Couldn't find appropriate Chrome binary.");
     let mut browser = Browser::new(options.clone())?;

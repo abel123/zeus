@@ -3,9 +3,9 @@ use serde::Serialize;
 use std::cmp::PartialEq;
 use std::ops::Sub;
 use std::rc::Rc;
+use time::macros::offset;
 use time::OffsetDateTime;
 use tracing::debug;
-use tws_rs::Error;
 use zen_core::objects::chan::NewBar;
 use zen_core::objects::enums::Direction;
 use zen_core::objects::trade::{Signal, ZS};
@@ -104,7 +104,11 @@ impl BuySellPoint {
                     format!("{}笔", bs.zs2.bi_count + 2),
                     "other".to_string(),
                 ),
-                dt: Some(OffsetDateTime::from_unix_timestamp(bs.dt).unwrap()),
+                dt: Some(
+                    OffsetDateTime::from_unix_timestamp(bs.dt)
+                        .unwrap()
+                        .to_offset(offset!(+8)),
+                ),
                 score: if bs.bc_type.contains(&BeichiType::Diff) {
                     100
                 } else {
@@ -113,8 +117,8 @@ impl BuySellPoint {
             };
             if !bs.fake_bi {
                 Notify::notify_signal(&czsc.symbol, signal.dt.unwrap(), signal.clone());
-                result.push(signal);
             }
+            result.push(signal);
             self.beichi_tracker.push(bs);
         }
         czsc.bi_list
@@ -205,7 +209,11 @@ impl BuySellPoint {
     pub fn calculate(&self, czsc: &mut CZSC, dindex: usize) -> Option<BSPoint> {
         let mut result: Vec<BSPoint> = vec![];
 
-        for fake in [false, true] {
+        for fake in if dindex == 0 {
+            vec![false, true]
+        } else {
+            vec![false]
+        } {
             if !fake && czsc.bi_list.len() > 3 {
                 if let Some(val) = czsc
                     .bi_list
