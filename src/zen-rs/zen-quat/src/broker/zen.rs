@@ -1,9 +1,11 @@
 use crate::calculate::beichi::buy_sell_point::BuySellPoint;
+use crate::calculate::others;
 use crate::calculate::others::sma_tracker::SMATracker;
 use crate::calculate::r#trait::Processor;
 use crate::utils::notify::Notify;
 use std::collections::HashMap;
 use std::rc::Rc;
+use talipp::indicator::sma;
 use time::OffsetDateTime;
 use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
@@ -25,7 +27,6 @@ pub(crate) struct Zen {
     pub(crate) token: Option<CancellationToken>,
     pub(crate) request_id: i32,
     pub(crate) beichi_processor: BuySellPoint,
-    pub(crate) sma_tracker: SMATracker,
 }
 
 impl Drop for Zen {
@@ -35,7 +36,7 @@ impl Drop for Zen {
 }
 impl Zen {
     pub fn new(sym: Contract, freq: Freq, setting: Settings) -> Self {
-        Self {
+        let mut res = Self {
             czsc: CZSC::new(sym.symbol.clone(), freq, setting.clone()),
             contract: sym,
             freq,
@@ -46,8 +47,11 @@ impl Zen {
             token: None,
             request_id: 0,
             beichi_processor: BuySellPoint::new(),
-            sma_tracker: SMATracker::new(vec![15, 30, 60, 120, 200]),
-        }
+        };
+        res.czsc
+            .cache
+            .insert(SMATracker::new(vec![15, 30, 60, 120, 200]));
+        res
     }
 
     pub fn reset(&mut self) {
@@ -62,15 +66,17 @@ impl Zen {
         self.realtime = false;
         self.last_time = OffsetDateTime::now_utc();
         self.token = None;
+        self.czsc
+            .cache
+            .insert(SMATracker::new(vec![15, 30, 60, 120, 200]));
         self.beichi_processor.beichi_tracker.clear();
-        self.sma_tracker = SMATracker::new(vec![15, 30, 60, 120, 200]);
     }
 
     pub fn update(&mut self, bar: Bar) -> Vec<Signal> {
         let is_new = self.czsc.update(bar);
         //let signals = self.bc_processor.process(&self.czsc, is_new);
-        let signals = self.beichi_processor.process(&mut self.czsc, is_new);
-        self.sma_tracker.process(&self.czsc, is_new);
+        let signals = self.beichi_processor.process(&mut self.czsc, is_new, None);
+        others::sma_tracker::process(&mut self.czsc, is_new, None);
         return signals;
     }
     pub fn need_subscribe(&self, from: i64, to: i64, replay: bool) -> bool {

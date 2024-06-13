@@ -17,7 +17,7 @@ pub struct Signal {
     pub value: (String, String, String),
     #[serde(skip)]
     pub dt: Option<OffsetDateTime>,
-    pub score: u32,
+    pub figure: f32,
 }
 
 impl Default for Signal {
@@ -26,14 +26,19 @@ impl Default for Signal {
             key: ("".to_string(), "other".to_string(), "other".to_string()),
             value: ("".to_string(), "other".to_string(), "other".to_string()),
             dt: None,
-            score: 0,
+            figure: 0.0,
         }
     }
 }
 
 impl Debug for Signal {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{}：{}", self.key(), self.value()))
+        f.write_fmt(format_args!(
+            "{}：{} - {}",
+            self.key(),
+            self.value(),
+            self.figure
+        ))
     }
 }
 
@@ -96,7 +101,7 @@ impl Signal {
     }
 
     pub fn is_match(&self, other: &Self) -> bool {
-        if other.score >= self.score {
+        if other.figure >= self.figure {
             if other.value.0 == self.value.0 || self.key.0 == "other" {
                 if other.value.1 == self.value.1 || self.key.1 == "other" {
                     if other.value.2 == self.value.2 || self.key.2 == "other" {
@@ -398,7 +403,7 @@ mod tests {
                     key: ("k1".to_string(), "k2".to_string(), "k3".to_string()),
                     value: ("v1".to_string(), "v2".to_string(), "v3".to_string()),
                     dt: None,
-                    score: 70,
+                    figure: 70.0,
                 }],
                 signals_any: None,
                 signals_not: None,

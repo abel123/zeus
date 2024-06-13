@@ -566,7 +566,13 @@ async fn option_price(
             let contract = Contract::auto_stock(params.symbol.as_str());
             let zen = z.borrow().get_czsc(false, &contract, freq);
             let zen = zen.read().await;
-            let sma = zen.sma_tracker.store.get(ma);
+            let smas = zen
+                .czsc
+                .cache
+                .get::<crate::calculate::zen_cache::SMATrackerCache>()
+                .unwrap();
+
+            let sma = smas.store.get(ma);
 
             let ma_val = sma.map(|x| x.ma()).unwrap_or(0.0);
             let last = sma.map(|x| x.last()).unwrap_or(0.0);

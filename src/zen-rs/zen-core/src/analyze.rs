@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::cmp::{max};
+use std::cmp::max;
 use std::fmt::Display;
 use std::rc::Rc;
 
@@ -8,7 +8,7 @@ use talipp::indicator::Indicator;
 use time::OffsetDateTime;
 use tracing::{debug, error};
 
-use crate::objects::chan::{Bar, NewBar, Symbol, BI, FX};
+use crate::objects::chan::{Bar, GenericCache, NewBar, Symbol, BI, FX};
 use crate::objects::enums::{Direction, Freq, Mark};
 use crate::settings::{BiType, Settings};
 
@@ -23,6 +23,7 @@ pub struct CZSC {
     pub freq: Freq,
     settings: Settings,
     macd_calc: MACD,
+    pub cache: GenericCache,
 }
 
 impl Display for CZSC {
@@ -45,6 +46,7 @@ impl CZSC {
             freq,
             settings,
             macd_calc: MACD::new(4, 9, 9),
+            cache: Default::default(),
         }
     }
 

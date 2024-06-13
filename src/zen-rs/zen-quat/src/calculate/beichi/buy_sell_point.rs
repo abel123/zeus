@@ -9,7 +9,7 @@ use tracing::debug;
 use zen_core::objects::chan::NewBar;
 use zen_core::objects::enums::Direction;
 use zen_core::objects::trade::{Signal, ZS};
-use zen_core::CZSC;
+use zen_core::{Bar, CZSC};
 
 #[derive(Eq, PartialEq, Serialize, Debug, Clone)]
 enum PointType {
@@ -68,7 +68,12 @@ impl BuySellPoint {
         }
     }
 
-    pub fn process(&mut self, czsc: &mut CZSC, is_new: bool) -> Vec<Signal> {
+    pub fn process(
+        &mut self,
+        czsc: &mut CZSC,
+        is_new: bool,
+        start: Option<(Bar, Direction)>,
+    ) -> Vec<Signal> {
         let mut result = vec![];
         if czsc
             .bi_list
@@ -109,10 +114,10 @@ impl BuySellPoint {
                         .unwrap()
                         .to_offset(offset!(+8)),
                 ),
-                score: if bs.bc_type.contains(&BeichiType::Diff) {
-                    100
+                figure: if bs.bc_type.contains(&BeichiType::Diff) {
+                    100.0
                 } else {
-                    80
+                    80.0
                 },
             };
             if !bs.fake_bi {
