@@ -18,6 +18,7 @@ pub struct Signal {
     #[serde(skip)]
     pub dt: Option<OffsetDateTime>,
     pub figure: f32,
+    pub figure_max: Option<f32>,
 }
 
 impl Default for Signal {
@@ -27,6 +28,7 @@ impl Default for Signal {
             value: ("".to_string(), "other".to_string(), "other".to_string()),
             dt: None,
             figure: 0.0,
+            figure_max: None,
         }
     }
 }
@@ -34,10 +36,11 @@ impl Default for Signal {
 impl Debug for Signal {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
-            "{}：{} - {}",
+            "{}：{} - {} ~ {:?}",
             self.key(),
             self.value(),
-            self.figure
+            self.figure,
+            self.figure_max
         ))
     }
 }
@@ -101,7 +104,7 @@ impl Signal {
     }
 
     pub fn is_match(&self, other: &Self) -> bool {
-        if other.figure >= self.figure {
+        if other.figure >= self.figure && other.figure <= self.figure_max.unwrap_or(f32::MAX) {
             if other.value.0 == self.value.0 || self.key.0 == "other" {
                 if other.value.1 == self.value.1 || self.key.1 == "other" {
                     if other.value.2 == self.value.2 || self.key.2 == "other" {
@@ -115,6 +118,7 @@ impl Signal {
 }
 
 pub struct ZS<'a> {
+    pub start_bi: &'a BI,
     pub bis: &'a [BI],
     cache: GenericCache,
 }
@@ -122,7 +126,8 @@ pub struct ZS<'a> {
 impl<'a> ZS<'a> {
     pub fn new(bis: &'a [BI]) -> Self {
         Self {
-            bis,
+            start_bi: bis.first().unwrap(),
+            bis: bis.get(1..bis.len()).unwrap(),
             cache: Default::default(),
         }
     }

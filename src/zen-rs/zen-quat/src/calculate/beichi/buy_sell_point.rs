@@ -119,6 +119,7 @@ impl BuySellPoint {
                 } else {
                     80.0
                 },
+                figure_max: None,
             };
             if !bs.fake_bi {
                 Notify::notify_signal(&czsc.symbol, signal.dt.unwrap(), signal.clone());
@@ -158,7 +159,7 @@ impl BuySellPoint {
             }
 
             let slice = czsc.bi_list.get((len - dindex - n)..(len - dindex));
-            let zs = slice.map(|x| ZS::new(x.get(1..(x.len() - 1 + extra_offset)).unwrap()));
+            let zs = slice.map(|x| ZS::new(x.get(0..(x.len() - 1 + extra_offset)).unwrap()));
             if zs.as_ref().map(|z| z.is_valid().clone()).unwrap_or(false) == false {
                 continue;
             }

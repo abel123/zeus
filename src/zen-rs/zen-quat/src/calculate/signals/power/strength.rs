@@ -39,6 +39,7 @@ pub fn length_percentage(czsc: &CZSC, dindex: usize, use_fake: bool) -> Vec<Sign
             value: (dindex.to_string(), percent.to_string(), "".to_string()),
             dt: None,
             figure: 0.0,
+            figure_max: None,
         }];
     }
     let percent = czsc
@@ -55,6 +56,7 @@ pub fn length_percentage(czsc: &CZSC, dindex: usize, use_fake: bool) -> Vec<Sign
         value: (dindex.to_string(), percent.to_string(), "".to_string()),
         dt: None,
         figure: 0.0,
+        figure_max: None,
     }];
 }
 
