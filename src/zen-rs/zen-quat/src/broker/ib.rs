@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use futures_util::StreamExt;
-use time::{Duration, OffsetDateTime};
+use time::{Date, Duration, Month, OffsetDateTime, Time, UtcOffset};
 use tokio::select;
 use tokio::sync::oneshot::{channel, Sender};
 use tokio::sync::RwLock;
@@ -22,6 +22,7 @@ use tws_rs::client::market_data::historical::{
 use tws_rs::contracts::Contract;
 use tws_rs::{Client, ClientRef, Error};
 use zen_core::objects::enums::Freq;
+use zen_core::Bar;
 
 pub(crate) struct IB {
     pub client: RwLock<Rc<RefCell<Option<ClientRef>>>>,
@@ -251,8 +252,8 @@ impl IB {
         loop {
             select! {
                 Some(Ok(e)) = stream.next() =>{
-                        let e: historical::Bar = e;
-                        let zen = {self.store.borrow_mut().get_czsc(contract, freq)};
+                    let e: historical::Bar = e;
+                    let zen = {self.store.borrow_mut().get_czsc(contract, freq)};
                     {
 
                         let mut zen = zen.write().await;
@@ -264,8 +265,22 @@ impl IB {
                                 .insert((contract.clone(), freq), signals)
                         };
                     }
-                        self.store.borrow_mut().process(contract).await;
+                    if freq == Freq::F60 && e.date >= OffsetDateTime::now_utc() - Duration::hours(2){
+                        let day_zen = {self.store.borrow_mut().get_czsc(contract, Freq::D)};
+                        let mut day_zen = zen.write().await;
+                        if day_zen.czsc.bars_ubi.last().map(|b|
+                            b.raw_bars.last().unwrap().borrow().dt >= OffsetDateTime::now_utc()-Duration::hours(12)).unwrap_or(false){
+                            let last_bar = day_zen.czsc.bars_raw.last().unwrap().clone();
+                            let last_bar = last_bar.borrow();
+                            let mut emulate_bar = Bar{
+                    id: 0,dt: last_bar.dt,freq,open: last_bar.open ,
+                    close: e.close as f32 , high: last_bar.high.max(e.high as f32) , low: last_bar.low.min(e.close as f32) ,
+                    vol: last_bar.vol, amount: last_bar.amount , cache: Default::default(),macd_4_9_9: (0.0, 0.0, 0.0),};
+                            day_zen.czsc.update(emulate_bar);
                         }
+                    }
+                    self.store.borrow_mut().process(contract).await;
+                }
                 _ = cloned_token.cancelled() => {
                     break;
                 }
