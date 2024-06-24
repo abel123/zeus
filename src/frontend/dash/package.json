@@ -25,6 +25,7 @@
     "@reduxjs/toolkit": "^1.9.7",
     "@types/lodash": "^4.14.200",
     "axios": "^1.5.1",
+    "json-rpc-2.0": "^1.7.0",
     "lodash": "^4.17.21",
     "lodash.debounce": "^4.0.8",
     "nanoevents": "^8.0.0",
@@ -39,6 +40,7 @@
     "recoil-sync": "^0.2.0",
     "recoil-sync-next": "0.0.6",
     "tty-table": "^4.2.3",
+    "websocket-reconnect": "^1.0.10",
     "widgets-cli": "^1.0.5"
   },
   "devDependencies": {

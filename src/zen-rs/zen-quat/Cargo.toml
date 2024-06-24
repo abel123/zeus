@@ -34,3 +34,6 @@ headless_chrome = { git = "https://github.com/rust-headless-chrome/rust-headless
 anyhow = "1.0"
 clap = { version = "4.5.4", features = ["derive"] }
 rand = "0.8.5"
+actix = "0.13.5"
+actix-web-actors = "4.3.0"
+jsonrpc-core = "18.0.0"

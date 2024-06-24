@@ -1,3 +1,4 @@
+use actix::{Actor, StreamHandler};
 use std::cell::RefCell;
 use std::cmp::max;
 use std::collections::HashMap;
@@ -6,7 +7,7 @@ use std::string::ToString;
 use std::time::Duration;
 
 use actix_web::web::Json;
-use actix_web::{error, get, post, web, HttpRequest, Responder, Result};
+use actix_web::{error, get, post, web, Error, HttpRequest, HttpResponse, Responder, Result};
 use diesel::prelude::*;
 use diesel::ExpressionMethods;
 use diesel_logger::LoggingConnection;
@@ -30,8 +31,55 @@ use crate::broker::mixed::MixedBroker;
 use crate::db::models::Symbol;
 use crate::schema::symbols::dsl::symbols;
 use crate::schema::symbols::{screener, symbol};
+use actix_web_actors::ws;
+use jsonrpc_core::{IoHandler, Value};
+use tokio_util::bytes::Buf;
 
 mod params;
+
+/// Define HTTP actor
+struct MyWs;
+
+impl Actor for MyWs {
+    type Context = ws::WebsocketContext<Self>;
+}
+
+/// Handler for ws::Message message
+impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
+    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
+        match msg {
+            Ok(ws::Message::Ping(msg)) => {
+                debug!("msg {:?}", msg);
+
+                let mut io = IoHandler::new();
+                io.add_sync_method("say_hello", |_| Ok(Value::String("Hello World!".into())));
+
+                let response = io.handle_request_sync(std::str::from_utf8(&msg).unwrap());
+                ctx.pong(response.unwrap_or("".to_string()).as_bytes())
+            }
+            Ok(ws::Message::Text(text)) => {
+                debug!("text {}", text);
+                ctx.text(text)
+            }
+            Ok(ws::Message::Binary(bin)) => {
+                debug!("bin {:?}", bin);
+                ctx.binary(bin)
+            }
+            _ => (),
+        }
+    }
+}
+
+#[get("/ws")]
+async fn websocket(
+    req: HttpRequest,
+    stream: web::Payload,
+    z: web::Data<MixedBroker>,
+) -> Result<HttpResponse, Error> {
+    let resp = ws::start(MyWs {}, &req, stream);
+    println!("{:?}", resp);
+    resp
+}
 
 #[get("/datafeed/udf/history")]
 pub(super) async fn history(

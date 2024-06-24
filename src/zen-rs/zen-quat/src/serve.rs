@@ -36,6 +36,7 @@ pub fn serve() -> std::io::Result<()> {
                 .service(api::zen_element)
                 .service(api::config)
                 .service(api::option_price)
+                .service(api::websocket)
         })
         .workers(1)
         .bind(("0.0.0.0", 8080))?
