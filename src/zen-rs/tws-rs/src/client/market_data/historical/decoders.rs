@@ -1,6 +1,7 @@
 use time::macros::{format_description, time};
 use time::{Date, OffsetDateTime, PrimitiveDateTime};
 use time_tz::{timezones, OffsetDateTimeExt, PrimitiveDateTimeExt, Tz};
+use tracing::debug;
 
 use crate::messages::ResponseMessage;
 use crate::Error;
@@ -230,10 +231,8 @@ pub(super) fn decode_historical_data_update(
     message.skip(); // method_type
     message.skip(); // request_id
     let bar_count = message.next_int()?;
-    let timestamp = message.next_long()?;
-    let date_utc = OffsetDateTime::from_unix_timestamp(timestamp)
-        .unwrap()
-        .to_timezone(time_zone);
+    let date = message.next_string()?;
+    let date_utc = parse_bar_date(&date, time_zone)?;
     let open = message.next_double()?;
     let close = message.next_double()?;
     let high = message.next_double()?;
@@ -278,8 +277,9 @@ fn parse_bar_date(text: &str, time_zone: &Tz) -> Result<OffsetDateTime, Error> {
         let date_format = format_description!("[year][month][day]");
         let bar_date = Date::parse(text, date_format)?;
         let bar_date = bar_date.with_time(time!(00:00));
-
-        Ok(bar_date.assume_timezone_utc(time_tz::timezones::db::UTC))
+        Ok(bar_date
+            .assume_timezone_utc(time_tz::timezones::db::EST)
+            .to_timezone(time_zone))
     } else {
         let timestamp: i64 = text.parse()?;
         let date_utc = OffsetDateTime::from_unix_timestamp(timestamp).unwrap();

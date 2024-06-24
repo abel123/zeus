@@ -3,6 +3,9 @@ import { Bar, HistoryMetadata, LibrarySymbolInfo, PeriodParams } from "../../../
 import { getErrorMessage, logMessage, RequestParams, UdfErrorResponse, UdfOkResponse, UdfResponse } from "./helpers";
 
 import { IRequester } from "./irequester";
+import { WsReconnect } from "websocket-reconnect";
+import { JSONRPCClient } from "json-rpc-2.0";
+
 // tslint:disable: no-any
 interface HistoryPartialDataResponse extends UdfOkResponse {
     t: any;
@@ -94,6 +97,34 @@ export class HistoryProvider {
 
         return new Promise(async (resolve: (result: GetBarsResult) => void, reject: (reason: string) => void) => {
             try {
+                if (false) {
+                    const ws = new WsReconnect({ reconnectDelay: 5000 });
+                    ws.open(`ws://127.0.0.1:8080/ws`);
+
+                    const client = new JSONRPCClient((request) => {
+                        try {
+                            ws.send(JSON.stringify(request));
+                            return Promise.resolve();
+                        } catch (error) {
+                            return Promise.reject(error);
+                        }
+                    });
+
+                    ws.on("reconnect", function open() {
+                        // this will only be called on every reconnect attempt
+                        client.rejectAllPendingRequests("reconnect");
+                    });
+
+                    ws.on("message", (data: string) => {
+                        const json = JSON.parse(data);
+                        console.log("======== received", json);
+                        client.receive(JSON.parse(data));
+                    });
+
+                    ws.on("close", () => {
+                        client.rejectAllPendingRequests("close");
+                    });
+                }
                 const initialResponse = await this._requester.sendRequest<HistoryResponse>(
                     this._datafeedUrl,
                     "history",

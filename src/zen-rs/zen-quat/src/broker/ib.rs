@@ -163,11 +163,11 @@ impl IB {
                 return Ok(());
             }
 
+            zen.token.take().map(|t| t.cancel());
+
             if zen.realtime {
                 self.cancel_historical_data(zen.request_id).await?;
             }
-
-            zen.token.take().map(|t| t.cancel());
 
             let mut keep_up = OffsetDateTime::now_utc() - OffsetDateTime::from_unix_timestamp(to)?
                 < Duration::days(365);
@@ -265,19 +265,9 @@ impl IB {
                                 .insert((contract.clone(), freq), signals)
                         };
                     }
-                    if freq == Freq::F60 && e.date >= OffsetDateTime::now_utc() - Duration::hours(2){
-                        let day_zen = {self.store.borrow_mut().get_czsc(contract, Freq::D)};
-                        let mut day_zen = zen.write().await;
-                        if day_zen.czsc.bars_ubi.last().map(|b|
-                            b.raw_bars.last().unwrap().borrow().dt >= OffsetDateTime::now_utc()-Duration::hours(12)).unwrap_or(false){
-                            let last_bar = day_zen.czsc.bars_raw.last().unwrap().clone();
-                            let last_bar = last_bar.borrow();
-                            let mut emulate_bar = Bar{
-                    id: 0,dt: last_bar.dt,freq,open: last_bar.open ,
-                    close: e.close as f32 , high: last_bar.high.max(e.high as f32) , low: last_bar.low.min(e.close as f32) ,
-                    vol: last_bar.vol, amount: last_bar.amount , cache: Default::default(),macd_4_9_9: (0.0, 0.0, 0.0),};
-                            day_zen.czsc.update(emulate_bar);
-                        }
+
+                    if freq == Freq::D {
+                        //debug!("update bar {:?}, {:?}", e, e.to_bar(freq));
                     }
                     self.store.borrow_mut().process(contract).await;
                 }

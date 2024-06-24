@@ -10,7 +10,7 @@ import { usePathname } from "next/navigation";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     (globalThis as any).datafeed =
-        (globalThis as any).datafeed ?? new DataFeedWrapper("http://192.168.31.180:8080/datafeed/udf", 5 * 1000);
+        (globalThis as any).datafeed ?? new DataFeedWrapper("http://192.168.31.180:8080/datafeed/udf", 2 * 1000);
 
     const pathname = usePathname();
 
