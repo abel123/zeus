@@ -1,9 +1,10 @@
-use actix::{Actor, StreamHandler};
+use actix::{Actor, AsyncContext, ContextFutureSpawner, Handler, StreamHandler, WrapFuture};
 use std::cell::RefCell;
 use std::cmp::max;
 use std::collections::HashMap;
-use std::ops::{DerefMut, Sub};
+use std::ops::{Deref, DerefMut, Sub};
 use std::string::ToString;
+use std::sync::Arc;
 use std::time::Duration;
 
 use actix_web::web::Json;
@@ -21,6 +22,9 @@ use tws_rs::contracts::{
 };
 use zen_core::objects::enums::{Direction, Freq};
 
+use crate::api::jsonrpc::types::error::code::ErrorCode;
+use crate::api::jsonrpc::types::request::RpcRequest;
+use crate::api::jsonrpc::types::response::{RpcPayload, RpcResponse};
 use crate::api::params::{
     BiInfo, Config, Exchange, HistoryRequest, HistoryResponse, LibrarySymbolInfo, OptionPriceItem,
     OptionPriceRequest, SearchRequest, SearchSymbolResultItem, SymbolRequest, ZenBiDetail,
@@ -32,16 +36,111 @@ use crate::db::models::Symbol;
 use crate::schema::symbols::dsl::symbols;
 use crate::schema::symbols::{screener, symbol};
 use actix_web_actors::ws;
-use jsonrpc_core::{IoHandler, Value};
+use serde_json::{json, Value};
 use tokio_util::bytes::Buf;
 
+mod jsonrpc;
 mod params;
 
 /// Define HTTP actor
-struct MyWs;
+struct MyWs {
+    broker: Arc<MixedBroker>,
+}
 
 impl Actor for MyWs {
     type Context = ws::WebsocketContext<Self>;
+}
+
+impl MyWs {
+    async fn history_ws(broker: Arc<MixedBroker>, params: HistoryRequest) -> HistoryResponse {
+        let symbol_ = params.symbol;
+        let contract = Contract::auto_stock(symbol_.as_str());
+        let freq = IB::freq_map().get(&params.resolution).unwrap().clone();
+
+        let rs = broker
+            .borrow()
+            .try_subscribe(
+                false,
+                &contract,
+                freq,
+                params.from,
+                params.to,
+                params.countback as isize,
+                false,
+            )
+            .await;
+        if rs.is_err() {
+            return HistoryResponse {
+                s: "error".to_string(),
+                errmsg: Some(format!("error in get_bars: {}", rs.unwrap_err())),
+                t: None,
+                c: None,
+                h: None,
+                l: None,
+                v: None,
+                o: None,
+            };
+        }
+        let from = OffsetDateTime::from_unix_timestamp(params.from).unwrap();
+        let to = OffsetDateTime::from_unix_timestamp(params.to).unwrap();
+        let mut index: isize = -1;
+
+        let (mut o, mut c, mut h, mut l) = (vec![], vec![], vec![], vec![]);
+        let (mut t, mut v) = (vec![], vec![]);
+        let zen = broker.borrow().get_czsc(false, &contract, freq);
+        let zen = zen.read().await;
+        if params.countback > 0 {
+            for (idx, bar) in zen.czsc.bars_raw.iter().enumerate() {
+                if bar.borrow().dt <= to {
+                    index = idx as isize;
+                } else {
+                    break;
+                }
+            }
+            for idx in max(index + 1 - (params.countback as isize), 0)..(index + 1) {
+                let bar = &zen.czsc.bars_raw[idx as usize];
+                o.push(bar.borrow().open);
+                c.push(bar.borrow().close);
+                h.push(bar.borrow().high);
+                l.push(bar.borrow().low);
+                t.push(bar.borrow().dt.unix_timestamp());
+                v.push(bar.borrow().vol);
+            }
+        } else {
+            for bar in &zen.czsc.bars_raw {
+                if bar.borrow().dt < from {
+                    continue;
+                }
+                if bar.borrow().dt > to {
+                    break;
+                }
+                o.push(bar.borrow().open);
+                c.push(bar.borrow().close);
+                h.push(bar.borrow().high);
+                l.push(bar.borrow().low);
+                t.push(bar.borrow().dt.unix_timestamp());
+                v.push(bar.borrow().vol);
+            }
+        }
+        return HistoryResponse {
+            s: "ok".to_string(),
+            errmsg: None,
+            t: Some(t),
+            c: Some(c),
+            h: Some(h),
+            l: Some(l),
+            v: Some(v),
+            o: Some(o),
+        };
+    }
+}
+
+impl Handler<RpcResponse> for MyWs {
+    type Result = ();
+
+    fn handle(&mut self, msg: RpcResponse, ctx: &mut Self::Context) {
+        ctx.text(msg.dump());
+    }
 }
 
 /// Handler for ws::Message message
@@ -50,16 +149,57 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
         match msg {
             Ok(ws::Message::Ping(msg)) => {
                 debug!("msg {:?}", msg);
-
-                let mut io = IoHandler::new();
-                io.add_sync_method("say_hello", |_| Ok(Value::String("Hello World!".into())));
-
-                let response = io.handle_request_sync(std::str::from_utf8(&msg).unwrap());
-                ctx.pong(response.unwrap_or("".to_string()).as_bytes())
+                ctx.pong(&*msg)
             }
             Ok(ws::Message::Text(text)) => {
-                debug!("text {}", text);
-                ctx.text(text)
+                let Ok(RpcRequest {
+                    jsonrpc,
+                    method,
+                    params,
+                    id,
+                }) = serde_json::from_slice(text.as_ref())
+                else {
+                    return ctx.text(
+                        RpcResponse {
+                            payload: ErrorCode::ParseError.into(),
+                            ..Default::default()
+                        }
+                        .dump(),
+                    );
+                };
+                let payload = match method.as_str() {
+                    "say_hello" => {
+                        let payload = RpcPayload::Result(json!("Hello World"));
+                        ctx.text(
+                            RpcResponse {
+                                jsonrpc,
+                                payload,
+                                id,
+                            }
+                            .dump(),
+                        );
+                    }
+                    "history" => {
+                        let recipient = ctx.address().recipient();
+                        let req = params.unwrap()[0].clone();
+                        let broker = self.broker.clone();
+                        let future = async move {
+                            let rsp =
+                                MyWs::history_ws(broker, serde_json::from_value(req).unwrap())
+                                    .await;
+                            recipient
+                                .send(RpcResponse {
+                                    jsonrpc,
+                                    payload: RpcPayload::Result(json!(rsp)),
+                                    id,
+                                })
+                                .await
+                                .expect("TODO: panic message");
+                        };
+                        future.into_actor(self).spawn(ctx);
+                    }
+                    _ => {}
+                };
             }
             Ok(ws::Message::Binary(bin)) => {
                 debug!("bin {:?}", bin);
@@ -76,7 +216,13 @@ async fn websocket(
     stream: web::Payload,
     z: web::Data<MixedBroker>,
 ) -> Result<HttpResponse, Error> {
-    let resp = ws::start(MyWs {}, &req, stream);
+    let resp = ws::start(
+        MyWs {
+            broker: z.deref().clone(),
+        },
+        &req,
+        stream,
+    );
     println!("{:?}", resp);
     resp
 }

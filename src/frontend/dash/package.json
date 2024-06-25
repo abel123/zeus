@@ -21,6 +21,7 @@
   "dependencies": {
     "@measured/puck": "^0.13.1",
     "@mui/toolpad": "^0.1.38",
+    "@nolovenodie/typescript-robust-websocket": "^1.0.0",
     "@preline/overlay": "^1.4.0",
     "@reduxjs/toolkit": "^1.9.7",
     "@types/lodash": "^4.14.200",
@@ -39,6 +40,7 @@
     "recoil": "0.7.7",
     "recoil-sync": "^0.2.0",
     "recoil-sync-next": "0.0.6",
+    "reconnecting-websocket": "^4.4.0",
     "tty-table": "^4.2.3",
     "websocket-reconnect": "^1.0.10",
     "widgets-cli": "^1.0.5"

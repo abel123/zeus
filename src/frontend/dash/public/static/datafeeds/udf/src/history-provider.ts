@@ -3,7 +3,7 @@ import { Bar, HistoryMetadata, LibrarySymbolInfo, PeriodParams } from "../../../
 import { getErrorMessage, logMessage, RequestParams, UdfErrorResponse, UdfOkResponse, UdfResponse } from "./helpers";
 
 import { IRequester } from "./irequester";
-import { WsReconnect } from "websocket-reconnect";
+import ReconnectingWebSocket from "reconnecting-websocket";
 import { JSONRPCClient } from "json-rpc-2.0";
 
 // tslint:disable: no-any
@@ -60,6 +60,7 @@ export class HistoryProvider {
     private _datafeedUrl: string;
     private readonly _requester: IRequester;
     private readonly _limitedServerResponse?: LimitedResponseConfiguration;
+    _client: JSONRPCClient<void>;
 
     public constructor(
         datafeedUrl: string,
@@ -69,6 +70,34 @@ export class HistoryProvider {
         this._datafeedUrl = datafeedUrl;
         this._requester = requester;
         this._limitedServerResponse = limitedServerResponse;
+
+        const ws = new ReconnectingWebSocket(`ws://127.0.0.1:8080/ws`, [], { debug: false });
+
+        const client = new JSONRPCClient((request) => {
+            try {
+                ws.send(JSON.stringify(request));
+                return Promise.resolve();
+            } catch (error) {
+                return Promise.reject(error);
+            }
+        });
+
+        ws.addEventListener("open", function open() {
+            // this will only be called on every reconnect attempt
+            client.rejectAllPendingRequests("reconnect");
+        });
+
+        ws.addEventListener("message", (event: MessageEvent<any>) => {
+            const json = JSON.parse(event.data);
+            console.log("======== received", json);
+            client.receive(JSON.parse(event.data));
+        });
+
+        ws.addEventListener("close", () => {
+            client.rejectAllPendingRequests("close");
+        });
+
+        this._client = client;
     }
 
     public getBars(
@@ -97,39 +126,17 @@ export class HistoryProvider {
 
         return new Promise(async (resolve: (result: GetBarsResult) => void, reject: (reason: string) => void) => {
             try {
-                if (false) {
-                    const ws = new WsReconnect({ reconnectDelay: 5000 });
-                    ws.open(`ws://127.0.0.1:8080/ws`);
+                let initialResponse: HistoryResponse = await this._client.request("history", [requestParams]);
+                //console.warn(initialResponse);
 
-                    const client = new JSONRPCClient((request) => {
-                        try {
-                            ws.send(JSON.stringify(request));
-                            return Promise.resolve();
-                        } catch (error) {
-                            return Promise.reject(error);
-                        }
-                    });
-
-                    ws.on("reconnect", function open() {
-                        // this will only be called on every reconnect attempt
-                        client.rejectAllPendingRequests("reconnect");
-                    });
-
-                    ws.on("message", (data: string) => {
-                        const json = JSON.parse(data);
-                        console.log("======== received", json);
-                        client.receive(JSON.parse(data));
-                    });
-
-                    ws.on("close", () => {
-                        client.rejectAllPendingRequests("close");
-                    });
-                }
+                /*
                 const initialResponse = await this._requester.sendRequest<HistoryResponse>(
                     this._datafeedUrl,
                     "history",
                     requestParams
                 );
+                //*/
+
                 const result = this._processHistoryResponse(initialResponse);
 
                 if (this._limitedServerResponse) {
@@ -140,7 +147,7 @@ export class HistoryProvider {
                 if (e instanceof Error || typeof e === "string") {
                     const reasonString = getErrorMessage(e);
                     // tslint:disable-next-line:no-console
-                    console.warn(`HistoryProvider: getBars() failed, error=${reasonString}`);
+                    console.warn(`HistoryProvider: getBars() failed ${e}, error=${reasonString}`);
                     reject(reasonString);
                 }
             }
