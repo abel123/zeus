@@ -65,7 +65,7 @@ export class ModelView {
         let self = this;
         this.chart = api;
 
-        this.chart.createStudy("Volume", true);
+        //this.chart.createStudy("Volume", true);
         this.chart.createStudy(
             "Moving Average Multiple",
             false,
@@ -112,18 +112,15 @@ export class ModelView {
 
     debounced_draw_zen = debounce(
         async () => {
-            console.log("called");
             this.draw_zen();
         },
-        400,
-        { maxWait: 1500 }
+        800,
+        { maxWait: 3000 }
     );
 
     draw_zen() {
-        console.log("aaaaaaaaaaaaaaaaa");
         let update = (globalThis as any).zenUpdate ?? true;
         if (!update || this.chart == undefined) {
-            console.warn("null return");
             return;
         }
         let Datafeed = (globalThis as any).datafeed as DataFeedWrapper;

@@ -43,15 +43,15 @@ mod jsonrpc;
 mod params;
 
 /// Define HTTP actor
-struct MyWs {
+struct APIEndpointWs {
     broker: Arc<MixedBroker>,
 }
 
-impl Actor for MyWs {
+impl Actor for APIEndpointWs {
     type Context = ws::WebsocketContext<Self>;
 }
 
-impl MyWs {
+impl APIEndpointWs {
     async fn history_ws(broker: Arc<MixedBroker>, params: HistoryRequest) -> HistoryResponse {
         let symbol_ = params.symbol;
         let contract = Contract::auto_stock(symbol_.as_str());
@@ -60,7 +60,7 @@ impl MyWs {
         let rs = broker
             .borrow()
             .try_subscribe(
-                false,
+                params.use_local.unwrap_or(false),
                 &contract,
                 freq,
                 params.from,
@@ -87,7 +87,9 @@ impl MyWs {
 
         let (mut o, mut c, mut h, mut l) = (vec![], vec![], vec![], vec![]);
         let (mut t, mut v) = (vec![], vec![]);
-        let zen = broker.borrow().get_czsc(false, &contract, freq);
+        let zen = broker
+            .borrow()
+            .get_czsc(params.use_local.unwrap_or(false), &contract, freq);
         let zen = zen.read().await;
         if params.countback > 0 {
             for (idx, bar) in zen.czsc.bars_raw.iter().enumerate() {
@@ -135,7 +137,7 @@ impl MyWs {
     }
 }
 
-impl Handler<RpcResponse> for MyWs {
+impl Handler<RpcResponse> for APIEndpointWs {
     type Result = ();
 
     fn handle(&mut self, msg: RpcResponse, ctx: &mut Self::Context) {
@@ -144,7 +146,7 @@ impl Handler<RpcResponse> for MyWs {
 }
 
 /// Handler for ws::Message message
-impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
+impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for APIEndpointWs {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         match msg {
             Ok(ws::Message::Ping(msg)) => {
@@ -184,9 +186,11 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
                         let req = params.unwrap()[0].clone();
                         let broker = self.broker.clone();
                         let future = async move {
-                            let rsp =
-                                MyWs::history_ws(broker, serde_json::from_value(req).unwrap())
-                                    .await;
+                            let rsp = APIEndpointWs::history_ws(
+                                broker,
+                                serde_json::from_value(req).unwrap(),
+                            )
+                            .await;
                             recipient
                                 .send(RpcResponse {
                                     jsonrpc,
@@ -217,13 +221,13 @@ async fn websocket(
     z: web::Data<MixedBroker>,
 ) -> Result<HttpResponse, Error> {
     let resp = ws::start(
-        MyWs {
+        APIEndpointWs {
             broker: z.deref().clone(),
         },
         &req,
         stream,
     );
-    println!("{:?}", resp);
+    debug!("{:?}", resp);
     resp
 }
 
@@ -412,7 +416,7 @@ async fn search_symbol(
             ),
         )
         .await
-        .unwrap()
+        .unwrap_or(Ok(vec![]))
         .unwrap_or(vec![]);
         let params = params
             .iter()

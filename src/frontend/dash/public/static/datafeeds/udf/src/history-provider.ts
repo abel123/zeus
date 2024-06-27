@@ -88,8 +88,7 @@ export class HistoryProvider {
         });
 
         ws.addEventListener("message", (event: MessageEvent<any>) => {
-            const json = JSON.parse(event.data);
-            console.log("======== received", json);
+            //console.log("======== received", json);
             client.receive(JSON.parse(event.data));
         });
 
@@ -111,6 +110,7 @@ export class HistoryProvider {
             resolution: resolution,
             from: periodParams.from,
             to: periodParams.to,
+            use_local: (globalThis as any).use_local ?? false,
         };
         if (periodParams.countBack !== undefined) {
             requestParams.countback = periodParams.countBack;
