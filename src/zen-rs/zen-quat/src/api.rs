@@ -11,7 +11,6 @@ use actix_web::web::Json;
 use actix_web::{error, get, post, web, Error, HttpRequest, HttpResponse, Responder, Result};
 use diesel::prelude::*;
 use diesel::ExpressionMethods;
-use diesel_logger::LoggingConnection;
 use time::{format_description, OffsetDateTime};
 use tokio::time::timeout;
 use tracing::{debug, info};
@@ -36,6 +35,7 @@ use crate::db::models::Symbol;
 use crate::schema::symbols::dsl::symbols;
 use crate::schema::symbols::{screener, symbol};
 use actix_web_actors::ws;
+use diesel_tracing::sqlite::InstrumentedSqliteConnection;
 use serde_json::{json, Value};
 use tokio_util::bytes::Buf;
 
@@ -329,7 +329,7 @@ async fn search_symbol(
     req: HttpRequest,
     web::Query(params): web::Query<SearchRequest>,
     z: web::Data<MixedBroker>,
-    conn: web::Data<RefCell<LoggingConnection<SqliteConnection>>>,
+    conn: web::Data<RefCell<InstrumentedSqliteConnection>>,
 ) -> Result<impl Responder> {
     use crate::schema::symbols::dsl::*;
 
@@ -474,7 +474,7 @@ async fn search_symbol(
 #[get("/datafeed/udf/symbols")]
 pub(crate) async fn resolve_symbol(
     web::Query(params): web::Query<SymbolRequest>,
-    conn: web::Data<RefCell<LoggingConnection<SqliteConnection>>>,
+    conn: web::Data<RefCell<InstrumentedSqliteConnection>>,
 ) -> Result<impl Responder> {
     let mut contract_type = "stock".to_string();
     let mut screener_ = "america".to_string();

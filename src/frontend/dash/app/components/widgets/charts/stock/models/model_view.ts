@@ -114,7 +114,7 @@ export class ModelView {
         async () => {
             this.draw_zen();
         },
-        800,
+        2000,
         { maxWait: 3000 }
     );
 

@@ -3,7 +3,7 @@ use crate::broker::zen::{Store, Zen};
 use crate::db::establish_connection;
 use crate::db::models::BarHistory;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper, SqliteConnection};
-use diesel_logger::LoggingConnection;
+use diesel_tracing::sqlite::InstrumentedSqliteConnection;
 use std::cell::RefCell;
 use std::rc::Rc;
 use time::{Duration, OffsetDateTime};
@@ -15,14 +15,14 @@ use zen_core::Bar;
 
 pub struct LocalDB {
     store: Rc<RefCell<Store>>,
-    conn: RefCell<LoggingConnection<SqliteConnection>>,
+    conn: RefCell<InstrumentedSqliteConnection>,
 }
 
 impl LocalDB {
     pub fn new() -> Self {
         Self {
             store: Rc::new(RefCell::new(Store::new())),
-            conn: RefCell::new(LoggingConnection::new(establish_connection())),
+            conn: RefCell::new((establish_connection())),
         }
     }
 }

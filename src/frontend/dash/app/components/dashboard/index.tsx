@@ -24,7 +24,7 @@ export const MainGrid = (props: Props) => {
                     </div>
                     <div className="row-span-5 col-span-4 border-solid border-2 border-slate-300" key="1-2">
                         <StockChart
-                            resolution={"3" as ResolutionString}
+                            resolution={"5" as ResolutionString}
                             macd_config={[{ fast: 4, slow: 9, signal: 9 }]}
                             hidden_extra_toolbar={true}
                             standalone={false}
@@ -41,7 +41,7 @@ export const MainGrid = (props: Props) => {
                     </div>
                     <div className="row-span-5 col-span-4 border-solid border-2 border-slate-300" key="1-4">
                         <StockChart
-                            resolution={"5" as ResolutionString}
+                            resolution={"3" as ResolutionString}
                             macd_config={[{ fast: 4, slow: 9, signal: 9 }]}
                             hidden_extra_toolbar={true}
                             standalone={false}

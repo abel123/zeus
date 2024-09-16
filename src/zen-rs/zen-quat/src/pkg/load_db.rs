@@ -4,6 +4,7 @@ use anyhow::Result;
 use diesel::{
     Connection, ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper, SqliteConnection,
 };
+use diesel_tracing::sqlite::InstrumentedSqliteConnection;
 use futures_util::future::join_all;
 use futures_util::StreamExt;
 use std::collections::HashMap;
@@ -15,10 +16,8 @@ use tokio::sync::Semaphore;
 use tokio::task::{spawn_local, LocalSet};
 use tokio::time::{sleep, timeout};
 use tracing::{debug, error, info};
-use tws_rs::client::market_data::historical::{
-    historical_data, BarSize, TWSDuration, WhatToShow,
-};
-use tws_rs::contracts::{contract_details_no_cache};
+use tws_rs::client::market_data::historical::{historical_data, BarSize, TWSDuration, WhatToShow};
+use tws_rs::contracts::contract_details_no_cache;
 use tws_rs::{Client, Error};
 use zen_core::objects::enums::Freq;
 
@@ -84,8 +83,8 @@ pub fn load_local_db(watchlist: String, db_file: String, verify_only: bool) -> R
                     for _ in 0..2 {
                         let bars = {
                             use crate::schema::bar_history::dsl::*;
-                            let mut db =
-                                SqliteConnection::establish(&db_file.clone()).expect("db exist");
+                            let mut db = InstrumentedSqliteConnection::establish(&db_file.clone())
+                                .expect("db exist");
 
                             bar_history
                                 .filter(symbol.eq(contract.symbol.clone()))
