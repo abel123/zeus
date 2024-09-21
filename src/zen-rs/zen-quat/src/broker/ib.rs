@@ -159,7 +159,10 @@ impl IB {
             let zen = { self.store.borrow_mut().get_czsc(contract, freq) };
             let mut zen = zen.write().await;
             if !zen.need_subscribe(from, to, replay) {
-                sender.send(()).unwrap();
+                let e = sender.send(());
+                if e.is_err() {
+                    error!("error in send unsubscribe {:?}", e)
+                }
                 return Ok(());
             }
 
