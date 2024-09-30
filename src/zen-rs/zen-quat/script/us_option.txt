@@ -6,3 +6,4 @@ SPY	SPDR 标普500指数ETF	美股
 AAPL	苹果	美股
 NVDA	英伟达	美股
 TSLA	特斯拉	美股
+KWEB 中概互联 美股

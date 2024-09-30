@@ -1,5 +1,6 @@
 代码	名称	市场	
 CTAS	信达思	美股
+SPY     SPY思	美股
 EPAM	EPAM Systems	美股
 MMC	威达信	美股
 TER	泰瑞达	美股

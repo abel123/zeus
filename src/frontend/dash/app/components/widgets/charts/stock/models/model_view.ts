@@ -144,7 +144,7 @@ export class ModelView {
                 {
                     from: range.from,
                     to: range.to,
-                    symbol: symbol?.full_name,
+                    symbol: symbol?.exchange + ":" + symbol?.name,
                     resolution: resolution,
                     macd_config: this.macd_config,
                 },

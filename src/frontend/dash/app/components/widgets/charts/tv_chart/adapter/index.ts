@@ -78,7 +78,7 @@ export class LocalStorageSaveLoadAdapter implements IExternalSaveLoadAdapter {
         }
         const savedChartData: SavedChartData = {
             ...chartData,
-            id: chartData.id,
+            id: chartData.id.toString(),
             timestamp: Math.round(Date.now() / 1000),
         };
 

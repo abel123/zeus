@@ -1,6 +1,6 @@
 import {
+    DatafeedErrorCallback,
     DOMCallback,
-    ErrorCallback,
     GetMarksCallback,
     HistoryCallback,
     IDatafeedChartApi,
@@ -126,7 +126,7 @@ export class DataFeedWrapper implements IDatafeedChartApi, IExternalDatafeed, ID
     resolveSymbol(
         symbolName: string,
         onResolve: ResolveCallback,
-        onError: ErrorCallback,
+        onError: DatafeedErrorCallback,
         extension?: SymbolResolveExtension | undefined
     ): void {
         if (this.state == State.Origin) {
@@ -140,7 +140,7 @@ export class DataFeedWrapper implements IDatafeedChartApi, IExternalDatafeed, ID
         resolution: ResolutionString,
         periodParams: PeriodParams,
         onResult: HistoryCallback,
-        onError: ErrorCallback
+        onError: DatafeedErrorCallback
     ): void {
         if (this.state == State.Origin) {
             return this.datafeed_original.getBars(symbolInfo, resolution, periodParams, onResult, onError);
