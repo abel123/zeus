@@ -50,6 +50,7 @@ export const TVChartContainer = (
             locale: props.locale as LanguageCode,
             disabled_features: [
                 "use_localstorage_for_settings",
+                "library_custom_color_themes",
                 //"trading_account_manager",
                 //"keep_object_tree_widget_in_right_toolbar",
                 //"right_toolbar",
