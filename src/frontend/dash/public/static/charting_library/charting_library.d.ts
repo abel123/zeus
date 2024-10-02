@@ -50,6 +50,11 @@ declare enum StopType {
 	TrailingStop = 1,
 	GuaranteedStop = 2
 }
+export declare const enum BottomWidgetBarMode {
+	Minimized = "minimized",
+	Normal = "normal",
+	Maximized = "maximized"
+}
 export declare const widget: ChartingLibraryWidgetConstructor;
 export declare enum ActionId {
 	ChartAddIndicatorToAllCharts = "Chart.AddIndicatorToAllCharts",
@@ -841,6 +846,8 @@ export interface AccountManagerPage {
 	title: string;
 	/** It is possible to display one or more tables in this tab. */
 	tables: AccountManagerTable[];
+	/** Controls whether the number of items is displayed on a custom page. Set to `true` to display the count, or `false` to hide it. */
+	displayCounterInTab?: boolean;
 }
 /** Custom field that will always be shown above the pages of the Account manager */
 export interface AccountManagerSummaryField {
@@ -2078,7 +2085,7 @@ export interface BrokerConfigFlags {
 	supportModifyBrackets?: boolean;
 	/**
 	 * Enables Level 2 data for the [Depth of Market](https://www.tradingview.com/charting-library-docs/latest/trading_terminal/depth-of-market) widget.
-	 * This flag requires the [`subscribeDepth`](https://www.tradingview.com/charting-library-docs/latest/connecting_data/Datafeed-API#subscribedepth) and [`unsubscribeDepth`](https://www.tradingview.com/charting-library-docs/latest/connecting_data/Datafeed-API#unsubscribedepth) methods to be implemented.
+	 * This flag requires the [`subscribeDepth`](https://www.tradingview.com/charting-library-docs/latest/connecting_data/datafeed-api/trading-platform-methods#subscribedepth) and [`unsubscribeDepth`](https://www.tradingview.com/charting-library-docs/latest/connecting_data/datafeed-api/trading-platform-methods#unsubscribedepth) methods to be implemented.
 	 * @default false
 	 */
 	supportLevel2Data?: boolean;
@@ -4066,8 +4073,8 @@ export interface ChartingLibraryWidgetOptions {
 	 */
 	autosize?: boolean;
 	/**
-	 * Setting this property to `true` will make the chart write detailed API logs into the browser console.
-	 * Alternatively, you can use the `charting_library_debug_mode` featureset to enable it, or use the `setDebugMode` widget method ({@link IChartingLibraryWidget.setDebugMode}) .
+	 * Setting this property to `true` makes the library write detailed [Datafeed API](https://www.tradingview.com/charting-library-docs/latest/connecting_data/datafeed-api/) logs into the browser console.
+	 * Alternatively, you can use the [`charting_library_debug_mode`](https://www.tradingview.com/charting-library-docs/latest/customization/Featuresets#charting_library_debug_mode) featureset or the {@link IChartingLibraryWidget.setDebugMode} method.
 	 *
 	 * ```javascript
 	 * debug: true,
@@ -4590,21 +4597,17 @@ export interface ChartingLibraryWidgetOptions {
 	 */
 	time_scale?: TimeScaleOptions;
 	/**
-	 * Use this property to set your own translation function. `key` and `options` will be passed to the function.
+	 * Use this property to set a custom translation function for UI strings.
+	 * It accepts the original text, the singular form of the text, and the translated text as arguments.
+	 * The function should return a string with the new translation or `null` to fall back to the default translation.
 	 *
-	 * You can use this function to provide custom translations for some strings.
-	 *
-	 * The function should return either a string with a new translation or `null` to fallback to the default translation.
-	 *
-	 * For example, if you want to rename "Trend Line" shape to "Line Shape", then you can do something like this:
+	 * The example below shows how to rename the "Trend Line" drawing to "Line Drawing".
 	 *
 	 * ```javascript
-	 * custom_translate_function: (key, options, isTranslated) => {
-	 *     if (key === 'Trend Line') {
-	 *         // patch the title of trend line
-	 *         return 'Line Shape';
+	 * custom_translate_function: (originalText, singularOriginalText, translatedText) => {
+	 *     if (originalText === "Trend Line") {
+	 *         return "Line Drawing";
 	 *     }
-	 *
 	 *     return null;
 	 * }
 	 * ```
@@ -5393,7 +5396,7 @@ export interface CryptoBalance {
  */
 export interface CurrencyInfo {
 	/**
-	 * Currently selected currency for the price scale or null if there are several different currencies on the scale.
+	 * Returns the currently selected currency for the [price scale](https://www.tradingview.com/charting-library-docs/latest/ui_elements/Price-Scale). Returns `null` if there are several different currencies on the scale.
 	 */
 	selectedCurrency: string | null;
 	/**
@@ -5715,7 +5718,7 @@ export interface DOMLevel {
 }
 /**
  * Datafeed configuration data.
- * Pass the resulting array of properties as a parameter to {@link OnReadyCallback} of the [`onReady`](https://www.tradingview.com/charting-library-docs/latest/connecting_data/Datafeed-API#onready) method.
+ * Pass the resulting array of properties as a parameter to {@link OnReadyCallback} of the [`onReady`](https://www.tradingview.com/charting-library-docs/latest/connecting_data/datafeed-api/required-methods#onready) method.
  */
 export interface DatafeedConfiguration {
 	/**
@@ -5830,7 +5833,8 @@ export interface DatafeedQuoteValues {
 	/** Today's low price */
 	low_price?: number;
 	/**
-	 * Yesterday's closing price.
+	 * Closing price of the symbol from the previous regular market session.
+	 *
 	 * Required for mobile apps. Otherwise, `NaN` values will appear in the [Legend](https://www.tradingview.com/charting-library-docs/latest/ui_elements/Legend).
 	 */
 	prev_close_price?: number;
@@ -9162,6 +9166,10 @@ export interface HullMovingAverageIndicatorOverrides {
 	"plot.color": string;
 	[key: string]: StudyOverrideValueType;
 }
+export interface HyperlinkInfo {
+	text: string;
+	url: string;
+}
 export interface IAction extends IMenuItem, IDestroyable {
 	/** @inheritDoc */
 	readonly type: MenuItemType.Action;
@@ -9564,9 +9572,18 @@ export interface IBrokerConnectionAdapterHost {
 	 */
 	showPositionBracketsDialog(position: Position | IndividualPosition, brackets: Brackets, focus: OrderTicketFocusControl): Promise<boolean>;
 	/**
+	 * @deprecated This method will be removed from the library in the next major version. Please use {@link setAccountManagerVisibilityMode} instead.
 	 * Activate bottom widget
 	 */
 	activateBottomWidget(): Promise<void>;
+	/**
+	 * Method to retrieve the current visibility mode of the Account Manager.
+	 */
+	getAccountManagerVisibilityMode(): IWatchedValueReadonly<BottomWidgetBarMode>;
+	/**
+	 * Method to set a new visibility mode for the Account Manager.
+	 */
+	setAccountManagerVisibilityMode(mode: BottomWidgetBarMode): void;
 	/**
 	 * Shows trading properties
 	 */
@@ -11349,7 +11366,7 @@ export interface IChartingLibraryWidget {
 	 */
 	currencyAndUnitVisibility(): IWatchedValue<VisibilityType>;
 	/**
-	 * Enable or disable debug mode.
+	 * Enable or disable writing detailed [Datafeed API](https://www.tradingview.com/charting-library-docs/latest/connecting_data/datafeed-api/) logs into the browser console.
 	 *
 	 * @param enabled A boolean flag. `true` to enable debug mode, `false` to disable.
 	 */
@@ -11811,19 +11828,6 @@ export interface IDelegate<TFunc extends Function> extends ISubscription<TFunc> 
 	/** Fire (Evoke) */
 	fire: TFunc;
 }
-/**
- * # IDESTRØYÅBLE
- * ```
- * ┌────────────────┐
- * │ ┏━━━━━┓        │
- * │ ┃ ○ ○ ┃        │  ┏━━━━━┓           ┌╲╌╌╱╌┐
- * │ ┃ ○ ○ ┃    x 1 │  ┃ ○ ○ ┃ destroy() ┊ ╲╱  ╵
- * │ ┠─────┨        │  ┃ ○ ○ ┃  ╭───╯╲   ╷ ╱╲  ┊
- * │ ┗━━━━━┛        │  ┠─────┨  ╰───╮╱   ├╱ ╌╲ ┤
- * │ destroy()  x 1 │  ┗━━━━━┛           └ ╌╌ ╌┘
- * └────────────────┘
- * ```
- */
 export interface IDestroyable {
 	/** Clean up (destroy) any subscriptions, intervals, or other resources that this `IDestroyable` instance has. */
 	destroy(): void;
@@ -12426,6 +12430,11 @@ export interface IOrderLineAdapter {
 	/**
 	 * Set the body font of the order line.
 	 *
+	 * **Example**
+	 * ```javascript
+	 * widget.activeChart().createOrderLine().setPrice(170).setBodyFont("bold 12px Verdana")
+	 * ```
+	 *
 	 * @param value The new body font.
 	 */
 	setBodyFont(value: string): this;
@@ -12435,6 +12444,11 @@ export interface IOrderLineAdapter {
 	getQuantityFont(): string;
 	/**
 	 * Set the quantity font of the order line.
+	 *
+	 * **Example**
+	 * ```javascript
+	 * widget.activeChart().createOrderLine().setPrice(170).setQuantityFont("bold 12px Verdana")
+	 * ```
 	 *
 	 * @param value The new quantity font.
 	 */
@@ -12818,6 +12832,12 @@ export interface IPositionLineAdapter {
 	getBodyFont(): string;
 	/**
 	 * Set the body font of the position line.
+	 *
+	 * **Example**
+	 * ```javascript
+	 * widget.activeChart().createPositionLine().setPrice(170).setBodyFont("bold 12px Verdana")
+	 * ```
+	 *
 	 * @param value The new body font.
 	 */
 	setBodyFont(value: string): this;
@@ -12827,6 +12847,12 @@ export interface IPositionLineAdapter {
 	getQuantityFont(): string;
 	/**
 	 * Set the quantity font of the position line.
+	 *
+	 * **Example**
+	 * ```javascript
+	 * widget.activeChart().createPositionLine().setPrice(170).setQuantityFont("bold 12px Verdana")
+	 * ```
+	 *
 	 * @param value The new quantity font.
 	 */
 	setQuantityFont(value: string): this;
@@ -13015,14 +13041,14 @@ export interface IPriceScaleApi {
 	hasMainSeries(): boolean;
 	/** Returns an array of IDs of all studies attached to the price scale */
 	getStudies(): EntityId[];
-	/** Returns the current currency info set on the price scale if any or null if none is specified */
+	/** Returns the current currency set on the [price scale](https://www.tradingview.com/charting-library-docs/latest/ui_elements/Price-Scale). Returns `null` if no currency is specified. */
 	currency(): CurrencyInfo | null;
 	/**
 	 * Sets a currency on the price scale.
 	 * @param  {string|null} currency - currency supported by your backend (for example 'EUR', 'USD'). A null value will reset the currency to default.
 	 */
 	setCurrency(currency: string | null): void;
-	/** Returns the current unit info set on the price scale if any or null if none is specified */
+	/** Returns the current unit set on the [price scale](https://www.tradingview.com/charting-library-docs/latest/ui_elements/Price-Scale). Returns `null` if no unit is specified. */
 	unit(): UnitInfo | null;
 	/**
 	 * Sets a unit on the price scale.
@@ -13648,7 +13674,7 @@ export interface ITimezoneApi {
  *
  * **Notes about watchlist contents**
  *
- * Watchlist items should be symbol names which your datafeed [`resolveSymbol`](https://www.tradingview.com/charting-library-docs/latest/connecting_data/Datafeed-API#resolvesymbol) method can resolve. This
+ * Watchlist items should be symbol names which your datafeed [`resolveSymbol`](https://www.tradingview.com/charting-library-docs/latest/connecting_data/datafeed-api/required-methods#resolvesymbol) method can resolve. This
  * means that generally shorter names such as `AAPL` can be used if your datafeed understands it. However,
  * it is recommend that you provide the symbol names as they appear within the `LibrarySymbolInfo` object, for
  * example, `NASDAQ:AAPL`.
@@ -14513,7 +14539,7 @@ export interface LibrarySymbolInfo {
 	 * Note that it should not contain the exchange name.
 	 * This symbol name is visible to users and can be repeated.
 	 *
-	 * By default, `name` is used to resolve symbols in the [Datafeed API](https://www.tradingview.com/charting-library-docs/latest/connecting_data/Datafeed-API).
+	 * By default, `name` is used to resolve symbols in the [Datafeed API](https://www.tradingview.com/charting-library-docs/latest/connecting_data/datafeed-api/).
 	 * If you use {@link LibrarySymbolInfo.ticker}, the library will use the ticker for Datafeed API requests.
 	 */
 	name: string;
@@ -16123,9 +16149,9 @@ export interface OrderPreviewResult {
 	/** Confirmation ID. A unique identifier that should be passed to `placeOrder` method */
 	confirmId?: string;
 	/** Warning messages */
-	warnings?: string[];
+	warnings?: (string | MarkupText)[];
 	/** Error messages */
-	errors?: string[];
+	errors?: (string | MarkupText)[];
 }
 /**
  * Describes a single order preview section.
@@ -18999,7 +19025,7 @@ export interface SchiffpitchforkLineToolOverrides {
 }
 /**
  * [Symbol Search](https://www.tradingview.com/charting-library-docs/latest/ui_elements/Symbol-Search) result item.
- * Pass the resulting array of symbols as a parameter to {@link SearchSymbolsCallback} of the [`searchSymbols`](https://www.tradingview.com/charting-library-docs/latest/connecting_data/Datafeed-API#searchsymbols) method.
+ * Pass the resulting array of symbols as a parameter to {@link SearchSymbolsCallback} of the [`searchSymbols`](https://www.tradingview.com/charting-library-docs/latest/connecting_data/datafeed-api/required-methods#searchsymbols) method.
  *
  * @example
  * ```
@@ -25898,6 +25924,11 @@ export interface SubscribeEventsMap {
 	 * @param  {boolean} isVisible - if the widget bar is currently hidden
 	 */
 	widgetbar_visibility_changed: (isVisible: boolean) => void;
+	/**
+	 * The _Save as default_ option is selected in the drop-down menu of the indicator settings.
+	 * @param  {EntityId} id - entity ID
+	 */
+	study_dialog_save_defaults: (id: EntityId) => void;
 }
 export interface SuccessFormatterParseResult<T> extends FormatterParseResult {
 	/** @inheritDoc */
@@ -26557,14 +26588,14 @@ export interface TradingTerminalWidgetOptions extends Omit<ChartingLibraryWidget
 	 */
 	broker_factory?(host: IBrokerConnectionAdapterHost): IBrokerWithoutRealtime | IBrokerTerminal;
 	/**
-	 * Setting this property will make the library write detailed Broker API logs into the browser console.
+	 * Setting this property makes the library write detailed [Broker API](https://www.tradingview.com/charting-library-docs/latest/trading_terminal/trading-concepts/#broker-api) and [Trading Host](https://www.tradingview.com/charting-library-docs/latest/trading_terminal/trading-concepts/#trading-host) logs into the browser console.
 	 *
 	 * ```javascript
-	 * debug_broker: 'common',
+	 * debug_broker: 'normal',
 	 * ```
 	 *
-	 * The logs will include the calls and return values for methods invoked on the
-	 * 'host' (IBrokerConnectionAdapterHost) and 'broker' (IBrokerWithoutRealtime | IBrokerTerminal).
+	 * The logs include the calls and return values for methods invoked on the
+	 * host ({@link IBrokerConnectionAdapterHost}) and broker ({@link IBrokerWithoutRealtime}).
 	 * Since the method calls can be asynchronous, you can use the ID numbers in each message to match
 	 * the calls to responses.
 	 */
@@ -27946,13 +27977,12 @@ export type ActionMetaInfo = ActionDescriptionWithCallback | MenuSeparator;
 export type AskBid = Required<Pick<TradingQuotes, "ask" | "bid">>;
 export type AvailableSaveloadVersions = "1.0" | "1.1";
 /**
- * Sets the debug level for {@link ChartingLibraryWidgetOptions.debug_broker}.
+ * Sets the debug level for {@link TradingTerminalWidgetOptions.debug_broker }.
  *
- * - `host-only`: only logs messages related to the IBrokerConnectionAdapterHost,
- * - `broker-only`: only logs messages related to the IBrokerWithoutRealtime or IBrokerTerminal,
- * - `normal`: Logs messages for both the broker and host but excludes noisy
- * methods such as `connectionStatus` which are frequently called,
- * - `all`: all of the possible debug messages.
+ * - `host-only`: logs only messages related to the {@link IBrokerConnectionAdapterHost} interface.
+ * - `broker-only`: logs only messages related to the {@link IBrokerWithoutRealtime} interface.
+ * - `normal`: logs messages for the broker and host but excludes frequently called methods, such as `connectionStatus`.
+ * - `all`: logs all possible debug messages.
  */
 export type BrokerDebugMode = "all" | "normal" | "host-only" | "broker-only";
 export type CellAlignment = "left" | "right";
@@ -28304,6 +28334,13 @@ export type ChartingLibraryFeatureset =
  */
 "disable_pulse_animation" | 
 /**
+ * Enables an alternative loading mode for the library, which can be used when the iframe content must be served from the same origin.
+ *
+ * Loads the initial library iframe content from `library_path + 'sameorigin.html`.
+ * @default false
+ */
+"iframe_loading_same_origin" | 
+/**
  * Enables custom color themes features.
  * @default true
  */
@@ -28532,6 +28569,7 @@ export type LineStudyPlotStyleName = "line" | "histogram" | "cross" | "area" | "
  */
 export type LineToolsAndGroupsLoadRequestType = "allLineTools" | "lineToolsWithoutSymbol" | "studiesLineTools" | "mainSeriesLineTools";
 export type MarkConstColors = "red" | "green" | "blue" | "yellow";
+export type MarkupText = (string | HyperlinkInfo)[];
 export type MultipleChartsLayoutType = "2h" | "2v" | "2-1" | "3s" | "3h" | "3v" | "4" | "6" | "8" | "1-2" | "3r" | "4h" | "4v" | "4s" | "4s-l" | "5h" | "5v" | "6h" | "6v" | "7h" | "8h" | "8v" | "1-3" | "2-2" | "2-2-l" | "2-3" | "3-2" | "1-4" | "5s" | "6c" | "2-4" | "8c";
 export type OmitActionId<T extends {
 	actionId: ActionId;
@@ -28675,7 +28713,7 @@ export type SupportedLineTools = "text" | "anchored_text" | "note" | "anchored_n
  */
 export type SymbolSearchCompleteOverrideFunction = (symbol: string, searchResultItem?: SearchSymbolResultItem) => Promise<SymbolSearchCompleteData>;
 export type SymbolSource = SymbolInputSymbolSource;
-export type SymbolType = "stock" | "index" | "forex" | "futures" | "bitcoin" | "crypto" | "undefined" | "expression" | "spread" | "cfd" | "economic" | "equity" | "dr" | "bond" | "right" | "warrant" | "fund" | "structured" | "commodity" | "fundamental" | "spot" | "swap";
+export type SymbolType = "stock" | "index" | "forex" | "futures" | "bitcoin" | "crypto" | "undefined" | "expression" | "spread" | "cfd" | "economic" | "equity" | "dr" | "bond" | "right" | "warrant" | "fund" | "structured" | "commodity" | "fundamental" | "spot" | "swap" | "option";
 /**
  * A function that takes an {@link TableFormatterInputs} object and returns a `string`.
  */

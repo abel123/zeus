@@ -78,7 +78,7 @@ export interface DOMLevel {
 }
 /**
  * Datafeed configuration data.
- * Pass the resulting array of properties as a parameter to {@link OnReadyCallback} of the [`onReady`](https://www.tradingview.com/charting-library-docs/latest/connecting_data/Datafeed-API#onready) method.
+ * Pass the resulting array of properties as a parameter to {@link OnReadyCallback} of the [`onReady`](https://www.tradingview.com/charting-library-docs/latest/connecting_data/datafeed-api/required-methods#onready) method.
  */
 export interface DatafeedConfiguration {
 	/**
@@ -193,7 +193,8 @@ export interface DatafeedQuoteValues {
 	/** Today's low price */
 	low_price?: number;
 	/**
-	 * Yesterday's closing price.
+	 * Closing price of the symbol from the previous regular market session.
+	 *
 	 * Required for mobile apps. Otherwise, `NaN` values will appear in the [Legend](https://www.tradingview.com/charting-library-docs/latest/ui_elements/Legend).
 	 */
 	prev_close_price?: number;
@@ -414,7 +415,7 @@ export interface LibrarySymbolInfo {
 	 * Note that it should not contain the exchange name.
 	 * This symbol name is visible to users and can be repeated.
 	 *
-	 * By default, `name` is used to resolve symbols in the [Datafeed API](https://www.tradingview.com/charting-library-docs/latest/connecting_data/Datafeed-API).
+	 * By default, `name` is used to resolve symbols in the [Datafeed API](https://www.tradingview.com/charting-library-docs/latest/connecting_data/datafeed-api/).
 	 * If you use {@link LibrarySymbolInfo.ticker}, the library will use the ticker for Datafeed API requests.
 	 */
 	name: string;
@@ -924,7 +925,7 @@ export interface QuoteOkData extends QuoteDataResponse {
 }
 /**
  * [Symbol Search](https://www.tradingview.com/charting-library-docs/latest/ui_elements/Symbol-Search) result item.
- * Pass the resulting array of symbols as a parameter to {@link SearchSymbolsCallback} of the [`searchSymbols`](https://www.tradingview.com/charting-library-docs/latest/connecting_data/Datafeed-API#searchsymbols) method.
+ * Pass the resulting array of symbols as a parameter to {@link SearchSymbolsCallback} of the [`searchSymbols`](https://www.tradingview.com/charting-library-docs/latest/connecting_data/datafeed-api/required-methods#searchsymbols) method.
  *
  * @example
  * ```
