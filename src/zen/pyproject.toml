@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "zen"
+version = "0.1.0"
+description = ""
+authors = ["yuanzx <yuanzx@yunphant.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.13"
+ib-insync = "^0.9.86"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

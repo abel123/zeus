@@ -50,7 +50,7 @@ export const TVChartContainer = (
             locale: props.locale as LanguageCode,
             disabled_features: [
                 "use_localstorage_for_settings",
-                "library_custom_color_themes",
+
                 //"trading_account_manager",
                 //"keep_object_tree_widget_in_right_toolbar",
                 //"right_toolbar",
@@ -103,8 +103,15 @@ export const TVChartContainer = (
             widgetOptions.disabled_features?.push("left_toolbar", "timeframes_toolbar", "header_widget");
         }
         const tvWidget = new Widget(widgetOptions);
-        // @ts-ignore
-        window.tvWidget = tvWidget;
+        tvWidget.applyOverrides({
+            "mainSeriesProperties.candleStyle.borderDownColor": "#089981",
+            "mainSeriesProperties.candleStyle.borderUpColor": "#F23645",
+            "mainSeriesProperties.candleStyle.downColor": "#089981",
+            "mainSeriesProperties.candleStyle.upColor": "#F23645",
+            "mainSeriesProperties.candleStyle.wickDownColor": "#089981",
+            "mainSeriesProperties.candleStyle.wickUpColor": "#F23645",
+        });
+
         tvWidget.onChartReady(() => {
             let chart = tvWidget.activeChart();
             props.model_view.attach(chart).then(() => {

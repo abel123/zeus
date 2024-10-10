@@ -1,0 +1,16 @@
+[package]
+name = "zen-core"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "zen_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+anymap3 = "1.0.0"
+chrono = "0.4.38"
+chrono-tz = "0.10.0"
+pyo3 = { version = "0.22.3",features = ["chrono", "chrono-tz"] }
+serde = { version = "1.0.210", features = ["derive"] }

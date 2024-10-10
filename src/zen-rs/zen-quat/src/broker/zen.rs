@@ -123,7 +123,7 @@ impl Store {
     pub(crate) fn onerror(&mut self, rsp: ResponseMessage) {
         debug!("onerror {:?}", rsp);
         match rsp.fields[3].as_str() {
-            "1100" => {
+            "1100"| "2103" | "2106" => {
                 self.store.clear();
             }
             _ => {}
