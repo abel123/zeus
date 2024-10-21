@@ -1,0 +1,6 @@
+debug: false
+min_bi_len: 4
+bi_type: Modern
+bi_change_threshold: 1
+max_bi_num: 500
+event_matcher_file: "./config/event_matcher.yaml"

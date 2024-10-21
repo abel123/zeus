@@ -30,13 +30,6 @@ export const OptionSelect = () => {
             <option disabled selected>
                 Stock Option
             </option>
-            {select_options.map((op, index) => {
-                return (
-                    <option key={index} value={(op as any).symbol}>
-                        <p className="bg-info"> {(op as any).symbol}</p>
-                    </option>
-                );
-            })}
         </select>
     );
 };

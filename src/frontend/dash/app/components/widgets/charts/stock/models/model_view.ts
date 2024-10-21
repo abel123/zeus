@@ -140,7 +140,7 @@ export class ModelView {
         }
         axios
             .post<Zen>(
-                "http://192.168.31.180:8080/zen/elements",
+                "http://127.0.0.1:8000/zen/elements",
                 {
                     from: range.from,
                     to: range.to,

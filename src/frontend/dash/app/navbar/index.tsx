@@ -82,7 +82,6 @@ export const NavBar = () => {
                         if (event.target.value != "") setSymbol(event.target.value);
                     }}
                 />
-                <OptionSelect></OptionSelect>
             </div>
             <div className="navbar-center">
                 <a className="normal-case text-xl">Terminal</a>
