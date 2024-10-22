@@ -9,7 +9,7 @@ class Resolution(Enum):
     Min15 = "15"
     Min30 = "30"
     Hour = "60"
-    day = "1D"
+    Day = "1D"
     Week = "1W"
     Month = "1M"
     year = "12M"

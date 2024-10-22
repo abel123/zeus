@@ -1,7 +1,9 @@
+import json
 import time
-from typing import Union
+from typing import Any, Union
 from fastapi import FastAPI, Request, Response, WebSocket
 from fastapi.responses import JSONResponse
+from jsonrpcserver import Result, Success, async_dispatch, method
 from loguru import logger
 import orjson
 import zen_core
@@ -59,5 +61,11 @@ async def zen_elements(req: ZenElementRequest):
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     while True:
-        data = await websocket.receive_text()
-        await websocket.send_text(f"Message text was: {data}")
+        data = await async_dispatch(await websocket.receive())
+        await websocket.send(data)
+
+
+@method
+async def history(req: Any) -> Result:
+    logger.debug("req {}", req)
+    return Success("pong")

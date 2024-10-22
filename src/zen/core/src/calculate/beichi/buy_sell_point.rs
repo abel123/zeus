@@ -132,7 +132,7 @@ impl BuySellPoint {
                 figure_max: None,
             };
             if !bs.fake_bi {
-                Notify::notify_signal(&czsc.symbol, signal.dt.unwrap(), signal.clone());
+                //Notify::notify_signal(&czsc.symbol, signal.dt.unwrap(), signal.clone());
             }
             result.push(signal);
             self.beichi_tracker.push(bs);

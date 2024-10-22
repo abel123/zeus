@@ -31,6 +31,19 @@ class BarSize(Enum):
     Month = "1 month"
 
 
+def adjust(d: date | datetime):
+    return (
+        datetime(
+            year=d.year,
+            month=d.month,
+            day=d.day,
+            tzinfo=timezone(timedelta(hours=-4), "EST"),
+        )
+        if not isinstance(d, datetime)
+        else d
+    )
+
+
 class Listener:
     def __init__(self, ib: IB, bars: BarDataList):
         self.ib = ib
@@ -39,16 +52,7 @@ class Listener:
         for bar in bars:
             self.zen.append(
                 zen_core.Bar(
-                    (
-                        datetime(
-                            year=bar.date.year,
-                            month=bar.date.month,
-                            day=bar.date.day,
-                            tzinfo=timezone(timedelta(hours=-4), "EST"),
-                        )
-                        if not isinstance(bar.date, datetime)
-                        else bar.date
-                    ),
+                    adjust(bar.date),
                     bar.open,
                     bar.close,
                     bar.high,
@@ -77,10 +81,11 @@ class Listener:
     def __del__(self):
         if self.bars.keepUpToDate:
             logger.debug(
-                "remove item {} - {} - {}",
+                "remove item {} - {} : {} - {}",
                 self.bars.contract,
                 self.bars.barSizeSetting,
                 self.bars[0].date,
+                self.bars[-1].date,
             )
             self.ib.cancelHistoricalData(self.bars)
 
@@ -93,13 +98,16 @@ class Broker:
         Resolution.Min15: BarSize.Min15,
         Resolution.Min30: BarSize.Min30,
         Resolution.Hour: BarSize.Hour,
-        Resolution.day: BarSize.Day,
+        Resolution.Day: BarSize.Day,
         Resolution.Week: BarSize.Week,
         Resolution.Month: BarSize.Month,
     }
 
     def __init__(self):
         self.ib = IB()
+        self.cache_key = dict()
+        self.ib.errorEvent += self.on_error
+
         self.lock = asyncio.Lock()
         self.cache = TTLCache(maxsize=90, ttl=timedelta(hours=1).seconds)
 
@@ -148,16 +156,7 @@ class Broker:
             l: Listener = self.cache.get(key)
             if l != None:
                 bar = l.bars[0]
-                first = (
-                    datetime(
-                        year=bar.date.year,
-                        month=bar.date.month,
-                        day=bar.date.day,
-                        tzinfo=timezone(timedelta(hours=-4), "EST"),
-                    )
-                    if not isinstance(bar.date, datetime)
-                    else bar.date
-                )
+                first = adjust(bar.date)
 
                 if first.timestamp() <= from_:
                     return l
@@ -173,8 +172,14 @@ class Broker:
         logger.debug("subscribe time {}", datetime.now() - start)
         if realtime:
             self.cache[key] = listener
+            self.cache_key[listener.bars.reqId] = key
 
         return listener
+
+    def on_error(self, reqId, errorCode, errorString, contract):
+        if reqId in self.cache_key:
+            logger.debug("del key {}", self.cache_key[reqId])
+            self.cache.pop(self.cache_key[reqId])
 
 
 def to_duration(delta: int) -> str:
