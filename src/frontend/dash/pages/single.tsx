@@ -22,7 +22,7 @@ export default function Home() {
             />
 
             <div className="grid grid-cols-7 bg-white h-full">
-                <div className="col-span-5 border-solid border-2 border-slate-300" key="3-2">
+                <div className="col-span-7 border-solid border-2 border-slate-300" key="3-2">
                     {isScriptReady && (
                         <StockChart
                             resolution={"60" as ResolutionString}
@@ -34,9 +34,6 @@ export default function Home() {
                             standalone={false}
                         />
                     )}
-                </div>
-                <div className="col-span-2 border-solid border-2 border-slate-300" key="3-1">
-                    <StockOptionTable></StockOptionTable>
                 </div>
             </div>
         </>

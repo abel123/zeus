@@ -58,10 +58,7 @@ export const MainGrid = (props: Props) => {
                             standalone={false}
                         />
                     </div>
-                    <div key="2-2" className="row-span-1 h-40">
-                        <StockOptionTable></StockOptionTable>
-                    </div>
-                    <div key="2-3" className="row-span-4 border-solid border-2 border-slate-300">
+                    <div key="2-3" className="row-span-5 border-solid border-2 border-slate-300">
                         <StockChart
                             resolution={"60" as ResolutionString}
                             macd_config={[{ fast: 4, slow: 9, signal: 9 }]}

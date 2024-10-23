@@ -85,7 +85,7 @@ export class ModelView {
             }
         );
         await this.createMACD();
-        if (true || this.macd_indicator_id.length > 0) {
+        if (true) {
             api.onDataLoaded().subscribe(
                 null,
                 () => {
@@ -140,7 +140,7 @@ export class ModelView {
         }
         axios
             .post<Zen>(
-                "http://127.0.0.1:8000/zen/elements",
+                "http://127.0.0.1:8080/zen/elements",
                 {
                     from: range.from,
                     to: range.to,

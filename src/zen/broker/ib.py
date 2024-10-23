@@ -81,7 +81,8 @@ class Listener:
     def __del__(self):
         if self.bars.keepUpToDate:
             logger.debug(
-                "remove item {} - {} : {} - {}",
+                "remove item({}) {} - {} : {} - {}",
+                self.bars.reqId,
                 self.bars.contract,
                 self.bars.barSizeSetting,
                 self.bars[0].date,
@@ -160,6 +161,10 @@ class Broker:
 
                 if first.timestamp() <= from_:
                     return l
+                else:
+                    logger.debug(
+                        "cache expire {} - {}", first, datetime.fromtimestamp(from_)
+                    )
 
         start = datetime.now()
         listener = await self._subscribe(
@@ -169,7 +174,12 @@ class Broker:
             self.mapping[freq].value,
             realtime,
         )
-        logger.debug("subscribe time {}", datetime.now() - start)
+        logger.debug(
+            "subscribe time {}: {} - {}",
+            datetime.now() - start,
+            listener.bars[0].date,
+            listener.bars[-1].date,
+        )
         if realtime:
             self.cache[key] = listener
             self.cache_key[listener.bars.reqId] = key
@@ -178,8 +188,12 @@ class Broker:
 
     def on_error(self, reqId, errorCode, errorString, contract):
         if reqId in self.cache_key:
-            logger.debug("del key {}", self.cache_key[reqId])
-            self.cache.pop(self.cache_key[reqId])
+            key = self.cache_key[reqId]
+            if self.cache.get(key) != None and self.cache.get(key).bars.reqId == reqId:
+                logger.debug("del key {}", key)
+                self.cache.pop(key, default=None)
+
+            self.cache_key.pop(reqId)
 
 
 def to_duration(delta: int) -> str:
