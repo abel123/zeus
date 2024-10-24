@@ -68,7 +68,7 @@ class Listener:
         bar = bars[-1]
         self.zen.append(
             zen_core.Bar(
-                bar.date,
+                adjust(bar.date),
                 bar.open,
                 bar.close,
                 bar.high,
@@ -163,7 +163,14 @@ class Broker:
                     return l
                 else:
                     logger.debug(
-                        "cache expire {} - {}", first, datetime.fromtimestamp(from_)
+                        "cache expire {} - {}  | {} - {}",
+                        first,
+                        datetime.fromtimestamp(
+                            from_,
+                            tz=timezone(timedelta(hours=-4), "EST"),
+                        ),
+                        first.timestamp(),
+                        from_,
                     )
 
         start = datetime.now()
@@ -194,10 +201,12 @@ class Broker:
                 self.cache.pop(key, default=None)
 
             self.cache_key.pop(reqId)
+        if reqId == -1 and errorCode in ["1100", "2103", "2106"]:
+            self.cache.clear()
 
 
 def to_duration(delta: int) -> str:
-    duration = timedelta(seconds=delta)
+    duration = max(timedelta(seconds=delta), (timedelta(days=2))) + timedelta(days=2)
     if duration.days >= 360:
         return f"{math.ceil(duration / timedelta(365))} Y"
     elif duration.days >= 30:

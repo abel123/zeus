@@ -1,12 +1,9 @@
-import json
 import time
 from typing import Any, Union
 from fastapi import FastAPI, Request, Response, WebSocket
 from fastapi.responses import JSONResponse
 from jsonrpcserver import Result, Success, async_dispatch, method
 from loguru import logger
-import orjson
-import zen_core
 from broker.ib import adjust
 from broker.mixed import Mixed, Resolution
 from fastapi.middleware.cors import CORSMiddleware
@@ -76,7 +73,7 @@ async def history(req: Any) -> Result:
       'to': -898350727, 'use_local': False, 'countback': 329}
     """
 
-    logger.debug("req {}", req)
+    # logger.debug("req {}", req)
     broker: Mixed = app.state.broker
     freq = Resolution(req["resolution"])
 

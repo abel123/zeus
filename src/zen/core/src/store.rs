@@ -93,9 +93,44 @@ impl Zen {
     }
 
     pub fn json(&self) -> String {
+        let last_dir = self.czsc.bi_list.last().map(|b| b.direction.clone()).unwrap_or(Direction::Up);
+        let unfinished = match last_dir {
+            Direction::Up => {
+                let bar = self.czsc
+                    .bars_ubi
+                    .iter()
+                    .skip(1)
+                    .min_by(|a, b| a.low.partial_cmp(&b.low).unwrap())
+                    .map(|a| a.clone())
+                    .unwrap();
+                ZenBiDetail {
+                    direction: String::from(Direction::Down.as_str()),
+                    end: bar.low,
+                    end_ts: bar.dt.timestamp(),
+                    start: self.czsc.bars_ubi[1].high,
+                    start_ts: self.czsc.bars_ubi[1].dt.timestamp(),
+                }
+            }
+            Direction::Down => {
+                let bar = self.czsc
+                    .bars_ubi
+                    .iter()
+                    .skip(1)
+                    .max_by(|a, b| a.high.partial_cmp(&b.high).unwrap())
+                    .map(|a| a.clone())
+                    .unwrap();
+                ZenBiDetail {
+                    direction: String::from(Direction::Up.as_str()),
+                    end: bar.high,
+                    end_ts: bar.dt.timestamp(),
+                    start: self.czsc.bars_ubi[1].low,
+                    start_ts: self.czsc.bars_ubi[1].dt.timestamp(),
+                }
+            }
+        };
         json!(
             {
-    "bi": {"finished": self.bi_info(), "unfinished": []},
+    "bi": {"finished": self.bi_info(), "unfinished": [unfinished]},
             "beichi": [self.bc_info()]
     }).to_string()
     }
