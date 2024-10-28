@@ -1,18 +1,18 @@
+use crate::analyze::CZSC;
+use crate::element::chan::Bar;
+use crate::element::chan::{NewBar, DT};
+use crate::element::enums::Direction;
+use crate::element::event::{Signal, ZS};
 use crate::utils::notify::Notify;
-use serde::Serialize;
-use std::cmp::PartialEq;
-use std::ops::Sub;
-use std::rc::Rc;
 use chrono::{FixedOffset, Local, TimeZone, Utc};
 use chrono_tz::Tz;
 use dict_derive::{FromPyObject, IntoPyObject};
 use pyo3::{pyclass, pymethods};
+use serde::Serialize;
+use std::cmp::PartialEq;
+use std::ops::Sub;
+use std::rc::Rc;
 use tracing::debug;
-use crate::element::chan::{NewBar, DT};
-use crate::element::enums::Direction;
-use crate::element::event::{Signal, ZS};
-use crate::element::chan::{Bar};
-use crate::analyze::CZSC;
 
 #[derive(Eq, PartialEq, Serialize, Debug, Clone)]
 enum PointType {
@@ -116,13 +116,15 @@ impl BuySellPoint {
                     } else {
                         "底"
                     }
-                        .to_string(),
+                    .to_string(),
                     format!("{}笔", bs.zs2.bi_count + 2),
                     "other".to_string(),
                 ),
                 dt: Some(
-                    Utc.timestamp_opt(bs.dt, 0).unwrap().fixed_offset().
-                        with_timezone(&FixedOffset::east_opt(8 * 3600).unwrap())
+                    Utc.timestamp_opt(bs.dt, 0)
+                        .unwrap()
+                        .fixed_offset()
+                        .with_timezone(&FixedOffset::east_opt(8 * 3600).unwrap()),
                 ),
                 figure: if bs.bc_type.contains(&BeichiType::Diff) {
                     100.0
@@ -132,7 +134,7 @@ impl BuySellPoint {
                 figure_max: None,
             };
             if !bs.fake_bi {
-                //Notify::notify_signal(&czsc.symbol, signal.dt.unwrap(), signal.clone());
+                Notify::notify_signal(&czsc.symbol, signal.dt.unwrap(), signal.clone());
             }
             result.push(signal);
             self.beichi_tracker.push(bs);
@@ -360,10 +362,7 @@ impl BuySellPoint {
                         .unwrap_or(0),
                     macd_b_val: macd_b.map(|x| x.borrow().macd_4_9_9.2).unwrap_or(0.0),
                     dt: if fake {
-                        czsc.bars_ubi
-                            .last()
-                            .map(|x| x.dt.timestamp())
-                            .unwrap_or(0)
+                        czsc.bars_ubi.last().map(|x| x.dt.timestamp()).unwrap_or(0)
                     } else {
                         bi_last.fx_b.dt.timestamp()
                     },
@@ -433,10 +432,7 @@ impl BuySellPoint {
                         .unwrap_or(0),
                     macd_b_val: macd_b.map(|x| x.borrow().macd_4_9_9.2).unwrap_or(0.0),
                     dt: if fake {
-                        czsc.bars_ubi
-                            .last()
-                            .map(|x| x.dt.timestamp())
-                            .unwrap_or(0)
+                        czsc.bars_ubi.last().map(|x| x.dt.timestamp()).unwrap_or(0)
                     } else {
                         bi_last.fx_b.dt.timestamp()
                     },

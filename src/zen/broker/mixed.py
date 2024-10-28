@@ -8,6 +8,9 @@ class Mixed:
     def __init__(self):
         self.ib = ib.Broker()
 
+    def __del__(self):
+        self.ib.ib.disconnect()
+
     async def subscribe(
         self,
         symbol: str,

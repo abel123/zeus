@@ -187,14 +187,16 @@ impl CZSC {
 
         let benchmark = if self.settings.bi_change_threshold > 0.5f32 && self.bi_list.len() >= 5 {
             Some(
+                /*
                 self
                     .bi_list
                     .iter()
                     .rev()
                     .take(5)
                     .map(|x| x.power_price())
-                    .min_by(|a, b| a.partial_cmp(b).unwrap()).unwrap()
-                    .min(self.bi_list.last().unwrap().power_price()),
+                    .max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap()
+                 */
+                self.bi_list.last().unwrap().power_price()
             )
         } else {
             None

@@ -1,6 +1,8 @@
 import os
 import logging
 import sys
+import zen_core
+
 from app import app
 
 from uvicorn import Config, Server
@@ -9,6 +11,8 @@ from loguru import logger
 from utils.logger import InterceptHandler
 
 LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL", "DEBUG"))
+
+zen_core.init()
 
 
 def setup_logging():
@@ -28,15 +32,13 @@ def setup_logging():
 
 if __name__ == "__main__":
     server = Server(
-        Config(
-            "app:app",
-            host="0.0.0.0",
-            log_level=LOG_LEVEL,
-        ),
+        Config("app:app", host="0.0.0.0", log_level=LOG_LEVEL, port=8080),
     )
 
     # setup logging last, to make sure no library overwrites it
     # (they shouldn't, but it happens)
     setup_logging()
+    logging.getLogger("uvicorn.access").disabled = True
+    logging.getLogger("uvicorn.protocols.http.httptools_impl").disabled = True
 
     server.run()

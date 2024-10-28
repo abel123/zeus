@@ -1,4 +1,5 @@
 import curd
+import flag
 
 Market = {
     "china": {"session": "0930-1131,1300-1501", "timezone": "Asia/Shanghai"},
@@ -70,7 +71,7 @@ async def resolve_symbol(symbol: str):
         ),
         "description": sym.desc,
         "type": type,
-        "session": Market[sym.screener]["session"],
+        "session": Market[sym.screener]["session"] if flag.RTH == True else "0000-2400",
         "exchange": sym.exchange,
         "listed_exchange": sym.exchange,
         "timezone": Market[sym.screener]["timezone"],

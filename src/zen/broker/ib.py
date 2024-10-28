@@ -8,6 +8,8 @@ import zen_core
 from broker.enums import Resolution
 from cachetools import TTLCache
 
+import flag
+
 
 class BarSize(Enum):
     Sec = "1 sec"
@@ -48,7 +50,7 @@ class Listener:
     def __init__(self, ib: IB, bars: BarDataList):
         self.ib = ib
         self.bars = bars
-        self.zen = zen_core.Zen(str(bars.contract), zen_core.Freq.F60)
+        self.zen = zen_core.Zen(str(bars.contract.symbol), zen_core.Freq.F60)
         for bar in bars:
             self.zen.append(
                 zen_core.Bar(
@@ -112,6 +114,9 @@ class Broker:
         self.lock = asyncio.Lock()
         self.cache = TTLCache(maxsize=90, ttl=timedelta(hours=1).seconds)
 
+    def __del__(self):
+        self.cache.clear()
+
     async def _reconnect(self):
         async with self.lock:
             if self.ib.client.connState == Client.DISCONNECTED:
@@ -131,7 +136,7 @@ class Broker:
             durationStr=duration,
             barSizeSetting=bar_size,
             whatToShow="TRADES",
-            useRTH=True,
+            useRTH=flag.RTH,
             formatDate=2,
             keepUpToDate=realtime,
         )
@@ -201,7 +206,8 @@ class Broker:
                 self.cache.pop(key, default=None)
 
             self.cache_key.pop(reqId)
-        if reqId == -1 and errorCode in ["1100", "2103", "2106"]:
+        if reqId == -1 and errorCode in [1100, 2103, 2106]:
+            logger.warning("clear cache: {} {}: {}", reqId, errorCode, errorString)
             self.cache.clear()
 
 

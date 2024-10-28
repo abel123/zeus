@@ -3,6 +3,7 @@ use std::{env, fs};
 
 use crate::element::event::Matcher;
 use config::{Config, ConfigError, Environment, File};
+use notify_rust::{get_bundle_identifier_or_default, set_application};
 use serde::Deserialize;
 use tracing::debug;
 

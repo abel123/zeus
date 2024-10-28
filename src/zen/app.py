@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 import time
 from typing import Any, Union
 from fastapi import FastAPI, Request, Response, WebSocket
@@ -12,7 +13,16 @@ import curd
 from param import ZenElementRequest
 import udf
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    broker: Mixed = app.state.broker
+    broker.ib.cache.clear()
+    broker.ib.ib.disconnect()
+
+
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -43,7 +53,7 @@ async def log_requests(request: Request, call_next):
 async def zen_elements(req: ZenElementRequest):
     freq = Resolution(req.resolution)
 
-    logger.debug("req {}, {}", req, freq)
+    # logger.debug("req {}, {}", req, freq)
     broker: Mixed = app.state.broker
     listener = await broker.subscribe(req.symbol, freq, req.from_, req.to, None, False)
 
