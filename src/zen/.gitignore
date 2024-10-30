@@ -72,3 +72,6 @@ docs/_build/
 .python-version
 
 tradingview.db
+bar.cache*
+data/us_option
+*pdf

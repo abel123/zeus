@@ -6,3 +6,4 @@ class ZenElementRequest(BaseModel):
     resolution: str
     symbol: str
     to: int
+    use_local: bool

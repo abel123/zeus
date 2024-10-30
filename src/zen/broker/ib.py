@@ -2,6 +2,7 @@ import asyncio
 from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 import math
+import os
 from ib_insync import *
 from loguru import logger
 import zen_core
@@ -66,6 +67,24 @@ class Listener:
         logger.debug("bars {}", len(bars))
         self.bars.updateEvent += self._update_data
 
+    def __setstate__(self, state):
+        # logger.debug("state {}", state)
+        self.bars = state["bars"]
+        self.zen = zen_core.Zen(str(self.bars.contract.symbol), zen_core.Freq.F60)
+        for bar in self.bars:
+            self.zen.append(
+                zen_core.Bar(
+                    adjust(bar.date),
+                    bar.open,
+                    bar.close,
+                    bar.high,
+                    bar.low,
+                    bar.volume,
+                ),
+                False,
+            )
+        # logger.debug("bars {}", len(self.bars))
+
     def _update_data(self, bars: BarDataList, hasNewBar):
         bar = bars[-1]
         self.zen.append(
@@ -87,8 +106,8 @@ class Listener:
                 self.bars.reqId,
                 self.bars.contract,
                 self.bars.barSizeSetting,
-                self.bars[0].date,
-                self.bars[-1].date,
+                self.bars[0].date if len(self.bars) > 0 else None,
+                self.bars[-1].date if len(self.bars) > 0 else None,
             )
             self.ib.cancelHistoricalData(self.bars)
 
@@ -120,7 +139,9 @@ class Broker:
     async def _reconnect(self):
         async with self.lock:
             if self.ib.client.connState == Client.DISCONNECTED:
-                await self.ib.connectAsync(port=14001, readonly=True)
+                await self.ib.connectAsync(
+                    clientId=os.getenv("ID", 1), port=14001, readonly=True
+                )
 
     async def _subscribe(
         self,
@@ -189,8 +210,8 @@ class Broker:
         logger.debug(
             "subscribe time {}: {} - {}",
             datetime.now() - start,
-            listener.bars[0].date,
-            listener.bars[-1].date,
+            listener.bars[0].date if len(listener.bars) > 0 else None,
+            listener.bars[-1].date if len(listener.bars) > 0 else None,
         )
         if realtime:
             self.cache[key] = listener

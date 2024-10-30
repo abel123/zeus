@@ -134,24 +134,21 @@ export class ModelView {
             return;
         }
 
-        let headers = {};
+        let headers = { use_local: false };
         if ((globalThis as any).use_local) {
-            headers = { Realtime: "false" };
+            headers = { use_local: true };
         }
         axios
-            .post<Zen>(
-                "http://127.0.0.1:8080/zen/elements",
-                {
+            .post<Zen>("http://127.0.0.1:8080/zen/elements", {
+                ...{
                     from: range.from,
                     to: range.to,
                     symbol: symbol?.full_name,
                     resolution: resolution,
                     macd_config: this.macd_config,
                 },
-                {
-                    headers: headers,
-                }
-            )
+                ...headers,
+            })
             .then((response) => {
                 this.groupIds.forEach((id: any, idx: any) => {
                     try {

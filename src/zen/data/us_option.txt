@@ -1,0 +1,10 @@
+代码	名称	市场	
+AMZN	亚马逊	美股
+MSFT	微软	美股
+META	Meta Platforms	美股
+SPY	SPDR 标普500指数ETF	美股
+AAPL	苹果	美股
+NVDA	英伟达	美股
+TSLA	特斯拉	美股
+KWEB 中概互联 美股
+SMCI 超微 美股

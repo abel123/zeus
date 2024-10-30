@@ -42,9 +42,10 @@ async def log_requests(request: Request, call_next):
 
     process_time = (time.time() - start_time) * 1000
     formatted_process_time = "{0:.2f}".format(process_time)
-    logger.info(
-        f"rid={request.url.path} completed_in={formatted_process_time}ms status_code={response.status_code}"
-    )
+    if request.url.path != "/zen/elements":
+        logger.info(
+            f"rid={request.url.path} completed_in={formatted_process_time}ms status_code={response.status_code}"
+        )
 
     return response
 
@@ -53,9 +54,11 @@ async def log_requests(request: Request, call_next):
 async def zen_elements(req: ZenElementRequest):
     freq = Resolution(req.resolution)
 
-    # logger.debug("req {}, {}", req, freq)
+    logger.debug("req {}, {}", req, freq)
     broker: Mixed = app.state.broker
-    listener = await broker.subscribe(req.symbol, freq, req.from_, req.to, None, False)
+    listener = await broker.subscribe(
+        req.symbol, freq, req.from_, req.to, None, req.use_local
+    )
 
     return Response(content=listener.zen.json(), media_type=JSONResponse.media_type)
 
@@ -90,7 +93,9 @@ async def history(req: Any) -> Result:
     from_, to = req["from"], req["to"]
     count_back = req["countback"]
     bars = (
-        await broker.subscribe(req["symbol"], freq, req["from"], req["to"], None, False)
+        await broker.subscribe(
+            req["symbol"], freq, req["from"], req["to"], None, req["use_local"]
+        )
     ).bars
 
     if count_back is None:
