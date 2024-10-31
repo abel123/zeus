@@ -11,6 +11,7 @@ from cachetools import LRUCache
 class Mixed:
     def __init__(self):
         self.ib = ib.Broker()
+        self.pc = PersistentCache(LRUCache, "bar.cache", maxsize=20000)
 
     def __del__(self):
         self.ib.ib.disconnect()
@@ -58,9 +59,7 @@ class Mixed:
         )
         return listener
 
-    @cachedasyncmethod(
-        cache=lambda self: PersistentCache(LRUCache, "bar.cache", maxsize=20000)
-    )
+    @cachedasyncmethod(cache=lambda self: self.pc)
     async def _local_subscribe(
         self,
         symbol: str,

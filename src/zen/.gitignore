@@ -75,3 +75,5 @@ tradingview.db
 bar.cache*
 data/us_option
 *pdf
+data/us_stock
+data/china_stock

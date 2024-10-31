@@ -1,5 +1,7 @@
 import asyncio
 import os
+
+from loguru import logger
 from broker.enums import Resolution
 from broker.mixed import Mixed
 
@@ -7,9 +9,9 @@ from broker.mixed import Mixed
 async def sync_to_local(lines):
     broker = Mixed()
     os.environ["ID"] = "233"
-    for l in lines[1:]:
+    for idx, l in enumerate(lines[1:]):
         l = l.split()
-        print(l)
+        logger.debug(f"{idx} {l}")
         coroutines = []
         for freq in [
             Resolution.Week,

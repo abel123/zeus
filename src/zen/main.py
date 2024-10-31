@@ -5,14 +5,14 @@ import zen_core
 from app import app
 from uvicorn import Config, Server
 from loguru import logger
-from script import m_screenshot
+from script import m_screenshot, ttm_squeeze_scaner
 from utils.logger import InterceptHandler
 import asyncio
 import click
 from script.datafeed import sync_to_local
 
 
-LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL", "DEBUG"))
+LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO"))
 
 zen_core.init()
 
@@ -50,7 +50,15 @@ def sync(filename):
 def screenshot(filename):
     with open(filename, "r") as f:
         data = f.readlines()
-        m_screenshot.excute(data)
+        m_screenshot.excute(filename.split("/")[-1].split(".")[0], data)
+
+
+@cli.command()
+@click.argument("filename")
+def ttm(filename):
+    with open(filename, "r") as f:
+        data = f.readlines()
+        ttm_squeeze_scaner.excute(data)
 
 
 @cli.command()
