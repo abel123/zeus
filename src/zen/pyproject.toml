@@ -23,7 +23,8 @@ shelved-cache = "^0.4.0"
 click = "^8.1.7"
 selenium = "^4.25.0"
 pandas-ta = "^0.3.14b0"
-
+colored = "^2.2.4"
+numpy = "1.26.4"
 
 [build-system]
 requires = ["poetry-core"]

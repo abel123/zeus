@@ -48,10 +48,23 @@ def adjust(d: date | datetime):
 
 
 class Listener:
+    mapping_ = {
+        BarSize.Min: zen_core.Freq.F1,
+        BarSize.Min3: zen_core.Freq.F3,
+        BarSize.Min5: zen_core.Freq.F5,
+        BarSize.Min15: zen_core.Freq.F15,
+        BarSize.Hour: zen_core.Freq.F60,
+        BarSize.Day: zen_core.Freq.D,
+        BarSize.Week: zen_core.Freq.W,
+    }
+
     def __init__(self, ib: IB, bars: BarDataList):
         self.ib = ib
         self.bars = bars
-        self.zen = zen_core.Zen(str(bars.contract.symbol), zen_core.Freq.F60)
+        self.zen = zen_core.Zen(
+            str(bars.contract.symbol),
+            Listener.mapping_.get(BarSize(bars.barSizeSetting), zen_core.Freq.F60),
+        )
         for bar in bars:
             self.zen.append(
                 zen_core.Bar(
@@ -70,7 +83,10 @@ class Listener:
     def __setstate__(self, state):
         # logger.debug("state {}", state)
         self.bars = state["bars"]
-        self.zen = zen_core.Zen(str(self.bars.contract.symbol), zen_core.Freq.F60)
+        self.zen = zen_core.Zen(
+            str(self.bars.contract.symbol),
+            Listener.mapping_.get(BarSize(self.bars.barSizeSetting), zen_core.Freq.F60),
+        )
         for bar in self.bars:
             self.zen.append(
                 zen_core.Bar(

@@ -54,7 +54,7 @@ async def log_requests(request: Request, call_next):
 async def zen_elements(req: ZenElementRequest):
     freq = Resolution(req.resolution)
 
-    logger.debug("req {}, {}", req, freq)
+    # logger.debug("req {}, {}", req, freq)
     broker: Mixed = app.state.broker
     listener = await broker.subscribe(
         req.symbol, freq, req.from_, req.to, None, req.use_local

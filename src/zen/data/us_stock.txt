@@ -24,7 +24,6 @@ ZS	Zscaler	美股
 CL	高露洁	美股
 COR	Cencora	美股
 MET	大都会人寿	美股
-EMR	艾默生电气	美股
 NEM	纽曼矿业	美股
 UBER	优步	美股
 U	Unity Software	美股
@@ -182,7 +181,6 @@ ALL	好事达	美股
 ELV	Elevance Health	美股
 AIG	美国国际集团	美股
 TSN	泰森食品	美股
-BAX	百特国际	美股
 WYNN	永利度假村	美股
 DLR	数字房地产信托公司	美股
 MSTR	MicroStrategy	美股
@@ -287,7 +285,6 @@ PDD	拼多多	美股
 WDC	西部数据	美股
 TGT	塔吉特	美股
 DJT	特朗普媒体科技集团	美股
-CMI	康明斯	美股
 MA	万事达	美股
 CELH	Celsius Holdings	美股
 EXPE	Expedia	美股

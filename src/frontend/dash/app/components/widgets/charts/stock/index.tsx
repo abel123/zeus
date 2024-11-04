@@ -31,7 +31,7 @@ const defaultWidgetProps: Partial<ChartingLibraryWidgetOptions> = {
     user_id: "zen_user_id",
     fullscreen: false,
     autosize: true,
-    symbol: "TSLA",
+    symbol: "SPY",
 };
 
 interface ChartConfig {

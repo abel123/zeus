@@ -1,10 +1,23 @@
 from contextlib import asynccontextmanager
+import json
 from typing import List, LiteralString
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from sqlmodel import Field, Session, SQLModel, create_engine, or_, select
-
-from model.db import Symbols
+from sqlmodel import (
+    Field,
+    Session,
+    SQLModel,
+    create_engine,
+    delete,
+    insert,
+    or_,
+    select,
+)
+from shelved_cache.decorators import asynccached
+from shelved_cache import PersistentCache
+from cachetools import LRUCache
+from model.db import Symbols, Ttm_Info
 
 DATABASE_URL = "sqlite+aiosqlite:///tradingview.db"
 
@@ -24,6 +37,10 @@ async def get_session() -> AsyncSession:
         yield session
 
 
+pc = PersistentCache(LRUCache, "search.cache", maxsize=200)
+
+
+@asynccached(cache=pc)
 async def select_symbols(
     screener: LiteralString,
     type: LiteralString,
@@ -57,3 +74,13 @@ async def resolve_symbols(
         )
 
         return (await session.execute(statement)).first()
+
+
+async def update_ttm(rows: list):
+    async with get_session() as session:
+        await session.execute(delete(Ttm_Info).where(1 == 1))
+        logger.debug("rows {}", rows[0])
+
+        for s, info in rows:
+            session.add(Ttm_Info(symbol=s, info=json.dumps(info)))
+        await session.commit()
