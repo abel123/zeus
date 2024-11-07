@@ -368,3 +368,4 @@ APA	阿帕奇石油	美股
 SMCI	超微电脑	美股
 CVNA	Carvana	美股
 KWEB 中概互联 美股
+CRSP CRISPR Therapeutics 美股

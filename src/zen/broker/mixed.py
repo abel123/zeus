@@ -9,6 +9,20 @@ from cachetools import LRUCache
 
 
 class Mixed:
+    offset = {
+        Resolution.Min: timedelta(hours=8),
+        Resolution.Min3: timedelta(days=8),
+        Resolution.Min5: timedelta(days=8),
+        Resolution.minute_10: timedelta(days=12),
+        Resolution.Min15: timedelta(days=12),
+        Resolution.Min30: timedelta(days=200),
+        Resolution.Hour: timedelta(days=300 / 6),
+        Resolution.Day: timedelta(days=300),
+        Resolution.Week: timedelta(days=300 * 7),
+        Resolution.Month: timedelta(days=20 * 365),
+        Resolution.year: timedelta(days=20 * 365),
+    }
+
     def __init__(self):
         self.ib = ib.Broker()
         self.pc = PersistentCache(LRUCache, "bar.cache", maxsize=20000)
@@ -26,6 +40,7 @@ class Mixed:
         local: bool,
     ):
         [exchange, symbol] = symbol.split(":")[:2]
+
         if local:
             d = date.today() - timedelta(days=1)
             to = datetime(
@@ -35,27 +50,15 @@ class Mixed:
                 hour=18,
                 tzinfo=timezone(timedelta(hours=-4), "EST"),
             ).timestamp()
-            offset = {
-                Resolution.Min: timedelta(hours=8),
-                Resolution.Min3: timedelta(days=8),
-                Resolution.Min5: timedelta(days=8),
-                Resolution.minute_10: timedelta(days=12),
-                Resolution.Min15: timedelta(days=12),
-                Resolution.Min30: timedelta(days=200),
-                Resolution.Hour: timedelta(days=300 / 6),
-                Resolution.Day: timedelta(days=300),
-                Resolution.Week: timedelta(days=300 * 7),
-                Resolution.Month: timedelta(days=20 * 365),
-                Resolution.year: timedelta(days=20 * 365),
-            }
+
             return await self._local_subscribe(
                 symbol=symbol,
                 freq=freq,
-                from_=to - int(offset[freq].total_seconds()),
+                from_=to - int(self.offset[freq].total_seconds()),
                 to=to,
             )
         listener = await self.ib.subscribe(
-            symbol=symbol, freq=freq, from_=from_, to=to, non_realtime=False
+            symbol=symbol, freq=freq, from_=from_, to=to, non_realtime=(cout_back == -1)
         )
         return listener
 

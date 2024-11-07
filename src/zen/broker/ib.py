@@ -223,13 +223,14 @@ class Broker:
             self.mapping[freq].value,
             realtime,
         )
-        logger.debug(
-            "subscribe time {}: {} - {}",
-            datetime.now() - start,
-            listener.bars[0].date if len(listener.bars) > 0 else None,
-            listener.bars[-1].date if len(listener.bars) > 0 else None,
-        )
+
         if realtime:
+            logger.debug(
+                "subscribe time {}: {} - {}",
+                datetime.now() - start,
+                listener.bars[0].date if len(listener.bars) > 0 else None,
+                listener.bars[-1].date if len(listener.bars) > 0 else None,
+            )
             self.cache[key] = listener
             self.cache_key[listener.bars.reqId] = key
 

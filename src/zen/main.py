@@ -55,10 +55,12 @@ def screenshot(filename):
 
 @cli.command()
 @click.argument("filename")
-def ttm(filename):
+@click.option("--nofilter", "-n", type=bool, default=False, is_flag=True)
+@click.option("--latest", "-l", type=bool, default=False, is_flag=True)
+def ttm(filename, nofilter, latest):
     with open(filename, "r") as f:
         data = f.readlines()
-        ttm_squeeze_scaner.excute(data)
+        asyncio.run(ttm_squeeze_scaner.excute(data, nofilter, latest))
 
 
 @cli.command()

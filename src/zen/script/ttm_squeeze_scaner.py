@@ -4,7 +4,9 @@ document: https://www.tradingview.com/script/7VXF3amy-Multi-Timeframe-TTM-Squeez
 """
 
 import asyncio
+from datetime import datetime, timedelta
 import os
+import time
 import colored
 from loguru import logger
 from broker.enums import Resolution
@@ -15,7 +17,8 @@ from colored import Back, Fore, Style
 from curd import update_ttm
 
 
-def excute(lines):
+async def excute(lines, nofilter, latest=False):
+    logger.debug("args {} {}", nofilter, latest)
     os.environ["ID"] = "233"
 
     broker = Mixed()
@@ -27,7 +30,19 @@ def excute(lines):
         logger.info(f"{idx} {l}")
         info = {}
         for freq in [Resolution.Day, Resolution.Hour, Resolution.Min15]:
-            listener = asyncio.run(broker.subscribe(f":{l[0]}", freq, 0, 0, None, True))
+            if latest:
+                time.sleep(1)
+            last = datetime.now().timestamp() - timedelta(minutes=1).total_seconds()
+            listener = await broker.subscribe(
+                f":{l[0]}",
+                freq,
+                int(last - Mixed.offset[freq].total_seconds()),
+                int(last),
+                -1 if latest else None,
+                False if latest else True,
+            )
+
+            # logger.debug("bars {}", listener.bars)
             df = util.df(listener.bars[max(len(listener.bars) - 100, 0) :])
             out = df.ta.squeeze_pro(
                 high=df["high"],
@@ -71,7 +86,7 @@ def excute(lines):
             }
 
         rows.append((l[0], info))
-    asyncio.run(update_ttm(rows))
+    # asyncio.run(update_ttm(rows))
 
     rows.sort(key=lambda f: score(f, True))
     count = 0
@@ -79,14 +94,14 @@ def excute(lines):
         if (
             sum(r["1D"]["SQZPRO_ON_WIDE"][-8:]) > 5
             and r["1D"]["SQZPRO_ON_WIDE"][-2] == 1
-        ):
+        ) or nofilter:
             print(
                 "{:<3} {:<5}: 1D - {:<12}: {} |  1h - {} | 15 - {}".format(
                     count,
                     symbol,
                     f"{r["1D"]["wide_count"]}, {r["1D"]["normal_count"]}, {r["1D"]["narrow_count"]}",
-                    f"{color_line(r["1D"], 7)}",
-                    f"{color_line(r["60"],10)}",
+                    f"{color_line(r["1D"], 10)}",
+                    f"{color_line(r["60"],18)}",
                     f"{color_line(r["15"],15)}",
                 )
             )

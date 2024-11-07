@@ -78,3 +78,5 @@ data/us_option
 data/us_stock
 data/china_stock
 search.cache*
+out.txt
+a.txt

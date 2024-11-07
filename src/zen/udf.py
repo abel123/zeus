@@ -5,7 +5,7 @@ Market = {
     "china": {"session": "0930-1131,1300-1501", "timezone": "Asia/Shanghai"},
     "hongkong": {"session": "0930-1200,1300-1601", "timezone": "Asia/Shanghai"},
     "america": {
-        "session": "0900-1631",
+        "session": "0900-1731",
         "timezone": "America/New_York",
     },
 }
