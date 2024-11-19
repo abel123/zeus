@@ -1,11 +1,12 @@
 from datetime import date, datetime, timedelta, timezone
-import zen_core
+import pickle
+from loguru import logger
 
-from broker import ib
+from broker import futu, ib
 from broker.enums import Resolution
 from shelved_cache import cachedasyncmethod
 from shelved_cache import PersistentCache
-from cachetools import LRUCache
+from cachetools import TTLCache
 
 
 class Mixed:
@@ -25,7 +26,12 @@ class Mixed:
 
     def __init__(self):
         self.ib = ib.Broker()
-        self.pc = PersistentCache(LRUCache, "bar.cache", maxsize=20000)
+        self.futu = futu.Broker()
+
+        # FIXME: adjust size accordingly
+        self.pc = PersistentCache(
+            TTLCache, "bar.cache", maxsize=4000, ttl=timedelta(days=1).total_seconds()
+        )
 
     def __del__(self):
         self.ib.ib.disconnect()
@@ -39,6 +45,17 @@ class Mixed:
         cout_back: int | None,
         local: bool,
     ):
+        if "." in symbol:
+            [exchange, symbol] = symbol.split(":")[:2]
+            listener = await self.futu.subscribe(
+                symbol=symbol,
+                freq=freq,
+                from_=from_,
+                to=to,
+                non_realtime=(cout_back == -1),
+            )
+            return listener
+
         [exchange, symbol] = symbol.split(":")[:2]
 
         if local:
@@ -63,6 +80,33 @@ class Mixed:
         return listener
 
     @cachedasyncmethod(cache=lambda self: self.pc)
+    async def _local_subscribe_load(
+        self,
+        symbol: str,
+        freq: Resolution,
+        from_: int,
+        to: int,
+    ):
+        logger.debug(
+            "local subscribe {} {} {} {}",
+            symbol,
+            freq,
+            datetime.fromtimestamp(
+                from_,
+                tz=timezone(timedelta(hours=+8), "CST"),
+            ),
+            datetime.fromtimestamp(
+                to,
+                tz=timezone(timedelta(hours=+8), "CST"),
+            ),
+        )
+        listener = await self.ib.subscribe(
+            symbol=symbol, freq=freq, from_=from_, to=to, non_realtime=True
+        )
+        listener.ib = None
+        listener.zen = None
+        return pickle.dumps(listener, protocol=pickle.HIGHEST_PROTOCOL)
+
     async def _local_subscribe(
         self,
         symbol: str,
@@ -70,9 +114,7 @@ class Mixed:
         from_: int,
         to: int,
     ):
-        listener = await self.ib.subscribe(
-            symbol=symbol, freq=freq, from_=from_, to=to, non_realtime=True
+        load = await self._local_subscribe_load(
+            symbol=symbol, freq=freq, from_=from_, to=to
         )
-        listener.ib = None
-        listener.zen = None
-        return listener
+        return pickle.loads(load)

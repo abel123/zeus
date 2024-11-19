@@ -32,6 +32,9 @@ app.add_middleware(
 )
 
 app.state.broker = Mixed()
+logger.info("init local db")
+app.state.broker.pc.initialize_if_not_initialized()
+logger.info("init local db finished")
 
 
 @app.middleware("http")

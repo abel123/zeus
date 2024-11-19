@@ -24,5 +24,6 @@ class InterceptHandler(logging.Handler):
 
 
 logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
-# logging.getLogger("ib_insync.client").setLevel(logging.INFO)
+logging.getLogger("ib_insync.client").setLevel(logging.INFO)
 logging.getLogger("websockets.legacy.protocol").setLevel(logging.INFO)
+# logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)

@@ -24,7 +24,7 @@ DATABASE_URL = "sqlite+aiosqlite:///tradingview.db"
 # Create an asynchronous engine for the database
 engine = create_async_engine(
     DATABASE_URL,
-    echo=True,
+    echo=False,
     future=True,
 )
 
@@ -37,10 +37,6 @@ async def get_session() -> AsyncSession:
         yield session
 
 
-pc = PersistentCache(LRUCache, "search.cache", maxsize=200)
-
-
-@asynccached(cache=pc)
 async def select_symbols(
     screener: LiteralString,
     type: LiteralString,
@@ -53,7 +49,6 @@ async def select_symbols(
             .where(
                 or_(
                     Symbols.symbol.like(f"%{user_input}"),
-                    Symbols.desc.like(f"%{user_input}%"),
                 )
             )
             .limit(100)
@@ -68,9 +63,8 @@ async def resolve_symbols(
     async with get_session() as session:
         statement = (
             select(Symbols)
-            .where(Symbols.screener == screener)
-            .where(Symbols.symbol == symbol)
-            .limit(100)
+            # .where(Symbols.screener == screener)
+            .where(Symbols.symbol == symbol).limit(100)
         )
 
         return (await session.execute(statement)).first()

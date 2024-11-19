@@ -11,7 +11,9 @@ import asyncio
 import click
 from script.datafeed import sync_to_local
 
+import nest_asyncio
 
+nest_asyncio.apply()
 LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO"))
 
 zen_core.init()
@@ -57,10 +59,12 @@ def screenshot(filename):
 @click.argument("filename")
 @click.option("--nofilter", "-n", type=bool, default=False, is_flag=True)
 @click.option("--latest", "-l", type=bool, default=False, is_flag=True)
-def ttm(filename, nofilter, latest):
+@click.option("--reverse", "-r", type=bool, default=False, is_flag=True)
+@click.option("--sort", "-s", type=str, default="sum")
+def ttm(filename, nofilter, latest, reverse, sort):
     with open(filename, "r") as f:
         data = f.readlines()
-        asyncio.run(ttm_squeeze_scaner.excute(data, nofilter, latest))
+        asyncio.run(ttm_squeeze_scaner.excute(data, nofilter, latest, reverse, sort))
 
 
 @cli.command()

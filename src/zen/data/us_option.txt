@@ -9,3 +9,4 @@ TSLA	特斯拉	美股
 GOOGL 谷歌 美股
 AMD AMD 美股
 KWEB 中概互联 美股
+IWM 罗素2000 美股

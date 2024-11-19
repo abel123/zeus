@@ -1,8 +1,3 @@
-use std::fmt::format;
-use dict_derive::{FromPyObject, IntoPyObject};
-use pyo3::{pyclass, pymethods};
-use serde::Serialize;
-use serde_json::json;
 use crate::analyze::{Symbol, CZSC};
 use crate::calculate::beichi::buy_sell_point::{BSPoint, BuySellPoint};
 use crate::calculate::others;
@@ -11,6 +6,11 @@ use crate::element::chan::{Bar, BI};
 use crate::element::enums::{Direction, Freq};
 use crate::element::event::Signal;
 use crate::setting::Settings;
+use dict_derive::{FromPyObject, IntoPyObject};
+use pyo3::{pyclass, pymethods};
+use serde::Serialize;
+use serde_json::json;
+use std::fmt::format;
 
 #[pyclass(unsendable)]
 pub(crate) struct Zen {
@@ -67,22 +67,21 @@ impl Zen {
     pub fn bi_info(&self) -> Vec<ZenBiDetail> {
         let mut ret = vec![];
         for bi in &self.czsc.bi_list {
-            ret.push(
-                ZenBiDetail {
-                    direction: String::from(bi.direction.as_str()),
-                    end: if bi.direction == Direction::Down {
-                        bi.low()
-                    } else {
-                        bi.high()
-                    },
-                    end_ts: bi.fx_b.dt.timestamp(),
-                    start: if bi.direction == Direction::Down {
-                        bi.high()
-                    } else {
-                        bi.low()
-                    },
-                    start_ts: bi.fx_a.dt.timestamp(),
-                })
+            ret.push(ZenBiDetail {
+                direction: String::from(bi.direction.as_str()),
+                end: if bi.direction == Direction::Down {
+                    bi.low()
+                } else {
+                    bi.high()
+                },
+                end_ts: bi.fx_b.dt.timestamp(),
+                start: if bi.direction == Direction::Down {
+                    bi.high()
+                } else {
+                    bi.low()
+                },
+                start_ts: bi.fx_a.dt.timestamp(),
+            })
         }
 
         ret
@@ -93,10 +92,16 @@ impl Zen {
     }
 
     pub fn json(&self) -> String {
-        let last_dir = self.czsc.bi_list.last().map(|b| b.direction.clone()).unwrap_or(Direction::Up);
+        let last_dir = self
+            .czsc
+            .bi_list
+            .last()
+            .map(|b| b.direction.clone())
+            .unwrap_or(Direction::Up);
         let unfinished = match last_dir {
             Direction::Up => {
-                let bar = self.czsc
+                let bar = self
+                    .czsc
                     .bars_ubi
                     .iter()
                     .skip(1)
@@ -112,7 +117,8 @@ impl Zen {
                 }
             }
             Direction::Down => {
-                let bar = self.czsc
+                let bar = self
+                    .czsc
                     .bars_ubi
                     .iter()
                     .skip(1)
@@ -129,9 +135,10 @@ impl Zen {
             }
         };
         json!(
-            {
-    "bi": {"finished": self.bi_info(), "unfinished": [unfinished]},
-            "beichi": [self.bc_info()]
-    }).to_string()
+                {
+        "bi": {"finished": self.bi_info(), "unfinished": [unfinished]},
+                "beichi": []//[self.bc_info()]
+        })
+        .to_string()
     }
 }

@@ -25,6 +25,7 @@ selenium = "^4.25.0"
 pandas-ta = "^0.3.14b0"
 colored = "^2.2.4"
 numpy = "1.26.4"
+moomoo-api = "^8.7.4708"
 
 [build-system]
 requires = ["poetry-core"]

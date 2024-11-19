@@ -3,11 +3,10 @@ document: https://www.tradingview.com/script/7VXF3amy-Multi-Timeframe-TTM-Squeez
 
 """
 
-import asyncio
 from datetime import datetime, timedelta
+import gc
 import os
 import time
-import colored
 from loguru import logger
 from broker.enums import Resolution
 from broker.mixed import Mixed
@@ -15,10 +14,13 @@ from ib_insync import util
 import pandas_ta as ta
 from colored import Back, Fore, Style
 from curd import update_ttm
+from pandas_ta.momentum import bias
 
 
-async def excute(lines, nofilter, latest=False):
+async def excute(lines, nofilter, latest=False, reverse=False, sort="sum"):
     logger.debug("args {} {}", nofilter, latest)
+    gc.disable()
+
     os.environ["ID"] = "233"
 
     broker = Mixed()
@@ -54,6 +56,7 @@ async def excute(lines, nofilter, latest=False):
                 append=True,
             )
 
+            ba = bias(df["close"], 5)
             wide = out["SQZPRO_ON_WIDE"][::-1].tolist().index(0)
             normal = out["SQZPRO_ON_NORMAL"][::-1].tolist().index(0)
             narrow = out["SQZPRO_ON_NARROW"][::-1].tolist().index(0)
@@ -62,6 +65,7 @@ async def excute(lines, nofilter, latest=False):
                 "wide_count": wide,
                 "normal_count": normal,
                 "narrow_count": narrow,
+                "bias": ba.to_list(),
                 "wide_index": (
                     out["SQZPRO_ON_WIDE"][::-1][:10].tolist().index(1)
                     if 1 in out["SQZPRO_ON_WIDE"][::-1][:10].tolist()
@@ -88,7 +92,7 @@ async def excute(lines, nofilter, latest=False):
         rows.append((l[0], info))
     # asyncio.run(update_ttm(rows))
 
-    rows.sort(key=lambda f: score(f, True))
+    rows.sort(key=lambda f: score(f, True, reverse, sort))
     count = 0
     for symbol, r in rows:
         if (
@@ -96,9 +100,10 @@ async def excute(lines, nofilter, latest=False):
             and r["1D"]["SQZPRO_ON_WIDE"][-2] == 1
         ) or nofilter:
             print(
-                "{:<3} {:<5}: 1D - {:<12}: {} |  1h - {} | 15 - {}".format(
+                "{:<3}{:<5} {}: 1D - {:<12}: {} |  1h - {} | 15 - {}".format(
                     count,
                     symbol,
+                    fmt_list(r["1D"]["bias"][-3:]),
                     f"{r["1D"]["wide_count"]}, {r["1D"]["normal_count"]}, {r["1D"]["narrow_count"]}",
                     f"{color_line(r["1D"], 10)}",
                     f"{color_line(r["60"],18)}",
@@ -107,6 +112,14 @@ async def excute(lines, nofilter, latest=False):
             )
 
             count += 1
+
+
+def fmt_list(l):
+    str = Style.reset + Fore.red + "↑" + Style.reset
+    if sum(l) < 0:
+        str = Style.reset + Fore.green + "↓" + Style.reset
+
+    return str + ",".join(["{:>5.1f}".format(x * 100) for x in l])
 
 
 def color_line(data, len=5):
@@ -141,7 +154,61 @@ def color_line(data, len=5):
     return str
 
 
-def score(info, yes):
+def score(info, yes, reverse, sort):
+    last_cnt = 8
+    from builtins import sum
+
+    if sort == "sum":
+        return (
+            (
+                sum(info[1]["1D"]["bias"][-3:]) < 0
+                if reverse
+                else sum(info[1]["1D"]["bias"][-3:]) > 0
+            ),
+            sum(
+                info[1]["1D"]["SQZPRO_ON_WIDE"][-last_cnt:]
+                + info[1]["1D"]["SQZPRO_ON_NORMAL"][-last_cnt:]
+                + info[1]["1D"]["SQZPRO_ON_NARROW"][-last_cnt:]
+            ),
+        )
+    elif sort == "diff":
+        return (
+            (
+                (
+                    info[1]["1D"]["SQZPRO_ON_WIDE"][-1]
+                    + info[1]["1D"]["SQZPRO_ON_NORMAL"][-1]
+                    + info[1]["1D"]["SQZPRO_ON_NARROW"][-1]
+                )
+                - (
+                    info[1]["1D"]["SQZPRO_ON_WIDE"][-2]
+                    + info[1]["1D"]["SQZPRO_ON_NORMAL"][-2]
+                    + info[1]["1D"]["SQZPRO_ON_NARROW"][-2]
+                ),
+                (
+                    info[1]["1D"]["SQZPRO_ON_WIDE"][-1]
+                    + info[1]["1D"]["SQZPRO_ON_NORMAL"][-1]
+                    + info[1]["1D"]["SQZPRO_ON_NARROW"][-1]
+                ),
+            )
+            if reverse
+            else (
+                (
+                    info[1]["1D"]["SQZPRO_ON_WIDE"][-2]
+                    + info[1]["1D"]["SQZPRO_ON_NORMAL"][-2]
+                    + info[1]["1D"]["SQZPRO_ON_NARROW"][-2]
+                )
+                - (
+                    info[1]["1D"]["SQZPRO_ON_WIDE"][-1]
+                    + info[1]["1D"]["SQZPRO_ON_NORMAL"][-1]
+                    + info[1]["1D"]["SQZPRO_ON_NARROW"][-1]
+                ),
+                (
+                    info[1]["1D"]["SQZPRO_ON_WIDE"][-1]
+                    + info[1]["1D"]["SQZPRO_ON_NORMAL"][-1]
+                    + info[1]["1D"]["SQZPRO_ON_NARROW"][-1]
+                ),
+            )
+        )
     return (
         -info[1]["1D"]["narrow_index"],
         -info[1]["1D"]["normal_index"],

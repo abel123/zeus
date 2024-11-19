@@ -44,12 +44,6 @@ async def resolve_symbol(symbol: str):
     if ":" in symbol:
         exchange = symbol.split(":")[0]
         symbol = symbol.split(":")[1]
-        if exchange == "option":
-            type = "option"
-        elif exchange == "HKEX":
-            screener = "hongkong"
-        elif exchange in ["SSE", "SZSE"]:
-            screener = "china"
 
     if " " in symbol:
         type = "option"
