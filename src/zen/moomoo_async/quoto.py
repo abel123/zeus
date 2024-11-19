@@ -97,22 +97,10 @@ class Quoto(Client):
         bars.keepUpToDate = keep_update
         bars.reqId = id
         for bar in rsp_pb.s2c.klList:
-            bars.append(
-                ib_insync.BarData(
-                    date=datetime.fromtimestamp(
-                        bar.timestamp,
-                        tz=timezone(timedelta(hours=+8), "EST"),
-                    )
-                    - self.adjust(ktype),
-                    open=bar.openPrice,
-                    high=bar.highPrice,
-                    low=bar.lowPrice,
-                    close=bar.closePrice,
-                    volume=bar.volume,
-                )
-            )
+            bars.append(self.convert(bar, ktype))
+
         if keep_update:
-            self.start_keep_update(code + ":" + str(KLType.to_number(ktype)[1]), bars)
+            self.start_keep_update(self.key(code, KLType.to_number(ktype)[1]), bars)
             # bars.updateEvent += lambda x, y: print(x, y)
         return RET_OK, "", bars
 
@@ -148,7 +136,7 @@ class Quoto(Client):
                 }.get(subtype, None)
                 if kline == None:
                     continue
-                self.end_keep_update(code + ":" + str(kline))
+                self.end_keep_update(self.key(code, kline))
 
         return RET_OK, "", None
 
@@ -163,7 +151,7 @@ class Quoto(Client):
         sec = msg.s2c.security
         symbol = ".".join([Market.to_string(sec.market)[1], sec.code])
         ktype = msg.s2c.klType
-        kline = symbol + ":" + str(msg.s2c.klType)
+        kline = self.key(symbol, msg.s2c.klType)
 
         # self._logger.debug("kline {}", kline)
 
@@ -175,51 +163,32 @@ class Quoto(Client):
         if container is not None:
             if len(container) == 0:
                 bar = msg.s2c.klList[0]
-                container.append(
-                    ib_insync.BarData(
-                        date=datetime.fromtimestamp(
-                            bar.timestamp,
-                            tz=timezone(timedelta(hours=+8), "EST"),
-                        )
-                        - self.adjust(ktype),
-                        open=bar.openPrice,
-                        high=bar.highPrice,
-                        low=bar.lowPrice,
-                        close=bar.closePrice,
-                        volume=bar.volume,
-                    )
-                )
+                container.append(self.convert(bar, ktype))
                 container.updateEvent.emit(container, True)
                 msg.s2c.klList = msg.s2c.klList[1:]
+
             for bar in msg.s2c.klList:
                 if bar.timestamp > container[-1].date.timestamp():
-                    container.append(
-                        ib_insync.BarData(
-                            date=datetime.fromtimestamp(
-                                bar.timestamp,
-                                tz=timezone(timedelta(hours=+8), "EST"),
-                            )
-                            - self.adjust(ktype),
-                            open=bar.openPrice,
-                            high=bar.highPrice,
-                            low=bar.lowPrice,
-                            close=bar.closePrice,
-                            volume=bar.volume,
-                        )
-                    )
+                    container.append(self.convert(bar, ktype))
                     container.updateEvent.emit(container, True)
-                elif bar.timestamp == container[-1].date.timestamp():
-                    container[-1] = ib_insync.BarData(
-                        date=datetime.fromtimestamp(
-                            bar.timestamp,
-                            tz=timezone(timedelta(hours=+8), "EST"),
-                        )
-                        - self.adjust(ktype),
-                        open=bar.openPrice,
-                        high=bar.highPrice,
-                        low=bar.lowPrice,
-                        close=bar.closePrice,
-                        volume=bar.volume,
-                    )
 
+                elif bar.timestamp == container[-1].date.timestamp():
+                    container[-1] = self.convert(bar, ktype)
                     container.updateEvent.emit(container, False)
+
+    def convert(self, bar: Qot_Common_pb2.KLine, ktype: KLType):
+        return ib_insync.BarData(
+            date=datetime.fromtimestamp(
+                bar.timestamp,
+                tz=timezone(timedelta(hours=+8), "EST"),
+            )
+            - self.adjust(ktype),
+            open=bar.openPrice,
+            high=bar.highPrice,
+            low=bar.lowPrice,
+            close=bar.closePrice,
+            volume=bar.volume,
+        )
+
+    def key(self, code, kline):
+        return code + ":" + str(kline)

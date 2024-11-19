@@ -128,7 +128,7 @@ class Broker:
     def __init__(self):
         self.futu = Quoto()
         self.cache_key = dict()
-        self.cache = TTLCache(maxsize=9, ttl=timedelta(hours=1).seconds)
+        self.cache = TTLCache(maxsize=90, ttl=timedelta(hours=1).seconds)
 
     def __del__(self):
         self.cache.clear()

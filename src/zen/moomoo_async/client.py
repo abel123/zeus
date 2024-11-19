@@ -23,7 +23,7 @@ class Client:
         self.conn = Connection()
         self._logger = logger
         self.unique_id = 0
-        SysConfig.set_proto_fmt(constant.ProtoFMT.Json)
+        SysConfig.set_proto_fmt(constant.ProtoFMT.Protobuf)
         utils.get_unique_id32 = self._unique_id
         self.conn.hasData += self._onSocketHasData
         self.conn.disconnected += self._onSocketDisconnected
@@ -125,9 +125,9 @@ class Client:
             else:
                 self._endReq(head_dict["serial_no"], rsp_pb, True)
 
-    def _onSocketDisconnected(self, msg):
+    async def _onSocketDisconnected(self, msg):
         self._logger.error("disconnected", msg)
-        asyncio.run(self.keep_alive_loop.stop())
+        await self.keep_alive_loop.stop()
         self._reset()
 
     def get_sync_conn_id(self):
