@@ -54,16 +54,17 @@ class Quoto(Client):
         return RET_OK, "", None
 
     def adjust(self, ktype=KLType.K_DAY):
-        return timedelta(seconds=0)
-        return {
+        res = {
             KLType.K_1M: timedelta(minutes=1),
             KLType.K_3M: timedelta(minutes=3),
             KLType.K_5M: timedelta(minutes=5),
             KLType.K_15M: timedelta(minutes=15),
             KLType.K_30M: timedelta(minutes=30),
             KLType.K_60M: timedelta(minutes=60),
-            KLType.K_DAY: timedelta(days=1),
-        }.get(ktype)
+            KLType.K_DAY: timedelta(hours=23),
+        }.get(ktype, timedelta(seconds=0))
+        # self._logger.debug("ktype {}, adjust {}", ktype, res)
+        return res
 
     async def get_cur_kline(
         self,
@@ -136,7 +137,7 @@ class Quoto(Client):
                 }.get(subtype, None)
                 if kline == None:
                     continue
-                self.end_keep_update(self.key(code, kline))
+                self.end_keep_update(self.key(code, KLType.to_number(kline)[1]))
 
         return RET_OK, "", None
 
@@ -153,6 +154,7 @@ class Quoto(Client):
         ktype = msg.s2c.klType
         kline = self.key(symbol, msg.s2c.klType)
 
+        ktype = KLType.to_string(ktype)[1]
         # self._logger.debug("kline {}", kline)
 
         container: ib_insync.BarDataList = self._results.get(kline, None)

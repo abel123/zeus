@@ -74,6 +74,7 @@ class Listener:
 
     def _update_data(self, bars: BarDataList, hasNewBar):
         bar = bars[-1]
+        # logger.debug("{} {} {}", bars.barSizeSetting, bar.date, bar.close)
         self.zen.append(
             zen_core.Bar(
                 bar.date,
