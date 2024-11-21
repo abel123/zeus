@@ -31,7 +31,6 @@ const defaultWidgetProps: Partial<ChartingLibraryWidgetOptions> = {
     user_id: "zen_user_id",
     fullscreen: false,
     autosize: true,
-    symbol: "SPY",
 };
 
 interface ChartConfig {
@@ -44,6 +43,11 @@ interface ChartConfig {
 export const StockChart = (props: ChartConfig) => {
     const [symbol, setSymbol] = useRecoilState(symbolState);
 
+    let def_sym = "SPY";
+    if (symbol.startsWith("HK")) {
+        def_sym = "HK.800000";
+    }
+
     let tv = useMemo(() => {
         let mv = new ModelView(props.macd_config);
         mv.hidden_extra_toolbar = props.hidden_extra_toolbar;
@@ -55,11 +59,12 @@ export const StockChart = (props: ChartConfig) => {
                     interval: props.resolution,
                     model_view: mv,
                     standalone: props.standalone,
+                    symbol: def_sym,
                 }}
             />
         );
     }, [
-        props.standalone ? "" : symbol,
+        props.standalone ? def_sym : symbol,
         props.hidden_extra_toolbar,
         props.macd_config,
         props.resolution,

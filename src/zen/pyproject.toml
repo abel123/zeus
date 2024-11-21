@@ -6,7 +6,7 @@ authors = ["yuanzx <yuanzx@yunphant.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "3.13"
 ib-insync = "^0.9.86"
 fastapi = "^0.115.2"
 loguru = "^0.7.2"
@@ -17,7 +17,7 @@ orjson = "^3.10.9"
 jsonrpcserver = "^5.0.9"
 sqlmodel = "^0.0.22"
 sqlalchemy-stubs = "^0.4"
-sqlalchemy = {extras = ["asyncio"], version = "^2.0.36"}
+sqlalchemy = { extras = ["asyncio"], version = "^2.0.36" }
 aiosqlite = "^0.20.0"
 shelved-cache = "^0.4.0"
 click = "^8.1.7"
@@ -26,6 +26,8 @@ pandas-ta = "^0.3.14b0"
 colored = "^2.2.4"
 numpy = "1.26.4"
 moomoo-api = "^8.7.4708"
+desktop-notifier = "^6.0.0"
+pymupdf = "^1.24.14"
 
 [build-system]
 requires = ["poetry-core"]

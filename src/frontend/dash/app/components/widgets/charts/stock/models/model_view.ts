@@ -227,7 +227,7 @@ export class ModelView {
                         }
                         if (bc.zs2.bi_count == 1) {
                             color = bc.direction == "down" ? "rgba(72, 138, 161, 0.6)" : "rgba(182, 138, 161, 1)";
-                        } else {
+                        } else if (false) {
                             let bc_id = chart.createMultipointShape(
                                 [
                                     { price: bc.zs2.high, time: bc.zs2.left },
@@ -242,7 +242,7 @@ export class ModelView {
                                     },
                                 }
                             );
-                            if (bc_id) chart.selection().add(bc_id);
+                            //if (bc_id) chart.selection().add(bc_id);
                         }
                         let bc_id = chart.createMultipointShape(
                             [
@@ -265,30 +265,32 @@ export class ModelView {
                             chart.selection().add(bc_id);
                         }
 
-                        if (["FirstBuy", "SecondBuy", "ThirdBuy"].indexOf(bc.type) != -1) {
-                            let bc_id = chart.createShape(
-                                { price: bc.price, time: bc.dt },
-                                {
-                                    shape: "arrow_up",
-                                    overrides: {
-                                        arrowColor: "rgba(253, 45, 0, 1)",
-                                    },
-                                    zOrder: "bottom",
-                                }
-                            );
-                            if (bc_id) chart.selection().add(bc_id);
-                        } else if (bc.type != "None") {
-                            let bc_id = chart.createShape(
-                                { price: bc.price * 1.0, time: bc.dt },
-                                {
-                                    shape: "arrow_down",
-                                    overrides: {
-                                        arrowColor: "rgba(0, 206, 9, 1)",
-                                    },
-                                    zOrder: "bottom",
-                                }
-                            );
-                            if (bc_id) chart.selection().add(bc_id);
+                        if (false) {
+                            if (["FirstBuy", "SecondBuy", "ThirdBuy"].indexOf(bc.type) != -1) {
+                                let bc_id = chart.createShape(
+                                    { price: bc.price, time: bc.dt },
+                                    {
+                                        shape: "arrow_up",
+                                        overrides: {
+                                            arrowColor: "rgba(253, 45, 0, 1)",
+                                        },
+                                        zOrder: "bottom",
+                                    }
+                                );
+                                //if (bc_id) chart.selection().add(bc_id);
+                            } else if (bc.type != "None") {
+                                let bc_id = chart.createShape(
+                                    { price: bc.price * 1.0, time: bc.dt },
+                                    {
+                                        shape: "arrow_down",
+                                        overrides: {
+                                            arrowColor: "rgba(0, 206, 9, 1)",
+                                        },
+                                        zOrder: "bottom",
+                                    }
+                                );
+                                //if (bc_id) chart.selection().add(bc_id);
+                            }
                         }
                     });
                 });

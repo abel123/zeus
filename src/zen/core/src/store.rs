@@ -137,7 +137,7 @@ impl Zen {
         json!(
                 {
         "bi": {"finished": self.bi_info(), "unfinished": [unfinished]},
-                "beichi": []//[self.bc_info()]
+                "beichi": [self.bc_info()]
         })
         .to_string()
     }

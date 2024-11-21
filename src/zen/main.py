@@ -5,7 +5,7 @@ import zen_core
 from app import app
 from uvicorn import Config, Server
 from loguru import logger
-from script import m_screenshot, ttm_squeeze_scaner
+from script import m_add_toc, m_screenshot, ttm_squeeze_scaner
 from utils.logger import InterceptHandler
 import asyncio
 import click
@@ -45,6 +45,13 @@ def sync(filename):
     with open(filename, "r") as f:
         data = f.readlines()
         asyncio.run(sync_to_local(data))
+
+
+@cli.command()
+@click.argument("pdf")
+@click.argument("list")
+def add_toc(pdf, list):
+    m_add_toc.excute(pdf, list)
 
 
 @cli.command()
