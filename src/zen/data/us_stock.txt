@@ -370,3 +370,4 @@ CVNA	Carvana	美股
 KWEB 中概互联 美股
 CRSP CRISPR Therapeutics 美股
 IWM 罗素2000 美股
+SPX	标普500指数	美股

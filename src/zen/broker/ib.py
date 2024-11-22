@@ -216,8 +216,14 @@ class Broker:
                     )
 
         start = datetime.now()
+        contract = (
+            Stock(symbol, "SMART", "USD")
+            if symbol != "SPX"
+            else Index("SPX", "CBOE", "USD")
+        )
+
         listener = await self._subscribe(
-            Stock(symbol, "SMART", "USD"),
+            contract,
             "" if realtime else datetime.fromtimestamp(to),
             to_duration(to - from_),
             self.mapping[freq].value,

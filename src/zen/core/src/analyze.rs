@@ -1,10 +1,10 @@
+use crate::talipp::indicator::macd::MACD;
+use crate::talipp::indicator::Indicator;
+use pyo3::pyclass;
 use std::cell::RefCell;
 use std::cmp::max;
 use std::fmt::Display;
 use std::rc::Rc;
-use pyo3::pyclass;
-use crate::talipp::indicator::macd::MACD;
-use crate::talipp::indicator::Indicator;
 use tracing::{debug, error};
 
 use crate::element::chan::{Bar, GenericCache, NewBar, BI, DT, FX};
@@ -181,7 +181,7 @@ impl CZSC {
                     .filter(|x| x.mark == Mark::G)
                     .max_by(|x, y| x.high.partial_cmp(&y.high).unwrap()),
             }
-                .unwrap();
+            .unwrap();
             self.bars_ubi.retain(|x| x.dt >= fx_a.elements[0].dt);
         }
 
@@ -196,7 +196,7 @@ impl CZSC {
                     .map(|x| x.power_price())
                     .max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap()
                  */
-                self.bi_list.last().unwrap().power_price()
+                self.bi_list.last().unwrap().power_price(),
             )
         } else {
             None
@@ -211,7 +211,7 @@ impl CZSC {
             if (last_bi.direction == Direction::Up
                 && self.bars_ubi.last().unwrap().high > last_bi.high())
                 || (last_bi.direction == Direction::Down
-                && self.bars_ubi.last().unwrap().low < last_bi.low())
+                    && self.bars_ubi.last().unwrap().low < last_bi.low())
             {
                 let offset = max(last_bi.bars.len() as isize - 2, 0);
                 if offset == 0 {
@@ -436,12 +436,12 @@ pub fn check_bi(
         BiType::Modern => {
             bars_a.len() >= 7
                 || (bars_a.len() == 6
-                && bars_a
-                .iter()
-                .filter(|x| x.dt > fx_a.dt && x.dt < fx_b.dt)
-                .map(|x| x.raw_bars.len() as i32)
-                .sum::<i32>()
-                >= 3)
+                    && bars_a
+                        .iter()
+                        .filter(|x| x.dt >= fx_a.dt && x.dt <= fx_b.dt)
+                        .map(|x| x.raw_bars.len() as i32)
+                        .sum::<i32>()
+                        >= 5)
         }
         BiType::Legacy => bars_a.len() >= 7,
         BiType::FourK => bars_a.len() >= 6,
