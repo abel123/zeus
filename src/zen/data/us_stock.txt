@@ -327,7 +327,6 @@ MRVL	迈威尔科技	美股
 TCOM	携程网	美股
 KMI	金德尔摩根	美股
 CCL	嘉年华邮轮	美股
-MRO	马拉松石油	美股
 IP	国际纸业	美股
 SPOT	Spotify Technology	美股
 BKNG	Booking Holdings	美股

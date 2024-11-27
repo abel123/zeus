@@ -61,7 +61,7 @@ class Quoto(Client):
             KLType.K_15M: timedelta(minutes=15),
             KLType.K_30M: timedelta(minutes=30),
             KLType.K_60M: timedelta(minutes=60),
-            KLType.K_DAY: timedelta(hours=23),
+            KLType.K_DAY: timedelta(hours=-10),
         }.get(ktype, timedelta(seconds=0))
         # self._logger.debug("ktype {}, adjust {}", ktype, res)
         return res
@@ -170,11 +170,13 @@ class Quoto(Client):
                 msg.s2c.klList = msg.s2c.klList[1:]
 
             for bar in msg.s2c.klList:
-                if bar.timestamp > container[-1].date.timestamp():
+                timestamp = self.convert(bar, ktype).date.timestamp()
+
+                if timestamp > container[-1].date.timestamp():
                     container.append(self.convert(bar, ktype))
                     container.updateEvent.emit(container, True)
 
-                elif bar.timestamp == container[-1].date.timestamp():
+                elif timestamp == container[-1].date.timestamp():
                     container[-1] = self.convert(bar, ktype)
                     container.updateEvent.emit(container, False)
 

@@ -438,10 +438,10 @@ pub fn check_bi(
                 || (bars_a.len() == 6
                     && bars_a
                         .iter()
-                        .filter(|x| x.dt >= fx_a.dt && x.dt <= fx_b.dt)
+                        .filter(|x| x.dt >= fx_a.dt && x.dt < fx_b.dt)
                         .map(|x| x.raw_bars.len() as i32)
                         .sum::<i32>()
-                        >= 5)
+                        >= 4)
         }
         BiType::Legacy => bars_a.len() >= 7,
         BiType::FourK => bars_a.len() >= 6,
