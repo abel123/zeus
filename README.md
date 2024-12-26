@@ -5,7 +5,7 @@ python + rust 缠论量化
 
 ### reference
 
-- 核心逻辑使用的是 https://github.com/waditu/czsc ，原项目主要是为了离线处理。为了方便实时展示，作了少量改动。后逐步用 rust 重写
+- 核心逻辑使用的是 https://github.com/waditu/czsc ，原项目主要是为了离线处理。为了方便实时展示，作了少量改动。用 rust 重写核心逻辑，pyo3给 python 使用
 
 
 # zen-rs
