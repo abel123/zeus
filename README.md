@@ -5,7 +5,7 @@ python + rust 缠论量化
 
 ### reference
 
-- 核心逻辑使用的是 https://github.com/waditu/czsc ，原项目主要是为了离线处理。为了方便实时展示，作了少量改动。后逐步用 rust 重写
+- 核心逻辑使用的是 https://github.com/waditu/czsc ，原项目主要是为了离线处理。为了方便实时展示，作了少量改动。用 rust 重写核心逻辑，pyo3给 python 使用
 
 
 # zen-rs
@@ -21,6 +21,6 @@ zen in rust（rust 版缠论)
 + low code 自定义 dashboard
   
 demo 示例:
-![image](https://github.com/abel123/zen-rs/assets/3805243/03cc2304-e5f9-4623-bfad-2de2262846ef)
-![image](https://github.com/abel123/zen-rs/assets/3805243/0832af62-9be9-42b1-9a59-821dd14c026e)
+![image](https://github.com/user-attachments/assets/f444ff22-b2fd-441a-b625-e6a36241e556)
 
+![0003-GOOGL](https://github.com/user-attachments/assets/f201e09b-75c2-4092-a085-eae4e87a6c8e)
