@@ -36,6 +36,7 @@ export interface Beichi {
     zs2: ZS;
     dt: number;
     price: number;
+    bi_count: number;
 }
 
 export interface ZS {

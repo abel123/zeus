@@ -58,6 +58,7 @@ pub struct BSPoint {
     macd_b_val: f32,
     dt: i64,
     price: f32,
+    bi_count: i32,
 }
 
 #[pymethods]
@@ -116,7 +117,7 @@ impl BuySellPoint {
                     } else {
                         "底"
                     }
-                        .to_string(),
+                    .to_string(),
                     format!("{}笔", bs.zs2.bi_count + 2),
                     "other".to_string(),
                 ),
@@ -371,6 +372,7 @@ impl BuySellPoint {
                     } else {
                         bi_last.high()
                     },
+                    bi_count: zs2.bis.len() as i32,
                 };
                 if dif_zero > (bi_first_diff * diff_threshold).abs() {
                     continue;
@@ -441,6 +443,7 @@ impl BuySellPoint {
                     } else {
                         bi_last.low()
                     },
+                    bi_count: zs2.bis.len() as i32,
                 };
                 if dif_zero < -(bi_first_diff * diff_threshold).abs() {
                     continue;

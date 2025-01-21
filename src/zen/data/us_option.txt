@@ -1,13 +1,15 @@
 代码	名称	市场	
-SPX	标普500指数	美股
-SPY	SPDR 标普500指数ETF	美股
-AMZN	亚马逊	美股
-MSFT	微软	美股
-META	Meta Platforms	美股
-AAPL	苹果	美股
-NVDA	英伟达	美股
-TSLA	特斯拉	美股
-GOOGL 谷歌 美股
-AMD AMD 美股
-KWEB 中概互联 美股
-IWM 罗素2000 美股
+SPY	标普500ETF-SPDR	美股	
+META	Meta Platforms	美股	
+MSFT	微软	美股	
+GOOGL	谷歌-A	美股	
+AMZN	亚马逊	美股	
+AMD	美国超微公司	美股	
+SMCI	超微电脑	美股	
+AAPL	苹果	美股	
+IWM	罗素2000ETF-iShares	美股	
+PINS	Pinterest	美股	
+RIVN	Rivian Automotive	美股	
+BABA	阿里巴巴	美股	
+NKE	耐克	美股	
+NVDA	英伟达	美股	
